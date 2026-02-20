@@ -1,0 +1,129 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "GEM Output Envelope",
+    "description": "Schema estándar para el output JSON de cualquier GEM del pipeline RAAD.",
+    "type": "object",
+    "required": [
+        "meta",
+        "scores",
+        "blockers",
+        "content"
+    ],
+    "properties": {
+        "meta": {
+            "type": "object",
+            "required": [
+                "search_id",
+                "gem",
+                "prompt_version",
+                "timestamp",
+                "sources"
+            ],
+            "properties": {
+                "search_id": {
+                    "type": "string",
+                    "description": "ID único de la búsqueda ejecutiva",
+                    "pattern": "^SEARCH-[0-9]{4}-[0-9]{3,}$"
+                },
+                "candidate_id": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "ID del candidato. Null para GEM5 (búsqueda, no candidato)."
+                },
+                "gem": {
+                    "type": "string",
+                    "enum": [
+                        "GEM_1",
+                        "GEM_2",
+                        "GEM_3",
+                        "GEM_4",
+                        "GEM_5"
+                    ]
+                },
+                "prompt_version": {
+                    "type": "string",
+                    "pattern": "^v[0-9]+\\.[0-9]+$",
+                    "description": "Versión del prompt utilizado (ej: v1.2)"
+                },
+                "timestamp": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "sources": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "minItems": 1,
+                    "description": "Lista de fuentes utilizadas"
+                }
+            }
+        },
+        "scores": {
+            "type": "object",
+            "required": [
+                "confidence"
+            ],
+            "properties": {
+                "score_dimension": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 10,
+                    "description": "Score principal. Null para GEM5."
+                },
+                "confidence": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10,
+                    "description": "Nivel de certeza basado en completitud, calidad y consistencia de inputs."
+                }
+            }
+        },
+        "blockers": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "Lista de blockers. Array vacío si no hay."
+        },
+        "content": {
+            "type": "object",
+            "description": "Contenido específico del GEM. Varía por módulo."
+        }
+    },
+    "if": {
+        "properties": {
+            "meta": {
+                "properties": {
+                    "gem": {
+                        "const": "GEM_4"
+                    }
+                }
+            }
+        }
+    },
+    "then": {
+        "required": [
+            "meta",
+            "scores",
+            "blockers",
+            "content",
+            "decision"
+        ],
+        "properties": {
+            "decision": {
+                "type": "string",
+                "enum": [
+                    "APROBADO",
+                    "BLOQUEADO"
+                ],
+                "description": "Solo para GEM4. Decisión final del auditor QA."
+            }
+        }
+    }
+}

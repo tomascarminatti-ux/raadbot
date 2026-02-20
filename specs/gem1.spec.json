@@ -1,1 +1,25 @@
-{\n  "id": "GEM_1",\n  "name": "Trayectoria y Logros",\n  "scope": "Por candidato",\n  "inputs_required": ["cv_candidato", "notas_entrevista", "gem5_summary"],\n  "outputs": ["gem1.json", "gem1.md"],\n  "scoring": {\n    "score_dimension": "0-10",\n    "confidence": "0-10",\n    "threshold_pass": 6\n  },\n  "block_conditions": [\n    "Si faltan métricas clave en logros => FLAG (no bloquea, pero baja score)",\n    "Si hay vacíos >3 meses sin explicación => FLAG"\n  ],\n  "sections_fixed": [\n    "Resumen ejecutivo",\n    "Trayectoria: coherencia y progresión",\n    "Logros calibrados",\n    "Señales de riesgo",\n    "Vacíos e inconsistencias",\n    "Score + confidence",\n    "Blockers"\n  ]\n}
+{
+  "id": "GEM_1",
+  "name": "Trayectoria y Logros",
+  "scope": "Por candidato",
+  "inputs_required": ["cv_candidato", "notas_entrevista", "gem5_summary"],
+  "outputs": ["gem1.json", "gem1.md"],
+  "scoring": {
+    "score_dimension": "0-10",
+    "confidence": "0-10",
+    "threshold_pass": 6
+  },
+  "block_conditions": [
+    "Si faltan métricas clave en logros => FLAG (no bloquea, pero baja score)",
+    "Si hay vacíos >3 meses sin explicación => FLAG"
+  ],
+  "sections_fixed": [
+    "Resumen ejecutivo",
+    "Trayectoria: coherencia y progresión",
+    "Logros calibrados",
+    "Señales de riesgo",
+    "Vacíos e inconsistencias",
+    "Score + confidence",
+    "Blockers"
+  ]
+}

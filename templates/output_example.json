@@ -1,0 +1,75 @@
+{
+    "meta": {
+        "search_id": "SEARCH-2026-001",
+        "candidate_id": "CAND-001",
+        "gem": "GEM_1",
+        "prompt_version": "v1.1",
+        "timestamp": "2026-02-20T15:00:00-03:00",
+        "sources": [
+            "CV candidato (PDF, 3 páginas)",
+            "Entrevista estructurada (45 min, notas)",
+            "GEM5 búsqueda SEARCH-2026-001"
+        ]
+    },
+    "scores": {
+        "score_dimension": 7,
+        "confidence": 8
+    },
+    "blockers": [],
+    "content": {
+        "resumen_ejecutivo": "Ejecutivo con 12 años en supply chain en industria FMCG. Progresión coherente desde analista a gerente regional. Logros cuantificados en reducción de costos (18% en 2024) y mejora de fill-rate (92% → 97%). Vacío temporal de 5 meses en 2022 sin explicación.",
+        "trayectoria_coherencia_progresion": [
+            "2014-2018: Analista Sr. Supply Chain en Empresa A [Fuente: CV – sección Experiencia]",
+            "2018-2021: Jefe de Operaciones en Empresa B [Fuente: CV – sección Experiencia]",
+            "2022 (ene-may): Vacío temporal no explicado [Fuente: CV – ausencia de datos]",
+            "2022-presente: Gerente Regional Supply Chain en Empresa C [Fuente: CV + Entrevista – min 8:20]"
+        ],
+        "logros_calibrados": [
+            {
+                "problema": "Fill-rate por debajo del benchmark regional (92%)",
+                "accion": "Rediseño de red de distribución + implementación de S&OP",
+                "resultado": "Fill-rate subió a 97% en 8 meses",
+                "metrica": "+5pp fill-rate, USD 2.1M en ventas recuperadas",
+                "fuente": "[Fuente: Entrevista – min 15:40 + CV – sección Logros]"
+            },
+            {
+                "problema": "Costos logísticos 22% sobre presupuesto",
+                "accion": "Renegociación de contratos + consolidación de rutas",
+                "resultado": "Reducción del 18% en costos logísticos",
+                "metrica": "USD 1.4M ahorro anual",
+                "fuente": "[Fuente: CV – sección Logros]"
+            },
+            {
+                "problema": "Equipo desmotivado, rotación del 35%",
+                "accion": "No detallada en fuentes",
+                "resultado": "Rotación bajó a 12%",
+                "metrica": "Logro no calibrado – requiere validación: falta detalle de qué acciones específicas tomó",
+                "fuente": "[Fuente: Entrevista – min 28:00]"
+            }
+        ],
+        "senales_riesgo": [
+            "Vacío temporal no explicado: ene-may 2022 (5 meses). No mencionado en entrevista. [Fuente: CV – ausencia]",
+            "Cambio de Empresa A a Empresa B: rol lateral (no ascenso). Candidato lo justifica como 'búsqueda de mayor alcance regional' pero sin evidencia de que el scope haya sido mayor. [Fuente: Entrevista – min 12:10]"
+        ],
+        "vacios_inconsistencias": [
+            {
+                "vacio": "Vacío ene-may 2022",
+                "como_validar": "Preguntar directamente en segunda entrevista o vía referencia"
+            },
+            {
+                "vacio": "Logro de reducción de rotación: falta acción específica",
+                "como_validar": "Solicitar ejemplos concretos de iniciativas de retención"
+            },
+            {
+                "vacio": "No hay información sobre manejo de presupuesto en Empresa A",
+                "como_validar": "Revisar con referencia de ese período"
+            }
+        ],
+        "score_gem1": {
+            "score": 7,
+            "confidence": 8,
+            "justificacion": "Trayectoria coherente con progresión clara. 2 logros bien calibrados, 1 parcial. Vacío temporal es flag pero no bloqueante."
+        },
+        "blockers": []
+    }
+}
