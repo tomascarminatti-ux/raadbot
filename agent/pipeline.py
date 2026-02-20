@@ -1,13 +1,7 @@
-"""
-pipeline.py – Orquestador del pipeline GEM de RAAD.
-
-Ejecuta secuencialmente: GEM5 → GEM1 → GEM2 → GEM3 → GEM4
-con gating por score y flujo post-bloqueo.
-"""
-
 import json
 import os
 from datetime import datetime, timezone
+from typing import Optional, Any
 
 from jsonschema import validate, ValidationError
 
@@ -46,7 +40,7 @@ class Pipeline:
                 return json.load(f)
         return None
 
-    def _save_output(self, gem_name: str, result: dict, candidate_id: str = None):
+    def _save_output(self, gem_name: str, result: dict, candidate_id: Optional[str] = None):
         """Guarda output JSON y Markdown."""
         prefix = gem_name
         if candidate_id:
@@ -139,7 +133,7 @@ class Pipeline:
         print(f"👤 Candidato: {candidate_id}")
         print(f"{'=' * 60}")
 
-        results = {"candidate_id": candidate_id, "gems": {}}
+        results: dict[str, Any] = {"candidate_id": candidate_id, "gems": {}}
         gem5_json = gem5_result.get("json", {})
         gem5_content = gem5_json.get("content", {}) if gem5_json else {}
 
@@ -343,10 +337,18 @@ class Pipeline:
         }
 
         for candidate_id, candidate_inputs in candidates.items():
-            result = self.run_candidate_pipeline(
-                candidate_id, candidate_inputs, gem5_result
-            )
-            all_results["candidates"][candidate_id] = result
+            try:
+                result = self.run_candidate_pipeline(
+                    candidate_id, candidate_inputs, gem5_result
+                )
+                all_results["candidates"][candidate_id] = result
+            except Exception as e:
+                print(f"  ❌ Error crítico procesando candidato {candidate_id}: {e}")
+                all_results["candidates"][candidate_id] = {
+                    "candidate_id": candidate_id,
+                    "decision": f"ERROR_EJECUCION: {e}",
+                    "gem4_score": None,
+                }
 
         # 3. Resumen final
         self._print_summary(all_results)

@@ -81,7 +81,7 @@ class DriveClient:
         )
         return results.get("files", [])
 
-    def download_file(self, file_id: str, mime_type: str = None) -> str:
+    def download_file(self, file_id: str, mime_type: Optional[str] = None) -> str:
         """
         Descarga el contenido de un archivo como texto.
 
@@ -139,8 +139,16 @@ class DriveClient:
 
             # Guardar localmente
             safe_name = name.replace("/", "_")
-            if not safe_name.endswith(".txt") and "google-apps" in mime:
-                safe_name += ".txt"
+            
+            if "google-apps" in mime:
+                if not safe_name.endswith(".txt"):
+                    safe_name += ".txt"
+            else:
+                if mime == "application/pdf" or "wordprocessing" in mime:
+                    print(f"  ⚠️  Advertencia: {name} es un archivo binario ({mime}).")
+                    print("     El modelo recibirá el texto crudo/binario si no es extraído.")
+                if not safe_name.endswith(".txt") and mime.startswith("text/"):
+                    safe_name += ".txt"
 
             filepath = os.path.join(target_dir, safe_name)
             with open(filepath, "w", encoding="utf-8") as f:

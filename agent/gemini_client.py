@@ -56,9 +56,9 @@ class GeminiClient:
         json_data = None
         markdown = raw_text
 
-        # Buscar bloque ```json ... ```
+        # Buscar bloque ```json ... ``` (o similar)
         json_match = re.search(
-            r"```json\s*\n(.*?)\n\s*```", raw_text, re.DOTALL
+            r"```(?:json)?\s*\n(.*?)\n\s*```", raw_text, re.DOTALL
         )
 
         if json_match:
@@ -66,12 +66,21 @@ class GeminiClient:
             try:
                 json_data = json.loads(json_str)
             except json.JSONDecodeError as e:
-                print(f"  ⚠️  JSON parse error: {e}")
+                print(f"  ⚠️  JSON parse error in code block: {e}")
                 json_data = {"_raw_json": json_str, "_parse_error": str(e)}
 
             # Markdown es todo lo que NO es el bloque JSON
             markdown = raw_text[: json_match.start()] + raw_text[json_match.end() :]
             markdown = markdown.strip()
+        else:
+            # Fallback: si el modelo devuelve JSON crudo sin backticks
+            try:
+                # Intentar parsear el raw_text entero
+                json_data = json.loads(raw_text.strip())
+                markdown = "" # No hay markdown si es todo JSON
+            except json.JSONDecodeError:
+                # Si falla, simplemente asumimos que no hay JSON en la respuesta
+                pass
 
         return {
             "json": json_data,
