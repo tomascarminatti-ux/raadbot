@@ -61,6 +61,26 @@ python run.py --search-id SEARCH-2026-001 --local-dir runs/SEARCH-2026-001/input
 
 El agente ejecutará secuencialmente GEM5 → GEM1 → GEM2 → GEM3 → GEM4, aplicando el control de calidad, reintentando si hay bloqueos, y guardando los resultados JSON y Markdown en `runs/SEARCH-2026-001/outputs/`.
 
+## Diagrama de Flujo del Agente
+
+```mermaid
+graph TD
+    A[Inputs: Google Drive o Carpeta Local] -->|run.py| B(Drive Client/Loader)
+    B --> C{Búsqueda GEM5}
+    C -->|Output Rol| D[Iterador de Candidatos]
+    D --> E[GEM1 - Trayectoria]
+    E -->|pasa ≥6| F[GEM2 - Assessment]
+    E -->|falla <6| Z[Descartado]
+    F -->|pasa ≥6| G[GEM3 - Veredicto]
+    F -->|falla <6| Z
+    G -->|pasa ≥6| H[GEM4 - QA Auditor]
+    G -->|falla <6| Z
+    H -->|Aprobado ≥7| I[Reporte Final y JSON]
+    H -->|Rechazado <7| J{Intento > 2?}
+    J -->|No| H
+    J -->|Sí| K[Escalado a Consultor]
+```
+
 ## Estructura del proyecto
 
 ```
