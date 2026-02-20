@@ -37,17 +37,23 @@ class GeminiClient:
                 )
 
                 raw_text = response.text
-                
+
                 usage_dict = {
                     "prompt_tokens": 0,
                     "candidates_tokens": 0,
-                    "total_tokens": 0
+                    "total_tokens": 0,
                 }
                 if hasattr(response, "usage_metadata") and response.usage_metadata:
-                    usage_dict["prompt_tokens"] = getattr(response.usage_metadata, "prompt_token_count", 0)
-                    usage_dict["candidates_tokens"] = getattr(response.usage_metadata, "candidates_token_count", 0)
-                    usage_dict["total_tokens"] = getattr(response.usage_metadata, "total_token_count", 0)
-                
+                    usage_dict["prompt_tokens"] = getattr(
+                        response.usage_metadata, "prompt_token_count", 0
+                    )
+                    usage_dict["candidates_tokens"] = getattr(
+                        response.usage_metadata, "candidates_token_count", 0
+                    )
+                    usage_dict["total_tokens"] = getattr(
+                        response.usage_metadata, "total_token_count", 0
+                    )
+
                 result = self._parse_response(raw_text)
                 result["usage"] = usage_dict
                 return result
@@ -62,6 +68,7 @@ class GeminiClient:
                     raise RuntimeError(
                         f"Gemini API falló después de {max_retries + 1} intentos: {e}"
                     )
+        raise RuntimeError("Unreachable")
 
     def _parse_response(self, raw_text: str) -> dict:
         """Parsea la respuesta de Gemini separando JSON y Markdown."""
@@ -69,9 +76,7 @@ class GeminiClient:
         markdown = raw_text
 
         # Buscar bloque ```json ... ``` (o similar)
-        json_match = re.search(
-            r"```(?:json)?\s*\n(.*?)\n\s*```", raw_text, re.DOTALL
-        )
+        json_match = re.search(r"```(?:json)?\s*\n(.*?)\n\s*```", raw_text, re.DOTALL)
 
         if json_match:
             json_str = json_match.group(1).strip()
@@ -82,14 +87,15 @@ class GeminiClient:
                 json_data = {"_raw_json": json_str, "_parse_error": str(e)}
 
             # Markdown es todo lo que NO es el bloque JSON
-            markdown = raw_text[: json_match.start()] + raw_text[json_match.end() :]
-            markdown = markdown.strip()
+            json_block_full = json_match.group(0)
+            parts = raw_text.split(json_block_full, 1)
+            markdown = "".join(parts).strip()
         else:
             # Fallback: si el modelo devuelve JSON crudo sin backticks
             try:
                 # Intentar parsear el raw_text entero
                 json_data = json.loads(raw_text.strip())
-                markdown = "" # No hay markdown si es todo JSON
+                markdown = ""  # No hay markdown si es todo JSON
             except json.JSONDecodeError:
                 # Si falla, simplemente asumimos que no hay JSON en la respuesta
                 pass

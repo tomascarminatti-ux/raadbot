@@ -33,3 +33,25 @@ Ejecuta GEM 2 (Assessment a negocio) para {{candidate_id}}.
 - No usar lenguaje psicológico abstracto. Convertir a conducta + impacto.
 - Si algo es inferencia: marcar como "Hipótesis no validada – requiere verificación".
 - No repetir hallazgos de GEM1 sin agregar valor nuevo (análisis, no copia).
+
+---
+### JSON EXACTO REQUERIDO
+DEBES DEVOLVER EXCLUSIVAMENTE UN OBJETO JSON CON LA SIGUIENTE ESTRUCTURA ESTRICTA. No envuelvas las keys en formatos diferentes, no alteres objetos:
+```json
+{
+  "meta": {
+    "search_id": "{{search_id}}",
+    "candidate_id": "{{candidate_id}}",
+    "gem": "GEM2",
+    "timestamp": "ISO 8601",
+    "prompt_version": "1.0",
+    "sources": ["cv", "interview_notes"]
+  },
+  "content": { },
+  "scores": {
+    "score_dimension": 8,
+    "confidence": "HIGH"
+  },
+  "issues_found": []
+}
+```

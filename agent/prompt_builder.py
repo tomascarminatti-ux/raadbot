@@ -54,6 +54,7 @@ def build_prompt(gem_name: str, variables: dict) -> str:
         placeholder = "{{" + key + "}}"
         if isinstance(value, dict):
             import json
+
             value = json.dumps(value, ensure_ascii=False, indent=2)
         prompt = prompt.replace(placeholder, str(value))
 

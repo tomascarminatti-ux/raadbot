@@ -1,120 +1,109 @@
-# Raadbot – RAAD GEM Industrial Pipeline
+# 🤖 Raadbot – RAAD GEM Industrial Pipeline
 
-Pipeline secuencial de IA para estandarizar reportes de **búsqueda ejecutiva** en RAAD.
+**Raadbot** es un agente de IA avanzado diseñado para la **Búsqueda Ejecutiva Industrial**. Su función es automatizar la evaluación de candidatos de alto nivel (C-Level, VP, Directores) transformando datos crudos y heterogéneos en reportes estratégicos estructurados, con una trazabilidad psicópata de la evidencia.
 
-## Qué hace
+Este proyecto utiliza **Gemini 2.5 Flash / Pro** (vía Google GenAI SDK) y está preparado para ejecución local (CLI), vía API (FastAPI) y orquestación automática mediante **n8n**.
 
-Convierte datos crudos de candidatos (CV, entrevistas, tests, referencias) en reportes ejecutivos estandarizados con control de calidad automático y trazabilidad de evidencia.
+---
 
-## Pipeline GEM
+## 🏗️ Arquitectura del Sistema
 
+El sistema opera bajo un patrón de **Pipeline Secuencial con Gating**. Los candidatos deben superar umbrales específicos de puntaje para avanzar al siguiente "GEM" (Módulo de Evaluación Gemini).
+
+### El Workflow GEM
+
+```mermaid
+graph TD
+    A[<b>Inputs Crudos</b><br/>CV, Entrevistas, Tests, JD] --> B[<b>GEM5</b><br/>Radiografía del Rol]
+    B -->|Carga Contexto| C[<b>GEM1</b><br/>Trayectoria y Logros]
+    C -->|Score >= 6| D[<b>GEM2</b><br/>Assessment a Negocio]
+    C -->|Score < 6| Z[Descartado]
+    D -->|Score >= 6| E[<b>GEM3</b><br/>Veredicto + Ref 360]
+    D -->|Score < 6| Z
+    E -->|Score >= 6| F[<b>GEM4</b><br/>Auditor QA]
+    E -->|Score < 6| Z
+    F -->|Aprobado >= 7| G[<b>REPORTE FINAL</b>]
+    F -->|Bloqueado| H{Retries < 2?}
+    H -->|Sí| F
+    H -->|No| I[Escalar a Consultor]
 ```
-GEM5 (Radiografía Estratégica) → una vez por búsqueda
-  ↓
-GEM1 (Trayectoria y Logros) → por candidato
-  ↓
-GEM2 (Assessment a Negocio) → por candidato
-  ↓
-GEM3 (Veredicto + Referencias 360°) → por candidato
-  ↓
-GEM4 (Auditor QA – Gate Final) → por candidato
-```
 
-### Gating
+---
 
-| GEM | Threshold | Acción si no pasa |
-|-----|-----------|-------------------|
-| GEM1 → GEM2 | Score ≥ 6 | Candidato descartado |
-| GEM2 → GEM3 | Score ≥ 6 | Candidato descartado |
-| GEM3 → GEM4 | Score ≥ 6 | Candidato descartado |
-| GEM4 → Envío | Score ≥ 7 | BLOQUEO TOTAL (máx 2 reintentos) |
+## 💎 Módulos GEM (Gemini Evaluation Modules)
 
-## Quickstart: Ejecutar el Pipeline
+Cada módulo tiene una responsabilidad única y un contrato JSON estricto:
 
-Ahora Raadbot es un **Agente ejecutable** impulsado por Gemini API y Google Drive.
+1.  **GEM5 (Radiografía Estratégica):** Analiza la Job Description y las notas de Kick-off para entender el "Problema Real" que el candidato debe resolver. Se ejecuta una vez por búsqueda.
+2.  **GEM1 (Trayectoria y Logros):** Evalúa el CV y notas de entrevista. Busca hitos cuantificables y estabilidad.
+3.  **GEM2 (Assessment a Negocio):** Contrasta al candidato contra los retos técnicos y de negocio definidos en GEM5.
+4.  **GEM3 (Veredicto y Cultura):** Cruza las referencias 360° y el encaje cultural con el cliente.
+5.  **GEM4 (Auditor QA):** Actúa como un "fiscal" interno. Revisa que todas las afirmaciones de los módulos anteriores tengan fuentes citadas `[Fuente: ...]` y que no existan alucinaciones.
 
+---
+
+## 🚀 Guía de Instalación
+
+### Requisitos
+- **Python 3.9+**
+- **Google Gemini API Key** (Obtenla en [AI Studio](https://aistudio.google.com/apikey))
+- **Google Cloud Credentials** (Opcional, para Google Drive)
+
+### Setup Rápido
 ```bash
 # 1. Clonar e instalar
 git clone https://github.com/tomascarminatti-ux/raadbot.git
 cd raadbot
 pip install -r requirements.txt
 
-# 2. Configurar credenciales
+# 2. Configurar entorno
 cp .env.example .env
-# Editar .env y agregar tu GEMINI_API_KEY
-# (Opcional, para Drive): descargar credentials.json de Google Cloud Console y ponerlo en la raíz
-
-# 3. Crear una nueva ejecución (estructura de carpetas)
-./scripts/new_run.sh SEARCH-2026-001
-
-# 4. Colocar inputs
-# A) Si usas Google Drive: organiza tus archivos en una carpeta (ver inputs/README.md)
-# B) Si usas archivos locales: ponlos en runs/SEARCH-2026-001/inputs/
-
-# 5. Ejecutar el Agente!
-# Opcion A: Con Google Drive
-python run.py --search-id SEARCH-2026-001 --drive-folder <ID_DE_CARPETA_DRIVE>
-
-# Opcion B: Con archivos locales
-python run.py --search-id SEARCH-2026-001 --local-dir runs/SEARCH-2026-001/inputs
+# Edita .env y pega tu GEMINI_API_KEY
 ```
 
-El agente ejecutará secuencialmente GEM5 → GEM1 → GEM2 → GEM3 → GEM4, aplicando el control de calidad, reintentando si hay bloqueos, y guardando los resultados JSON y Markdown en `runs/SEARCH-2026-001/outputs/`.
+---
 
-## Diagrama de Flujo del Agente
+## 🕹️ Modos de Operación
 
-```mermaid
-graph TD
-    A[Inputs: Google Drive o Carpeta Local] -->|run.py| B(Drive Client/Loader)
-    B --> C{Búsqueda GEM5}
-    C -->|Output Rol| D[Iterador de Candidatos]
-    D --> E[GEM1 - Trayectoria]
-    E -->|pasa ≥6| F[GEM2 - Assessment]
-    E -->|falla <6| Z[Descartado]
-    F -->|pasa ≥6| G[GEM3 - Veredicto]
-    F -->|falla <6| Z
-    G -->|pasa ≥6| H[GEM4 - QA Auditor]
-    G -->|falla <6| Z
-    H -->|Aprobado ≥7| I[Reporte Final y JSON]
-    H -->|Rechazado <7| J{Intento > 2?}
-    J -->|No| H
-    J -->|Sí| K[Escalado a Consultor]
+### 1. Terminal (CLI)
+Ideal para pruebas rápidas o procesamiento local masivo.
+```bash
+python run.py --search-id SEARCH-2026 --local-dir inputs/SEARCH-001 --json
 ```
 
-## Estructura del proyecto
-
-```
-raadbot/
-├── CLAUDE.md                      # Reglas del pipeline para el agente
-├── prompts/
-│   ├── 00_prompt_maestro.md       # Prompt base (rol + reglas + scoring rubric)
-│   ├── gem1.md … gem5.md          # Prompt de cada módulo
-├── specs/
-│   └── gem1…gem5.spec.json        # Contrato de cada módulo
-├── schemas/
-│   └── gem_output.schema.json     # JSON Schema validable
-├── templates/
-│   ├── output_example.json        # Ejemplo completo de output GEM1
-│   └── variables.md               # Registro de todas las {{variables}}
-├── scripts/
-│   ├── new_run.sh                 # Crear estructura de ejecución
-│   └── validate_output.sh         # Validar output contra schema
-└── runs/<search_id>/              # Ejecuciones
-    ├── inputs/                    # CV, entrevistas, tests, brief
-    ├── outputs/                   # gemX.json + gemX.md
-    └── logs/                      # Metadata y decisiones
+### 2. API REST (FastAPI)
+Ejecuta el agente como un microservicio.
+```bash
+uvicorn api:app --host 0.0.0.0 --port 8000
 ```
 
-## Reglas clave
+### 3. Orquestación n8n (Recomendado)
+Raadbot incluye plantillas en `n8n_workflows/`.
+- Soporta **Webhooks asíncronos**: Raadbot ejecuta el pipeline de fondo y "llama de vuelta" a n8n cuando termina.
+- **Zero Timeout**: Evita que n8n falle por esperas largas mediante el parámetro `webhook_url`.
 
-- **Evidencia obligatoria**: toda afirmación cita su fuente `[Fuente: ...]`
-- **Sin fluff**: prohibido adjetivos vacíos sin métricas
-- **Recomendación binaria**: SÍ o NO, sin ambigüedades
-- **Post-bloqueo**: máx 2 reintentos, luego escalar a consultor senior
-- **Scoring rubric**: definiciones claras de 1-10 en `00_prompt_maestro.md`
+---
 
-## Requisitos
+## 🛠️ Hardening & Seguridad (Production Ready)
 
-- Acceso a un LLM (Claude, GPT-4, etc.)
-- Python 3 + `jsonschema` (para validación): `pip install jsonschema`
-- Bash (para scripts)
+-   **State & Checkpoint:** Cada ejecución guarda su estado en `pipeline_state.json`. Si la luz se corta o el LLM falla, Raadbot reanuda exactamente donde quedó sin gastar tokens duplicados.
+-   **Schema Validation:** Todas las respuestas del LLM son validadas contra JSON Schemas en `schemas/`.
+-   **Smart Retries:** Ante errores de formato o bloqueos de seguridad del LLM, el sistema reintenta con backoff exponencial.
+-   **Seguridad de Inputs:** El sistema bloquea automáticamente la ingesta de binarios (PDF/DOCX) en Drive para evitar inyectar basura al contexto del prompt, exigiendo formatos limpios.
+
+---
+
+## 📊 Observabilidad y Costos
+
+El sistema genera un **Dashboard de Decisión** al finalizar:
+- **Costo Total:** Cálculo en tiempo real de USD gastados en Gemini.
+- **Token Usage:** Desglose de Prompt vs Completion tokens.
+- **Trazabilidad:** Cada GEM genera un `.json` estructurado y un `.md` legible por humanos en la carpeta `runs/<search_id>/outputs/`.
+
+---
+
+## 🤝 Contribución
+Para mantener la calidad de código:
+- Usa `black .` para formatear.
+- Los prompts se editan en `prompts/`.
+- Los contratos se definen en `specs/`.

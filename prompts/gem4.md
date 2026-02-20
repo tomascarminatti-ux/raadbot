@@ -39,3 +39,26 @@ Ejecuta GEM 4 (Auditor QA – Gate Final) para candidato {{candidate_id}}.
 - El auditor NO agrega contenido nuevo, solo evalúa la calidad de lo existente.
 - Score < 7 = BLOQUEO TOTAL sin excepciones.
 - En caso de BLOQUEO: las correcciones deben ser específicas y accionables (qué corregir + en qué GEM + cómo).
+
+
+---
+### JSON EXACTO REQUERIDO
+DEBES DEVOLVER EXCLUSIVAMENTE UN OBJETO JSON CON LA SIGUIENTE ESTRUCTURA ESTRICTA. No envuelvas las keys en formatos diferentes, no alteres objetos:
+```json
+{
+  "meta": {
+    "search_id": "{{search_id}}",
+    "candidate_id": "{{candidate_id}}",
+    "gem": "GEM4",
+    "timestamp": "ISO 8601",
+    "prompt_version": "1.0",
+    "sources": ["cv", "interview_notes"]
+  },
+  "content": { },
+  "scores": {
+    "score_dimension": 8,
+    "confidence": "HIGH"
+  },
+  "issues_found": []
+}
+```

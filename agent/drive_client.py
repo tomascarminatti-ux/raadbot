@@ -139,14 +139,15 @@ class DriveClient:
 
             # Guardar localmente
             safe_name = name.replace("/", "_")
-            
+
             if "google-apps" in mime:
                 if not safe_name.endswith(".txt"):
                     safe_name += ".txt"
             else:
                 if mime == "application/pdf" or "wordprocessing" in mime:
-                    print(f"  ⚠️  Advertencia: {name} es un archivo binario ({mime}).")
-                    print("     El modelo recibirá el texto crudo/binario si no es extraído.")
+                    raise ValueError(
+                        f"El archivo '{name}' es un binario ({mime}). Por favor súbelo en formato texto (.txt) o como Google Docs exportable. Los PDFs y Word crudos corrompen el output del LLM."
+                    )
                 if not safe_name.endswith(".txt") and mime.startswith("text/"):
                     safe_name += ".txt"
 
@@ -158,9 +159,7 @@ class DriveClient:
 
         return inputs
 
-    def discover_search_structure(
-        self, folder_id: str
-    ) -> dict:
+    def discover_search_structure(self, folder_id: str) -> dict:
         """
         Descubre la estructura de una carpeta de búsqueda en Drive.
 
@@ -179,10 +178,8 @@ class DriveClient:
         Returns:
             Dict con search_inputs y candidates
         """
-        structure = {
-            "search_inputs": {},
-            "candidates": {},
-        }
+        search_inputs: dict[str, str] = {}
+        candidates: dict[str, dict[str, str]] = {}
 
         files = self.list_files(folder_id)
         folders = self.list_folders(folder_id)
@@ -193,13 +190,13 @@ class DriveClient:
             content = self.download_file(f["id"], f["mimeType"])
 
             if "brief" in name or "jd" in name or "job" in name:
-                structure["search_inputs"]["jd_text"] = content
+                search_inputs["jd_text"] = content
             elif "kickoff" in name or "kick-off" in name or "kick_off" in name:
-                structure["search_inputs"]["kickoff_notes"] = content
+                search_inputs["kickoff_notes"] = content
             elif "company" in name or "context" in name or "compañía" in name:
-                structure["search_inputs"]["company_context"] = content
+                search_inputs["company_context"] = content
             elif "culture" in name or "cultura" in name:
-                structure["search_inputs"]["client_culture"] = content
+                search_inputs["client_culture"] = content
 
         # Subcarpetas = candidatos
         for folder in folders:
@@ -225,6 +222,9 @@ class DriveClient:
                 elif "culture" in name or "cultura" in name:
                     candidate_inputs["client_culture"] = content
 
-            structure["candidates"][candidate_id] = candidate_inputs
+            candidates[candidate_id] = candidate_inputs
 
-        return structure
+        return {
+            "search_inputs": search_inputs,
+            "candidates": candidates,
+        }

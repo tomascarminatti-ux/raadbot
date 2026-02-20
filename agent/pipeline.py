@@ -8,8 +8,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from .gemini_client import GeminiClient
-from .prompt_builder import build_prompt
+from agent.gemini_client import GeminiClient
+from agent.prompt_builder import build_prompt
 
 
 # Thresholds de gating
@@ -37,9 +37,9 @@ class Pipeline:
         self.search_id = search_id
         self.output_dir = output_dir
         self.schema = self._load_schema()
-        
+
         os.makedirs(output_dir, exist_ok=True)
-        
+
         # State & Checkpointing
         self.state_file = os.path.join(output_dir, "pipeline_state.json")
         self.state = self._load_state()
@@ -60,12 +60,12 @@ class Pipeline:
                 return json.load(f)
         return {
             "completed_gems": {},  # "CAND-001": ["gem1", "gem2"]
-            "results_cache": {},   # Cache de outputs
+            "results_cache": {},  # Cache de outputs
             "usage": {
                 "prompt_tokens": 0,
                 "candidates_tokens": 0,
-                "total_cost_usd": 0.0
-            }
+                "total_cost_usd": 0.0,
+            },
         }
 
     def _save_state(self):
@@ -77,20 +77,22 @@ class Pipeline:
         """Suma tokens y calcula costo acumulado."""
         if not usage:
             return
-        
+
         p_tokens = usage.get("prompt_tokens", 0)
         c_tokens = usage.get("candidates_tokens", 0)
-        
+
         self.state["usage"]["prompt_tokens"] += p_tokens
         self.state["usage"]["candidates_tokens"] += c_tokens
-        
+
         cost_p = (p_tokens / 1_000_000) * PRICE_PROMPT_1M
         cost_c = (c_tokens / 1_000_000) * PRICE_COMPLETION_1M
-        self.state["usage"]["total_cost_usd"] += (cost_p + cost_c)
-        
+        self.state["usage"]["total_cost_usd"] += cost_p + cost_c
+
         self._save_state()
 
-    def _save_output(self, gem_name: str, result: dict, candidate_id: Optional[str] = None):
+    def _save_output(
+        self, gem_name: str, result: dict, candidate_id: Optional[str] = None
+    ):
         """Guarda output JSON y Markdown y trackea estado."""
         prefix = gem_name
         if candidate_id:
@@ -111,7 +113,7 @@ class Pipeline:
             self.state["completed_gems"][state_key] = []
         if gem_name not in self.state["completed_gems"][state_key]:
             self.state["completed_gems"][state_key].append(gem_name)
-        
+
         if state_key not in self.state["results_cache"]:
             self.state["results_cache"][state_key] = {}
         self.state["results_cache"][state_key][gem_name] = result
@@ -125,7 +127,10 @@ class Pipeline:
 
         md_path = os.path.join(base, f"{prefix}.md")
         with open(md_path, "w", encoding="utf-8") as f:
-            f.write(result.get("markdown", result.get("raw", "")))
+            md_content = result.get("markdown")
+            if md_content is None:
+                md_content = result.get("raw", "")
+            f.write(str(md_content))
 
         raw_path = os.path.join(base, f"{prefix}.raw.txt")
         with open(raw_path, "w", encoding="utf-8") as f:
@@ -135,15 +140,16 @@ class Pipeline:
 
     def _validate_output(self, json_data: dict, gem_name: str) -> bool:
         if not self.schema or not json_data:
-            return True
+            raise ValueError(f"Output nulo o sin JSON válido en {gem_name}")
         try:
+            from jsonschema import validate, ValidationError
+
             validate(instance=json_data, schema=self.schema)
             return True
         except ValidationError as e:
-            console.print(f"[bold yellow]  ⚠️  Schema validation warning ({gem_name}):[/bold yellow] {e.message}")
-            return False
+            raise ValueError(f"Schema fallido en {gem_name}: {e.message}")
 
-    def _get_score(self, json_data: dict) -> Optional[int]:
+    def _get_score(self, json_data: Optional[dict]) -> Optional[int]:
         if not json_data:
             return None
         scores = json_data.get("scores", {})
@@ -151,16 +157,79 @@ class Pipeline:
 
     def _check_gate(self, gem_name: str, score: Optional[int]) -> bool:
         threshold = THRESHOLDS.get(gem_name)
-        if threshold is None or score is None:
+        if threshold is None:
             return True
+        if score is None:
+            return False
         return score >= threshold
 
-    def run_gem5(self, search_inputs: dict) -> dict:
-        console.print(Panel(f"[bold cyan]🔍 Ejecutando GEM5 – Radiografía Estratégica[/bold cyan]\nSearch ID: {self.search_id}", border_style="cyan"))
+    def _run_gem_with_validation(self, gem_name: str, prompt_vars: dict) -> dict:
+        for attempt in range(MAX_RETRIES_ON_BLOCK + 1):
+            prompt = build_prompt(gem_name, prompt_vars)
+            result = self.gemini.run_gem(prompt)
 
-        # Skip if cached
+            try:
+                self._validate_output(result.get("json"), gem_name)
+                return result
+            except ValueError as e:
+                import time
+
+                if attempt < MAX_RETRIES_ON_BLOCK:
+                    console.print(
+                        f"[bold yellow]  ⚠️  Error de validación ({e}). Reintentando {attempt+1}/{MAX_RETRIES_ON_BLOCK}...[/bold yellow]"
+                    )
+                    time.sleep(2)
+                else:
+                    console.print(
+                        f"[bold red]  ❌ Error definitivo de validación en {gem_name}.[/bold red]"
+                    )
+                    return result
+        return {}  # Fallback final para el linter
+
+    def _run_generic_gem_step(
+        self, gem_name: str, candidate_id: str, prompt_vars: dict, display_name: str
+    ) -> Any:
+        console.print(f"\n[bold]📋 {display_name}[/bold]")
+        cache = self.state["results_cache"].get(candidate_id, {})
+
+        if gem_name in self.state["completed_gems"].get(candidate_id, []):
+            console.print("[dim]  ⏭️  Recuperando de caché...[/dim]")
+            result = cache[gem_name]
+        else:
+            with console.status(f"[blue]Ejecutando {gem_name}...[/blue]"):
+                result = self._run_gem_with_validation(gem_name, prompt_vars)
+                self._save_output(gem_name, result, candidate_id)
+
+        score = self._get_score(result.get("json"))
+
+        if score is None:
+            console.print(
+                f"[bold red]  ❌ Error parseando score en {gem_name}. Fallo automático.[/bold red]"
+            )
+            return result, score, False
+
+        passed = self._check_gate(gem_name, score)
+        if not passed:
+            console.print(
+                f"[bold red]  ❌ {gem_name} score ({score}) < {THRESHOLDS.get(gem_name)}. Candidato descartado.[/bold red]"
+            )
+        else:
+            console.print(f"[green]  ✅ {gem_name} aprobado[/green] (score {score})")
+
+        return result, score, passed
+
+    def run_gem5(self, search_inputs: dict) -> dict:
+        console.print(
+            Panel(
+                f"[bold cyan]🔍 Ejecutando GEM5 – Radiografía Estratégica[/bold cyan]\nSearch ID: {self.search_id}",
+                border_style="cyan",
+            )
+        )
+
         if "gem5" in self.state["completed_gems"].get("search", []):
-            console.print("[dim]  ⏭️  GEM5 completado previamente. Recuperando de caché...[/dim]")
+            console.print(
+                "[dim]  ⏭️  GEM5 completado previamente. Recuperando de caché...[/dim]"
+            )
             return self.state["results_cache"]["search"]["gem5"]
 
         variables = {
@@ -168,15 +237,16 @@ class Pipeline:
             **search_inputs,
         }
 
-        with console.status("[cyan]Analizando rol y compañía con IA...[/cyan]", spinner="dots"):
-            prompt = build_prompt("gem5", variables)
-            result = self.gemini.run_gem(prompt)
+        with console.status(
+            "[cyan]Analizando rol y compañía con IA...[/cyan]", spinner="dots"
+        ):
+            result = self._run_gem_with_validation("gem5", variables)
 
         self._save_output("gem5", result)
-        self._validate_output(result.get("json"), "gem5")
-
         confidence = (result.get("json") or {}).get("scores", {}).get("confidence")
-        console.print(f"[bold green]  ✅ GEM5 completado[/bold green] | Confidence: {confidence}")
+        console.print(
+            f"[bold green]  ✅ GEM5 completado[/bold green] | Confidence: {confidence}"
+        )
 
         return result
 
@@ -186,133 +256,98 @@ class Pipeline:
         candidate_inputs: dict,
         gem5_result: dict,
     ) -> dict:
-        console.print(Panel(f"[bold magenta]👤 Procesando Candidato: {candidate_id}[/bold magenta]", border_style="magenta"))
+        console.print(
+            Panel(
+                f"[bold magenta]👤 Procesando Candidato: {candidate_id}[/bold magenta]",
+                border_style="magenta",
+            )
+        )
 
         results: dict[str, Any] = {"candidate_id": candidate_id, "gems": {}}
         gem5_json = gem5_result.get("json", {})
         gem5_content = gem5_json.get("content", {}) if gem5_json else {}
-        
-        completed = self.state["completed_gems"].get(candidate_id, [])
-        cache = self.state["results_cache"].get(candidate_id, {})
+        import json
 
-        # --- GEM1: Trayectoria y Logros ---
-        console.print("\n[bold]📋 GEM1 – Trayectoria y Logros[/bold]")
-        if "gem1" in completed:
-            console.print("[dim]  ⏭️  Recuperando de caché...[/dim]")
-            gem1_result = cache["gem1"]
-        else:
-            gem1_vars = {
-                "search_id": self.search_id,
-                "candidate_id": candidate_id,
-                "cv_text": candidate_inputs.get("cv_text", "No proporcionado"),
-                "interview_notes": candidate_inputs.get("interview_notes", "No proporcionado"),
-                "gem5_summary": json.dumps(gem5_content, ensure_ascii=False) if gem5_content else gem5_result.get("markdown", ""),
-            }
+        gem5_summary = (
+            json.dumps(gem5_content, ensure_ascii=False)
+            if gem5_content
+            else gem5_result.get("markdown", "")
+        )
+        gem5_key_challenge = gem5_content.get(
+            "problema_real_del_rol", gem5_result.get("markdown", "No disponible")
+        )
 
-            with console.status("[blue]Extrayendo trayectoria...[/blue]"):
-                gem1_prompt = build_prompt("gem1", gem1_vars)
-                gem1_result = self.gemini.run_gem(gem1_prompt)
-                self._save_output("gem1", gem1_result, candidate_id)
-        
+        # --- GEM1 ---
+        gem1_vars = {
+            "search_id": self.search_id,
+            "candidate_id": candidate_id,
+            "cv_text": candidate_inputs.get("cv_text", "No proporcionado"),
+            "interview_notes": candidate_inputs.get(
+                "interview_notes", "No proporcionado"
+            ),
+            "gem5_summary": gem5_summary,
+        }
+        gem1_result, gem1_score, passed1 = self._run_generic_gem_step(
+            "gem1", candidate_id, gem1_vars, "GEM1 – Trayectoria y Logros"
+        )
         results["gems"]["gem1"] = gem1_result
-        gem1_score = self._get_score(gem1_result.get("json"))
-        
-        if not self._check_gate("gem1", gem1_score):
-            console.print(f"[bold red]  ❌ GEM1 score ({gem1_score}) < 6. Candidato descartado.[/bold red]")
+        if not passed1:
             results["decision"] = "DESCARTADO_GEM1"
             return results
-        console.print(f"[green]  ✅ GEM1 aprobado[/green] (score {gem1_score} ≥ 6)")
 
-        # --- GEM2: Assessment a Negocio ---
-        console.print("\n[bold]🧠 GEM2 – Assessment a Negocio[/bold]")
-        if "gem2" in completed:
-            console.print("[dim]  ⏭️  Recuperando de caché...[/dim]")
-            gem2_result = cache["gem2"]
-        else:
-            gem2_vars = {
-                "search_id": self.search_id,
-                "candidate_id": candidate_id,
-                "gem1": gem1_result.get("json") or gem1_result.get("raw", ""),
-                "tests_text": candidate_inputs.get("tests_text", "No proporcionado"),
-                "case_notes": candidate_inputs.get("case_notes", "No proporcionado"),
-                "gem5_key_challenge": gem5_content.get("problema_real_del_rol", gem5_result.get("markdown", "No disponible")),
-            }
-
-            with console.status("[blue]Realizando assessment contra contexto de compañía...[/blue]"):
-                gem2_prompt = build_prompt("gem2", gem2_vars)
-                gem2_result = self.gemini.run_gem(gem2_prompt)
-                self._save_output("gem2", gem2_result, candidate_id)
-                
+        # --- GEM2 ---
+        gem2_vars = {
+            "search_id": self.search_id,
+            "candidate_id": candidate_id,
+            "gem1": gem1_result.get("json") or gem1_result.get("raw", ""),
+            "tests_text": candidate_inputs.get("tests_text", "No proporcionado"),
+            "case_notes": candidate_inputs.get("case_notes", "No proporcionado"),
+            "gem5_key_challenge": gem5_key_challenge,
+        }
+        gem2_result, gem2_score, passed2 = self._run_generic_gem_step(
+            "gem2", candidate_id, gem2_vars, "GEM2 – Assessment a Negocio"
+        )
         results["gems"]["gem2"] = gem2_result
-        gem2_score = self._get_score(gem2_result.get("json"))
-
-        if not self._check_gate("gem2", gem2_score):
-            console.print(f"[bold red]  ❌ GEM2 score ({gem2_score}) < 6. Candidato descartado.[/bold red]")
+        if not passed2:
             results["decision"] = "DESCARTADO_GEM2"
             return results
-        console.print(f"[green]  ✅ GEM2 aprobado[/green] (score {gem2_score} ≥ 6)")
 
-        # --- GEM3: Veredicto + Referencias 360° ---
-        console.print("\n[bold]🔎 GEM3 – Veredicto + Referencias 360°[/bold]")
-        if "gem3" in completed:
-            console.print("[dim]  ⏭️  Recuperando de caché...[/dim]")
-            gem3_result = cache["gem3"]
-        else:
-            gem3_vars = {
-                "search_id": self.search_id,
-                "candidate_id": candidate_id,
-                "gem1": gem1_result.get("json") or gem1_result.get("raw", ""),
-                "gem2": gem2_result.get("json") or gem2_result.get("raw", ""),
-                "references_text": candidate_inputs.get("references_text", "No proporcionado"),
-                "client_culture": candidate_inputs.get("client_culture", "No proporcionado"),
-            }
-
-            with console.status("[blue]Cruzando datos y referencias...[/blue]"):
-                gem3_prompt = build_prompt("gem3", gem3_vars)
-                gem3_result = self.gemini.run_gem(gem3_prompt)
-                self._save_output("gem3", gem3_result, candidate_id)
-                
+        # --- GEM3 ---
+        gem3_vars = {
+            "search_id": self.search_id,
+            "candidate_id": candidate_id,
+            "gem1": gem1_result.get("json") or gem1_result.get("raw", ""),
+            "gem2": gem2_result.get("json") or gem2_result.get("raw", ""),
+            "references_text": candidate_inputs.get(
+                "references_text", "No proporcionado"
+            ),
+            "client_culture": candidate_inputs.get(
+                "client_culture", "No proporcionado"
+            ),
+        }
+        gem3_result, gem3_score, passed3 = self._run_generic_gem_step(
+            "gem3", candidate_id, gem3_vars, "GEM3 – Veredicto + Referencias 360°"
+        )
         results["gems"]["gem3"] = gem3_result
-        gem3_score = self._get_score(gem3_result.get("json"))
-
-        if not self._check_gate("gem3", gem3_score):
-            console.print(f"[bold red]  ❌ GEM3 score ({gem3_score}) < 6. Candidato descartado.[/bold red]")
+        if not passed3:
             results["decision"] = "DESCARTADO_GEM3"
             return results
-        console.print(f"[green]  ✅ GEM3 aprobado[/green] (score {gem3_score} ≥ 6)")
 
-        # --- GEM4: Auditor QA ---
-        console.print("\n[bold]🛡️  GEM4 – Auditor QA (Gate Final)[/bold]")
-        
-        if "gem4" in completed:
-            console.print("[dim]  ⏭️  Recuperando de caché...[/dim]")
-            gem4_result = cache["gem4"]
-        else:
-            sources = []
-            for key in ["cv_text", "interview_notes", "tests_text", "case_notes", "references_text"]:
-                if candidate_inputs.get(key) and candidate_inputs[key] != "No proporcionado":
-                    sources.append(key)
+        # --- GEM4 ---
+        sources = []
+        for key in [
+            "cv_text",
+            "interview_notes",
+            "tests_text",
+            "case_notes",
+            "references_text",
+        ]:
+            if (
+                candidate_inputs.get(key)
+                and candidate_inputs[key] != "No proporcionado"
+            ):
+                sources.append(key)
 
-            with console.status("[yellow]Ejecutando auditoría QA rigurosa...[/yellow]"):
-                gem4_result = self._run_gem4_with_retries(candidate_id, gem1_result, gem2_result, gem3_result, sources)
-                
-        results["gems"]["gem4"] = gem4_result
-
-        gem4_json = gem4_result.get("json", {})
-        decision = (gem4_json or {}).get("decision", "DESCONOCIDO")
-        gem4_score = self._get_score(gem4_json)
-
-        results["decision"] = decision
-        results["gem4_score"] = gem4_score
-
-        if decision == "APROBADO":
-            console.print(f"\n[bold green]  🎉 REPORTE APROBADO[/bold green] (QA score: {gem4_score})")
-        else:
-            console.print(f"\n[bold red]  🚫 REPORTE BLOQUEADO[/bold red] (QA score: {gem4_score}) - Escalando a consultor.")
-
-        return results
-
-    def _run_gem4_with_retries(self, candidate_id: str, gem1_result: dict, gem2_result: dict, gem3_result: dict, sources: list, attempt: int = 0) -> dict:
         gem4_vars = {
             "search_id": self.search_id,
             "candidate_id": candidate_id,
@@ -321,40 +356,47 @@ class Pipeline:
             "gem3": gem3_result.get("json") or gem3_result.get("raw", ""),
             "sources_index": ", ".join(sources),
         }
-
-        gem4_prompt = build_prompt("gem4", gem4_vars)
-        gem4_result = self.gemini.run_gem(gem4_prompt)
-        
-        # Guardaremos los intentos fallidos con sufijos si es necesario, 
-        # pero para mantener simple, pisamos o guardamos el ultimo.
-        self._save_output("gem4", gem4_result, candidate_id)
+        gem4_result, gem4_score, passed4 = self._run_generic_gem_step(
+            "gem4", candidate_id, gem4_vars, "GEM4 – Auditor QA (Gate Final)"
+        )
+        results["gems"]["gem4"] = gem4_result
 
         gem4_json = gem4_result.get("json", {})
-        gem4_score = self._get_score(gem4_json)
         decision = (gem4_json or {}).get("decision", "BLOQUEADO")
 
-        console.print(f"  Score QA: {gem4_score} | Decisión: {decision}")
+        if gem4_score is not None and passed4 and decision != "BLOQUEADO":
+            decision = "APROBADO"
 
-        if decision != "BLOQUEADO" and self._check_gate("gem4", gem4_score):
-            return gem4_result
+        results["decision"] = decision
+        results["gem4_score"] = gem4_score
 
-        if attempt < MAX_RETRIES_ON_BLOCK:
-            console.print(f"[bold yellow]  🔄 Intento {attempt + 1}/{MAX_RETRIES_ON_BLOCK} de corrección automática...[/bold yellow]")
-            return self._run_gem4_with_retries(candidate_id, gem1_result, gem2_result, gem3_result, sources, attempt + 1)
+        if decision == "APROBADO":
+            console.print(
+                f"\n[bold green]  🎉 REPORTE APROBADO[/bold green] (QA score: {gem4_score})"
+            )
+        else:
+            console.print(
+                f"\n[bold red]  🚫 REPORTE BLOQUEADO[/bold red] (QA score: {gem4_score}) - Escalando a consultor."
+            )
 
-        console.print("[bold red]  ⛔ Máximo de reintentos QA alcanzado.[/bold red]")
-        return gem4_result
+        return results
 
-    def run_full_pipeline(self, search_inputs: dict, candidates: dict[str, dict]) -> dict:
+    def run_full_pipeline(
+        self, search_inputs: dict, candidates: dict[str, dict]
+    ) -> dict:
         timestamp = datetime.now(timezone.utc).isoformat()
-        
-        console.rule(f"[bold gold1]RAADBot Pipeline Runner v1.4 – {self.search_id}[/bold gold1]")
-        console.print(f"[dim]Timestamp: {timestamp} | Candidatos en cola: {len(candidates)}[/dim]\n")
+
+        console.rule(
+            f"[bold gold1]RAADBot Pipeline Runner v1.4 – {self.search_id}[/bold gold1]"
+        )
+        console.print(
+            f"[dim]Timestamp: {timestamp} | Candidatos en cola: {len(candidates)}[/dim]\n"
+        )
 
         # 1. GEM5
         gem5_result = self.run_gem5(search_inputs)
 
-        all_results = {
+        all_results: dict[str, Any] = {
             "search_id": self.search_id,
             "timestamp": timestamp,
             "gem5": gem5_result,
@@ -364,10 +406,14 @@ class Pipeline:
         # 2. Iterar candidatos
         for candidate_id, candidate_inputs in candidates.items():
             try:
-                result = self.run_candidate_pipeline(candidate_id, candidate_inputs, gem5_result)
+                result = self.run_candidate_pipeline(
+                    candidate_id, candidate_inputs, gem5_result
+                )
                 all_results["candidates"][candidate_id] = result
             except Exception as e:
-                console.print(f"[bold red]❌ Error crítico procesando candidato {candidate_id}: {e}[/bold red]")
+                console.print(
+                    f"[bold red]❌ Error crítico procesando candidato {candidate_id}: {e}[/bold red]"
+                )
                 all_results["candidates"][candidate_id] = {
                     "candidate_id": candidate_id,
                     "decision": f"ERROR_EJECUCION: {e}",
@@ -392,14 +438,18 @@ class Pipeline:
 
         # 4. Imprimir Tabla Final Resumen Nivel Psicopata
         self._print_summary(all_results)
-        
+
         return all_results
 
     def _print_summary(self, results: dict):
         console.print("\n")
-        
+
         # Tabla de Candidatos
-        table = Table(title="💎 Dashboard Final de Decisión", show_header=True, header_style="bold magenta")
+        table = Table(
+            title="💎 Dashboard Final de Decisión",
+            show_header=True,
+            header_style="bold magenta",
+        )
         table.add_column("Candidato", style="dim", width=15)
         table.add_column("Decisión Final", justify="center")
         table.add_column("Score QA")
@@ -408,7 +458,7 @@ class Pipeline:
         for cid, cresult in results["candidates"].items():
             decision = cresult.get("decision", "?")
             score = str(cresult.get("gem4_score", "?"))
-            
+
             if decision == "APROBADO":
                 status = "[green]Ready for Client[/green]"
                 icon = "✅"
@@ -421,21 +471,21 @@ class Pipeline:
             else:
                 status = "[yellow]Escalado (Requires Review)[/yellow]"
                 icon = "🚫"
-                
+
             table.add_row(cid, f"{icon} {decision}", score, status)
 
         console.print(table)
-        
+
         # Panel de Costos USD
         usage = self.state.get("usage", {})
         cost = usage.get("total_cost_usd", 0.0)
         p_tok = usage.get("prompt_tokens", 0)
         c_tok = usage.get("candidates_tokens", 0)
-        
+
         cost_panel = Panel(
             f"💰 Costo total estimado: [bold green]${cost:.4f} USD[/bold green]\n"
             f"📊 Prompt Tokens: {p_tok:,} | Completion Tokens: {c_tok:,}",
             title="Consumo de API",
-            border_style="green"
+            border_style="green",
         )
         console.print(cost_panel)

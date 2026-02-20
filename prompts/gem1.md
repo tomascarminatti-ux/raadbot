@@ -36,3 +36,25 @@ Ejecuta GEM 1 (Trayectoria y Logros) para candidato {{candidate_id}} contra el r
 - Si falta métrica: "Logro no calibrado – requiere validación" + qué métrica falta.
 - Cada fila de logro debe incluir [Fuente: ...].
 - El resumen ejecutivo NO debe repetir bullets de otras secciones.
+
+---
+### JSON EXACTO REQUERIDO
+DEBES DEVOLVER EXCLUSIVAMENTE UN OBJETO JSON CON LA SIGUIENTE ESTRUCTURA ESTRICTA. No envuelvas las keys en formatos diferentes, no alteres objetos:
+```json
+{
+  "meta": {
+    "search_id": "{{search_id}}",
+    "candidate_id": "{{candidate_id}}",
+    "gem": "GEM1",
+    "timestamp": "ISO 8601",
+    "prompt_version": "1.0",
+    "sources": ["cv", "interview_notes"]
+  },
+  "content": { },
+  "scores": {
+    "score_dimension": 8,
+    "confidence": "HIGH"
+  },
+  "issues_found": []
+}
+```

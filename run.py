@@ -153,8 +153,18 @@ Ejemplos:
         "--output-dir",
         help="Directorio de salida (default: runs/<search_id>/outputs)",
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Habilita la salida estricta en JSON para integraciones como n8n",
+    )
 
     args = parser.parse_args()
+
+    # --- Support para JSON CLI Mode ---
+    original_stdout = sys.stdout
+    if args.json:
+        sys.stdout = open(os.devnull, "w")
 
     # --- Validar API Key ---
     api_key = os.getenv("GEMINI_API_KEY")
@@ -226,8 +236,24 @@ Ejemplos:
 
     # --- Resultado final ---
     summary_path = os.path.join(output_dir, "pipeline_summary.json")
-    print(f"\n📄 Resumen guardado en: {summary_path}")
-    print("✨ Pipeline completado.")
+
+    if args.json:
+        sys.stdout = original_stdout
+        if os.path.exists(summary_path):
+            with open(summary_path, "r", encoding="utf-8") as f:
+                print(f.read())
+        else:
+            print(
+                json.dumps(
+                    {
+                        "error": "Pipeline failed or no summary generated",
+                        "status": "error",
+                    }
+                )
+            )
+    else:
+        print(f"\n📄 Resumen guardado en: {summary_path}")
+        print("✨ Pipeline completado.")
 
 
 if __name__ == "__main__":

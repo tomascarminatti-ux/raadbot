@@ -33,3 +33,25 @@ Construye GEM 5 (Radiografía estratégica) para la búsqueda: {{search_id}}.
 [RULES EXTRA]
 - Si falta brief_jd o kickoff_notes => BLOCK. No ejecutar sin estos inputs.
 - Cada sección debe ser accionable: que un consultor pueda usarla para filtrar candidatos.
+
+---
+### JSON EXACTO REQUERIDO
+DEBES DEVOLVER EXCLUSIVAMENTE UN OBJETO JSON CON LA SIGUIENTE ESTRUCTURA ESTRICTA. No envuelvas las keys en formatos diferentes, no alteres objetos:
+```json
+{
+  "meta": {
+    "search_id": "{{search_id}}",
+    "candidate_id": "N/A",
+    "gem": "GEM5",
+    "timestamp": "ISO 8601",
+    "prompt_version": "1.0",
+    "sources": ["cv", "interview_notes"]
+  },
+  "content": { },
+  "scores": {
+    "score_dimension": 8,
+    "confidence": "HIGH"
+  },
+  "issues_found": []
+}
+```

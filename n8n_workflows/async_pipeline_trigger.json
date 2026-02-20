@@ -1,0 +1,188 @@
+{
+    "name": "Raadbot Candidate Pipeline (Async)",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "raadbot-trigger",
+                "options": {}
+            },
+            "id": "e0d0c3eb-46c5-4d05-b3e3-7be177b960b7",
+            "name": "Webhook (Receiver)",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                220,
+                280
+            ],
+            "webhookId": "raadbot-pipeline-trigger"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://localhost:8000/api/v1/run",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "search_id",
+                            "value": "={{ $json.body.search_id }}"
+                        },
+                        {
+                            "name": "drive_folder",
+                            "value": "={{ $json.body.drive_folder }}"
+                        },
+                        {
+                            "name": "webhook_url",
+                            "value": "={{ $evaluateExpression($env.WEBHOOK_URL, 'http://localhost:5678') }}/webhook/raadbot-ready"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "848d7931-1582-4467-9150-13f8cce8d0f1",
+            "name": "Trigger API Raadbot (Async)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                460,
+                280
+            ]
+        },
+        {
+            "parameters": {
+                "content": "### 🚀 1. Disparador Inicial\nEnvía un HTTP POST a este endpoint con un JSON:\n```json\n{\n  \"search_id\": \"SEARCH-2026-X1\",\n  \"drive_folder\": \"ID_GOOGLE_DRIVE\"\n}\n```",
+                "height": 266.30206197025816,
+                "width": 313.3155829986326
+            },
+            "id": "3dc5b340-9a2f-48d6-84d3-7de4ff4e6677",
+            "name": "Sticky Note",
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                160,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "raadbot-ready",
+                "options": {}
+            },
+            "id": "c71a3641-52ea-4a41-baf8-936fc3ca833b",
+            "name": "Webhook (Results Ready)",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                220,
+                640
+            ],
+            "webhookId": "raadbot-ready"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.body.status }}",
+                            "value2": "success"
+                        }
+                    ]
+                }
+            },
+            "id": "dcfd145f-154a-4c28-be90-a35fd4d9e03d",
+            "name": "IF Success",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                460,
+                640
+            ]
+        },
+        {
+            "parameters": {
+                "content": "### 🎯 2. Recepción de Resultados\nUna vez que Raadbot concluye la evaluación del pool de candidatos (tras los N modelos GEM), llama a este Webhook con todo el JSON parseado.\n\nPuedes procesar `$json.body.summary` para enviar mails a los aprobados o descartados.",
+                "height": 331,
+                "width": 558
+            },
+            "id": "2d9426f8-4b71-419b-ba23-de12af723326",
+            "name": "Sticky Note1",
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                160,
+                560
+            ]
+        },
+        {
+            "parameters": {},
+            "id": "3bb62e58-f9e4-4ea5-abcd-64e0ddae73ff",
+            "name": "Slack Notification (Approved)",
+            "type": "n8n-nodes-base.noOp",
+            "typeVersion": 1,
+            "position": [
+                680,
+                540
+            ],
+            "notesInFlow": true,
+            "notes": "Add real Slack node here"
+        },
+        {
+            "parameters": {},
+            "id": "d04a991f-ff37-4f65-bb50-13a290d29759",
+            "name": "Error Handling (Log)",
+            "type": "n8n-nodes-base.noOp",
+            "typeVersion": 1,
+            "position": [
+                680,
+                740
+            ],
+            "notesInFlow": true,
+            "notes": "Handle timeouts/errors"
+        }
+    ],
+    "connections": {
+        "Webhook (Receiver)": {
+            "main": [
+                [
+                    {
+                        "node": "Trigger API Raadbot (Async)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook (Results Ready)": {
+            "main": [
+                [
+                    {
+                        "node": "IF Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "IF Success": {
+            "main": [
+                [
+                    {
+                        "node": "Slack Notification (Approved)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Error Handling (Log)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {}
+}

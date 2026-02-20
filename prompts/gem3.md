@@ -36,3 +36,26 @@ Ejecuta GEM 3 (Veredicto + Referencias 360°) para candidato {{candidate_id}}.
 - No repetir hallazgos de GEM1/GEM2 sin agregar valor nuevo (síntesis, no copia).
 - Contrastar explícitamente lo dicho por referencias vs lo observado en entrevistas/tests.
 - Si una referencia contradice datos previos: marcar como "Contradicción crítica" + detallar.
+
+
+---
+### JSON EXACTO REQUERIDO
+DEBES DEVOLVER EXCLUSIVAMENTE UN OBJETO JSON CON LA SIGUIENTE ESTRUCTURA ESTRICTA. No envuelvas las keys en formatos diferentes, no alteres objetos:
+```json
+{
+  "meta": {
+    "search_id": "{{search_id}}",
+    "candidate_id": "{{candidate_id}}",
+    "gem": "GEM3",
+    "timestamp": "ISO 8601",
+    "prompt_version": "1.0",
+    "sources": ["cv", "interview_notes"]
+  },
+  "content": { },
+  "scores": {
+    "score_dimension": 8,
+    "confidence": "HIGH"
+  },
+  "issues_found": []
+}
+```
