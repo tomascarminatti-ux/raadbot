@@ -29,27 +29,37 @@ GEM4 (Auditor QA – Gate Final) → por candidato
 | GEM3 → GEM4 | Score ≥ 6 | Candidato descartado |
 | GEM4 → Envío | Score ≥ 7 | BLOQUEO TOTAL (máx 2 reintentos) |
 
-## Quickstart
+## Quickstart: Ejecutar el Pipeline
+
+Ahora Raadbot es un **Agente ejecutable** impulsado por Gemini API y Google Drive.
 
 ```bash
-# 1. Clonar
-git clone <repo-url>
+# 1. Clonar e instalar
+git clone https://github.com/tomascarminatti-ux/raadbot.git
 cd raadbot
+pip install -r requirements.txt
 
-# 2. Crear una nueva ejecución
+# 2. Configurar credenciales
+cp .env.example .env
+# Editar .env y agregar tu GEMINI_API_KEY
+# (Opcional, para Drive): descargar credentials.json de Google Cloud Console y ponerlo en la raíz
+
+# 3. Crear una nueva ejecución (estructura de carpetas)
 ./scripts/new_run.sh SEARCH-2026-001
 
-# 3. Colocar inputs en runs/SEARCH-2026-001/inputs/
-#    (ver inputs/README.md para checklist)
+# 4. Colocar inputs
+# A) Si usas Google Drive: organiza tus archivos en una carpeta (ver inputs/README.md)
+# B) Si usas archivos locales: ponlos en runs/SEARCH-2026-001/inputs/
 
-# 4. Ejecutar cada GEM secuencialmente en tu LLM:
-#    - Inyectar prompts/00_prompt_maestro.md + prompts/gemX.md
-#    - Reemplazar {{variables}} con datos reales
-#    - Guardar outputs en runs/SEARCH-2026-001/outputs/
+# 5. Ejecutar el Agente!
+# Opcion A: Con Google Drive
+python run.py --search-id SEARCH-2026-001 --drive-folder <ID_DE_CARPETA_DRIVE>
 
-# 5. Validar output JSON contra el schema
-./scripts/validate_output.sh runs/SEARCH-2026-001/outputs/gem1.json
+# Opcion B: Con archivos locales
+python run.py --search-id SEARCH-2026-001 --local-dir runs/SEARCH-2026-001/inputs
 ```
+
+El agente ejecutará secuencialmente GEM5 → GEM1 → GEM2 → GEM3 → GEM4, aplicando el control de calidad, reintentando si hay bloqueos, y guardando los resultados JSON y Markdown en `runs/SEARCH-2026-001/outputs/`.
 
 ## Estructura del proyecto
 

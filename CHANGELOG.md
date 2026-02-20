@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.3.0
+- **Sistema Agente Ejecutable**: Raadbot ahora es un pipeline automatizado.
+- Creado `agent/gemini_client.py` usando `google-genai` SDK con retries y parsing de JSON.
+- Creado `agent/drive_client.py` con integración a Google Drive API para ingesta de inputs.
+- Creado `agent/pipeline.py` para orquestación completa (gating, reintentos post-bloqueo, schema validation).
+- Creado `agent/prompt_builder.py` para inyección automática de variables.
+- Creado `run.py` como CLI principal (`python run.py --search-id ...`).
+- Agregados `requirements.txt` y `.env.example`.
+
 ## v1.2.0
 - Agregada rúbrica de scoring detallada (1-10) en `00_prompt_maestro.md`.
 - Agregado criterio de confidence (completitud × calidad × consistencia).
