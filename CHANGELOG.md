@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.4.0] - Psycho Level Agent Upgrades
+### Added
+- **Rich Console UI**: Interfaz de terminal profesional, con spinners de carga, paneles dinámicos y tablas resumen a color.
+- **State Checkpointing**: El pipeline ahora guarda su estado localmente (`pipeline_state.json`) permitiendo continuar la ejecución donde se quedó si ocurre un error o se interrumpe (Hot-Reloading).
+- **Token & Cost Tracking**: Extracción de metadatos de uso desde la API de Gemini, sumando prompts/completion tokens y calculando el costo total estimado en USD por corrida.
+- **Error Handling Avanzado**: Robustecido para tolerar respuestas estructuradas sin etiquetas Markdown correctas.
+
+
 ## v1.3.0
 - **Sistema Agente Ejecutable**: Raadbot ahora es un pipeline automatizado.
 - Creado `agent/gemini_client.py` usando `google-genai` SDK con retries y parsing de JSON.

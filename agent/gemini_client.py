@@ -37,7 +37,19 @@ class GeminiClient:
                 )
 
                 raw_text = response.text
+                
+                usage_dict = {
+                    "prompt_tokens": 0,
+                    "candidates_tokens": 0,
+                    "total_tokens": 0
+                }
+                if hasattr(response, "usage_metadata") and response.usage_metadata:
+                    usage_dict["prompt_tokens"] = getattr(response.usage_metadata, "prompt_token_count", 0)
+                    usage_dict["candidates_tokens"] = getattr(response.usage_metadata, "candidates_token_count", 0)
+                    usage_dict["total_tokens"] = getattr(response.usage_metadata, "total_token_count", 0)
+                
                 result = self._parse_response(raw_text)
+                result["usage"] = usage_dict
                 return result
 
             except Exception as e:
