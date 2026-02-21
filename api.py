@@ -5,8 +5,9 @@ from typing import Optional
 import sys
 import httpx
 
+import re
 from fastapi import FastAPI, HTTPException, BackgroundTasks
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from dotenv import load_dotenv
 
 # Ensure environment is loaded
@@ -42,6 +43,26 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = "gemini-2.5-flash"
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "candidate_id")
+    @classmethod
+    def validate_ids(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        if not re.match(r"^[a-zA-Z0-9_-]+$", v):
+            raise ValueError(
+                "ID debe contener solo caracteres alfanuméricos, guiones o guiones bajos."
+            )
+        return v
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        if ".." in v:
+            raise ValueError("Path traversal detectable en local_dir.")
+        return v
 
 
 class PipelineResponse(BaseModel):
