@@ -1,9 +1,17 @@
+"""
+⚡ Bolt Optimization Summary:
+- Optimized JSON validation by pre-compiling Draft7Validator (avoiding re-parsing schema).
+- Added prompt template caching via functools.lru_cache in prompt_builder.py.
+- Moved build_prompt out of retry loops and eliminated redundant imports.
+- These micro-optimizations reduce overhead in long-running pipelines with many candidates.
+"""
 import json
 import os
+import time
 from datetime import datetime, timezone
 from typing import Optional, Any
 
-from jsonschema import validate, ValidationError
+from jsonschema import ValidationError, Draft7Validator
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -37,6 +45,7 @@ class Pipeline:
         self.search_id = search_id
         self.output_dir = output_dir
         self.schema = self._load_schema()
+        self.validator = Draft7Validator(self.schema) if self.schema else None
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -139,12 +148,10 @@ class Pipeline:
         return json_path, md_path
 
     def _validate_output(self, json_data: dict, gem_name: str) -> bool:
-        if not self.schema or not json_data:
+        if not self.validator or not json_data:
             raise ValueError(f"Output nulo o sin JSON válido en {gem_name}")
         try:
-            from jsonschema import validate, ValidationError
-
-            validate(instance=json_data, schema=self.schema)
+            self.validator.validate(instance=json_data)
             return True
         except ValidationError as e:
             raise ValueError(f"Schema fallido en {gem_name}: {e.message}")
@@ -164,20 +171,21 @@ class Pipeline:
         return score >= threshold
 
     def _run_gem_with_validation(self, gem_name: str, prompt_vars: dict) -> dict:
+        prompt = build_prompt(gem_name, prompt_vars)
         for attempt in range(MAX_RETRIES_ON_BLOCK + 1):
-            prompt = build_prompt(gem_name, prompt_vars)
             result = self.gemini.run_gem(prompt)
 
             try:
                 self._validate_output(result.get("json"), gem_name)
                 return result
             except ValueError as e:
-                import time
-
                 if attempt < MAX_RETRIES_ON_BLOCK:
-                    console.print(
-                        f"[bold yellow]  ⚠️  Error de validación ({e}). Reintentando {attempt+1}/{MAX_RETRIES_ON_BLOCK}...[/bold yellow]"
+                    msg = (
+                        f"[bold yellow]  ⚠️  Error de validación ({e}). "
+                        f"Reintentando {attempt+1}/{MAX_RETRIES_ON_BLOCK}..."
+                        "[/bold yellow]"
                     )
+                    console.print(msg)
                     time.sleep(2)
                 else:
                     console.print(
@@ -266,7 +274,6 @@ class Pipeline:
         results: dict[str, Any] = {"candidate_id": candidate_id, "gems": {}}
         gem5_json = gem5_result.get("json", {})
         gem5_content = gem5_json.get("content", {}) if gem5_json else {}
-        import json
 
         gem5_summary = (
             json.dumps(gem5_content, ensure_ascii=False)

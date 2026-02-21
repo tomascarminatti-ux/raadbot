@@ -1,8 +1,8 @@
 import os
 import json
+import sys
 from contextlib import asynccontextmanager
 from typing import Optional
-import sys
 import httpx
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 # Ensure environment is loaded
 load_dotenv()
 
+# Internal imports after load_dotenv
 from agent.gemini_client import GeminiClient
 from agent.pipeline import Pipeline
 from agent.drive_client import DriveClient
@@ -138,8 +139,6 @@ def trigger_pipeline(request: PipelineRequest, background_tasks: BackgroundTasks
     Verbo POST para iniciar una corrida del pipeline.
     Soporta webhook_url para ejecuciones asíncronas no bloqueantes.
     """
-    import sys
-
     if request.webhook_url:
         background_tasks.add_task(background_run_pipeline, request)
         return {
