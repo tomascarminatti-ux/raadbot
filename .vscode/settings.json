@@ -9,8 +9,7 @@
         "${workspaceFolder}"
     ],
     "python.analysis.autoImportCompletions": true,
-    "python.analysis.typeCheckingMode": "off",
-    "python.terminal.activateEnvInSelectedTerminal": true,
+    "python.analysis.typeCheckingMode": "basic",
     "python.analysis.diagnosticMode": "workspace",
     "python.envFile": "${workspaceFolder}/.env"
 }

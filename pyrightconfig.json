@@ -1,27 +1,19 @@
 {
     "include": [
-        "agent",
-        "utils",
         "."
     ],
     "exclude": [
         "**/__pycache__",
-        ".git"
+        ".git",
+        ".venv"
     ],
-    "reportMissingImports": "warning",
-    "pythonVersion": "3.9",
-    "pythonPlatform": "Darwin",
     "venvPath": ".",
     "venv": ".venv",
-    "executionEnvironments": [
-        {
-            "root": "agent",
-            "extraPaths": [
-                ".."
-            ]
-        },
-        {
-            "root": "."
-        }
-    ]
+    "reportMissingImports": "error",
+    "pythonVersion": "3.9",
+    "pythonPlatform": "Darwin",
+    "extraPaths": [
+        "."
+    ],
+    "typeCheckingMode": "basic"
 }

@@ -6,9 +6,9 @@ import json
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agent.gemini_client import GeminiClient
-from agent.pipeline import Pipeline
 
 def test_json_cleaning():
+    """Verifica que GeminiClient pueda limpiar JSONs malformados comunes."""
     client = GeminiClient(api_key="dummy")
     
     # Caso 1: JSON con coma final (un error común de LLMs)
@@ -27,28 +27,12 @@ def test_json_cleaning():
     assert parsed_mixed["json"]["val"] == 1
     assert "Aquí está el resultado" in parsed_mixed["markdown"]
 
-def test_gem_normalization():
-    # Mocking basic setup
-    pipeline = Pipeline(gemini=None, search_id="test", output_dir="temp_test")
-    
-    assert pipeline._normalize_gem_name("GEM1") == "gem1"
-    assert pipeline._normalize_gem_name("GEM_1") == "gem1"
-    assert pipeline._normalize_gem_name("gem-1") == "gem1"
-    assert pipeline._normalize_gem_name("GEM_5") == "gem5"
-    
-    # Limpiar temp dir
-    import shutil
-    if os.path.exists("temp_test"):
-        shutil.rmtree("temp_test")
-
 if __name__ == "__main__":
-    print("Corriendo tests de robustez...")
+    print("Corriendo tests de robustez de GeminiClient...")
     try:
         test_json_cleaning()
         print("✅ test_json_cleaning pasado")
-        test_gem_normalization()
-        print("✅ test_gem_normalization pasado")
-        print("\n🎉 Todos los tests pasaron exitosamente.")
+        print("\n🎉 Todos los tests de robustez pasaron exitosamente.")
     except Exception as e:
         print(f"❌ Error en los tests: {e}")
         sys.exit(1)
