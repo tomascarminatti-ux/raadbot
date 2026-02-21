@@ -243,7 +243,7 @@ Ejemplos:
     gemini = GeminiClient(api_key=api_key, model=args.model)
     pipeline = Pipeline(gemini=gemini, search_id=args.search_id, output_dir=output_dir)
 
-    results = pipeline.run_full_pipeline(search_inputs, candidates)
+    pipeline.run_full_pipeline(search_inputs, candidates)
 
     # --- Resultado final ---
     summary_path = os.path.join(output_dir, "pipeline_summary.json")

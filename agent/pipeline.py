@@ -3,7 +3,6 @@ import os
 from datetime import datetime, timezone
 from typing import Optional, Any
 
-from jsonschema import validate, ValidationError
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -175,9 +174,11 @@ class Pipeline:
                 import time
 
                 if attempt < MAX_RETRIES_ON_BLOCK:
-                    console.print(
-                        f"[bold yellow]  ⚠️  Error de validación ({e}). Reintentando {attempt+1}/{MAX_RETRIES_ON_BLOCK}...[/bold yellow]"
+                    msg = (
+                        f"[bold yellow]  ⚠️  Error de validación ({e}). "
+                        f"Reintentando {attempt+1}/{MAX_RETRIES_ON_BLOCK}...[/bold yellow]"
                     )
+                    console.print(msg)
                     time.sleep(2)
                 else:
                     console.print(
