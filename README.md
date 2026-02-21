@@ -1,128 +1,143 @@
-# 🤖 Raadbot – RAAD GEM Industrial Pipeline
+# 🤖 Raadbot v2.0 — Executive Search Industrial Pipeline
 
-**Raadbot** es un agente de IA avanzado diseñado para la **Búsqueda Ejecutiva Industrial**. Su función es automatizar la evaluación de candidatos de alto nivel (C-Level, VP, Directores) transformando datos crudos y heterogéneos en reportes estratégicos estructurados, con una trazabilidad psicópata de la evidencia.
-
-Este proyecto utiliza **Gemini 2.5 Flash / Pro** (vía Google GenAI SDK) y está preparado para ejecución local (CLI), vía API (FastAPI) y orquestación automática mediante **n8n**.
+**Raadbot** es el estándar de oro en sistemas de orquestación de IA para la **Búsqueda Ejecutiva de Alto Nivel**. No es un simple chatbot; es un motor de decisión industrial de grado producción diseñado para transformar la naturaleza de la evaluación de talento C-Level, VP y Directores.
 
 ---
 
-## 🏗️ Arquitectura del Sistema: GEM 6 Master Orchestrator
+## 🌟 Visión y Valor Core
 
-Raadbot opera bajo un patrón de **Orquestador-Worker (GEM 6)** de grado industrial. A diferencia de un pipeline lineal, el sistema utiliza un **Cerebro Central** que coordina la ejecución mediante eventos, estados y validaciones en tiempo real.
+En el mundo de la búsqueda ejecutiva, la subjetividad es el enemigo. Raadbot nace para eliminar el sesgo mediante una **Trazabilidad de Evidencia Estricta**.
 
-### Componentes Core (agente/gem6/):
-- **🧠 Orchestrator**: El motor central que maneja el ciclo de vida de cada candidato.
-- **🚥 State Machine**: Controla las transiciones (GEM5 -> GEM1 -> GEM2 -> ...) y previene estados inválidos.
-- **🚌 Event Bus**: Comunicación desacoplada entre módulos para máxima escalabilidad.
-- **📊 Metrics Collector**: KPIs en tiempo real (Tokens, Tiempo, Latencia, Scores).
-- **📝 Audit Logger**: Trazabilidad inmutable con checksums SHA-256 para cada decisión.
+- **Evidence-First**: Los agentes no pueden emitir juicios sin citar la fuente exacta `[Fuente: CV/Entrevista]`.
+- **Rigor Analítico**: Prohíbe el "clinical jargon" y el "fluff". Traduce narrativa vaga a impacto de negocio.
+- **Gating de Calidad**: Si la evidencia no es suficiente el sistema bloquea el reporte, protegiendo la reputación de la firma.
 
-### 🗺️ Diagrama de Flujo (Evaluation Flow v2.0)
+---
+
+## 🏗️ Arquitectura de Sistema: GEM 6 Master Orchestrator
+
+Raadbot v2.0 opera bajo un patrón de **Orquestador-Worker** liderado por el motor **GEM 6**. Esta capa gestiona la complejidad de una evaluación multi-agente.
+
+### Componentes de Ingeniería (`agent/gem6/`):
+- **🧠 Master Orchestrator**: El núcleo que gestiona el ciclo de vida, la resiliencia y la orquestación distribuida de los GEMs.
+- **🚥 State Machine**: Máquina de estados determinista que previene regresiones. Un candidato no puede ser evaluado en cultura (GEM 3) si no aprobó los hitos de trayectoria (GEM 1).
+- **🚌 Event Bus**: Sistema de comunicación asíncrono que desacopla la lógica de negocio de los efectos secundarios (logging, métricas, webhooks).
+- **📊 Metrics & Dashboard**: Recolección de KPIs tácticos (latencia, tokens) y estratégicos (scores de ajuste, veredictos).
+- **📝 Audit Ledger**: Registro de auditoría con checksums SHA-256 para cada nodo de decisión, garantizando integridad y cumplimiento legal (compliance).
+
+---
+
+## 🗺️ Mapa de Evaluación (Evaluation Flow v2.0)
 
 ```mermaid
 flowchart TD
-    subgraph GEM6_Orchestrator [GEM 6 Master Orchestrator]
+    subgraph INPUTS [Ingesta de Datos]
+        direction TB
+        JD[Job Description / Kickoff]
+        CV[CVs de Candidatos]
+        INT[Interview Transcripts]
+        REF[360 Reference Checks]
+    end
+
+    subgraph ENGINE [GEM 6 Master Orchestrator]
         direction TB
         SM[State Machine]
         EB[Event Bus]
-        MC[Metrics Collector]
+        MC[Metrics & Audit]
     end
 
-    A[Inputs Crudos: JD, CV, Interviews] --> G5[<b>GEM 5</b>: Radiografía del Rol]
-    G5 -->|Contexto Global| G1[<b>GEM 1</b>: Trayectoria y Logros]
+    JD --> G5[<b>GEM 5</b>: Radiografía Estratégica]
+    G5 -->|Mandato Global| G1[<b>GEM 1</b>: Hitos y Trayectoria]
     
-    G1 -->|Score >= 6.0| G2[<b>GEM 2</b>: Assessment a Negocio]
-    G1 -->|Score < 6.0| Z[Descartado]
+    G1 -->|Score >= 6.0| G2[<b>GEM 2</b>: Assessment de Negocio]
+    G1 -->|Score < 6.0| Z[Descarte Automático]
     
-    G2 -->|Score >= 6.0| G3[<b>GEM 3</b>: Veredicto Final]
+    G2 -->|Score >= 6.0| G3[<b>GEM 3</b>: Veredicto Cultural]
     G2 -->|Score < 6.0| Z
     
-    G3 -->|Aprobado/Reserva| G4[<b>GEM 4</b>: Auditor Raad]
-    G3 -->|No Recomendado| Z
+    G3 -->|Aprobado/Reserva| G4[<b>GEM 4</b>: Auditor QA]
+    G3 -->|Rechazado| Z
     
-    G4 -->|QA Pass >= 7.0| REPORT[<b>REPORTE FINAL GENERADO</b>]
-    G4 -->|QA Block| RE[Reintento / Ajuste de Prompt]
+    G4 -->|Pass >= 7.0| REPORT[<b>REPORTE DE DECISIÓN VR</b>]
+    G4 -->|QA Block| RE[Bucle de Refinamiento]
     
-    MC -.->|KPIs| REPORT
-    EB -.->|Events| SM
+    REPORT -.-> MC
+    EB -.->|State Signals| SM
 ```
 
 ---
 
-## 💎 Módulos GEM (Gemini Evaluation Modules) v2.0
+## 💎 Los Módulos GEM (v2.0 Analytical Edition)
 
-Cada módulo opera en **Modo Analítico-Estratégico** con contratos JSON estrictos:
+### 🔵 GEM 5: El Radiólogo Estratégico
+**Input**: Notas de Kick-off + Job Description.  
+**Misión**: Definir el "Dolor del Cliente" a nivel operativo. Produce el **Mandato de Búsqueda** que actuará como ancla contextual para el resto de los módulos.
 
-1.  **🔵 GEM 5 (Radiografía Estratégica):** Define el "dolor real" del cliente y el mandato de éxito a 18 meses. Es el ancla de todo el proceso.
-2.  **🟢 GEM 1 (Trayectoria y Logros):** Convierte narrativa en evidencia calibrada. Marca logros como "no calibrados" si falta data.
-3.  **🟡 GEM 2 (Assessment a Negocio):** Traduce psicometría y business cases a impacto ejecutivo (CEO language).
-4.  **🟣 GEM 3 (Veredicto Final):** Emite recomendación binaria (SÍ/NO) integrando todas las fuentes y referencias 360°.
-5.  **🔴 GEM 4 (Auditor Raad):** Actúa como fiscal de calidad. Bloquea reportes con "fluff", alucinaciones o falta de evidencia.
+### 🟢 GEM 1: El Historiador de Logros
+**Misión**: Convertir la narrativa del CV y la entrevista en evidencia calibrada.  
+**Filtro**: Ignora adjetivos autoproclamados y busca métricas cuantificables (%, $, unidades, tiempos).
 
----
+### 🟡 GEM 2: El Consultor de Negocio
+**Misión**: Contrastar al candidato contra los retos técnicos y de negocio definidos en GEM 5.  
+**Salida**: Evaluación de capacidad de resolución de problemas específicos del cliente.
 
-## 🚀 Guía de Instalación
+### 🟣 GEM 3: El Juez de Veredicto
+**Misión**: Realizar la síntesis final basada en referencias 360° y fit cultural.  
+**Decisión**: Emite un veredicto binario: **YES / NO / YES (with reservations)**. No se permite la tibieza.
 
-### Requisitos
-- **Python 3.9+**
-- **Google Gemini API Key** (Obtenla en [AI Studio](https://aistudio.google.com/apikey))
-- **Google Cloud Credentials** (Opcional, para Google Drive)
-
-### Setup Rápido
-```bash
-# 1. Clonar e instalar
-git clone https://github.com/tomascarminatti-ux/raadbot.git
-cd raadbot
-pip install -r requirements.txt
-
-# 2. Configurar entorno
-cp .env.example .env
-# Edita .env y pega tu GEMINI_API_KEY
-```
+### 🔴 GEM 4: El Fiscal Auditor
+**Misión**: Control de calidad final.  
+**Acción**: Bloquea cualquier reporte con alucinaciones, falta de fuentes o lenguaje impreciso. Calcula el **Quality Index** del reporte.
 
 ---
 
 ## 🕹️ Modos de Operación
 
-### 1. Terminal (CLI)
-Ideal para pruebas rápidas o procesamiento local masivo.
+### 1. Centro de Control (Web Dashboard) 🌐
+Interfaz premium para monitorear ejecuciones y tunear prompts sin tocar código.
+- **Acceso**: `http://localhost:8000/dashboard` (vía `./start_localhost.sh`)
+- **AI Refinement**: Chatea con el orquestador para ajustar el comportamiento de cada GEM.
+
+### 2. Microservicio Integrado (API REST) 📡
+Listo para conectar con **Netlify**, **n8n** o herramientas internas.
+- **Trigger**: `POST /api/v1/run`
+- **Search Setup**: `POST /api/v1/search/setup` (GEM 5 initialization)
+- **Health**: `GET /health` (Estado del sistema y versión)
+
+### 3. Ejecución Masiva (CLI) 💻
+Ideal para procesamiento de lotes grandes o auditorías de búsqueda.
 ```bash
-python run.py --search-id SEARCH-2026 --local-dir inputs/SEARCH-001 --json
+python run.py --search-id PROY-01 --local-dir inputs/search_01 --json
 ```
 
-### 2. API REST (FastAPI)
-Ejecuta el agente como un microservicio.
+---
+
+## 🚀 Despliegue y Hardening
+
+### Seguridad y Resiliencia
+- **State Checkpoints**: El archivo `pipeline_state.json` permite reanudar ejecuciones fallidas.
+- **Secret Management**: Soporte nativo para `.env` y variables de entorno seguras.
+- **Docker Ready**: `docker-compose.yml` incluido para despliegues portables y producción.
+
+### Instalación Rápida
 ```bash
-uvicorn api:app --host 0.0.0.0 --port 8000
+git clone https://github.com/tomascarminatti-ux/raadbot.git
+cd raadbot
+pip install -r requirements.txt
+cp .env.example .env # Configura tus API Keys
 ```
 
-### 3. Orquestación n8n (Recomendado)
-Raadbot incluye plantillas en `n8n_workflows/`.
-- Soporta **Webhooks asíncronos**: Raadbot ejecuta el pipeline de fondo y "llama de vuelta" a n8n cuando termina.
-- **Zero Timeout**: Evita que n8n falle por esperas largas mediante el parámetro `webhook_url`.
+---
+
+## 📈 Observabilidad
+Raadbot exporta en cada corrida:
+1.  **JSON Estructurado**: Para consumo de BI o bases de datos de talento.
+2.  **Markdown Legible**: Reportes formateados para consultores humanos.
+3.  **Metrics Dashboard**: Consumo de tokens, costos por búsqueda y latencia de respuesta.
 
 ---
 
-## 🛠️ Hardening & Seguridad (Production Ready)
+## 🤝 Soporte y Contribución
+Para reportar bugs o solicitar nuevas funcionalidades para GEMs específicos, favor de abrir un Issue o contactar al equipo de arquitectura RAAD.
 
--   **State & Checkpoint:** Cada ejecución guarda su estado en `pipeline_state.json`. Si la luz se corta o el LLM falla, Raadbot reanuda exactamente donde quedó sin gastar tokens duplicados.
--   **Schema Validation:** Todas las respuestas del LLM son validadas contra JSON Schemas en `schemas/`.
--   **Smart Retries:** Ante errores de formato o bloqueos de seguridad del LLM, el sistema reintenta con backoff exponencial.
--   **Seguridad de Inputs:** El sistema bloquea automáticamente la ingesta de binarios (PDF/DOCX) en Drive para evitar inyectar basura al contexto del prompt, exigiendo formatos limpios.
-
----
-
-## 📊 Observabilidad y Costos
-
-El sistema genera un **Dashboard de Decisión** al finalizar:
-- **Costo Total:** Cálculo en tiempo real de USD gastados en Gemini.
-- **Token Usage:** Desglose de Prompt vs Completion tokens.
-- **Trazabilidad:** Cada GEM genera un `.json` estructurado y un `.md` legible por humanos en la carpeta `runs/<search_id>/outputs/`.
-
----
-
-## 🤝 Contribución
-Para mantener la calidad de código:
-- Usa `black .` para formatear.
-- Los prompts se editan en `prompts/`.
-- Los contratos se definen en `specs/`.
+*Version 2.0.0 — Optimizado para Gemini 2.0*
