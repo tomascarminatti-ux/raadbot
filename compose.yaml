@@ -1,0 +1,6 @@
+services:
+  raadbot:
+    image: raadbot
+    build:
+      context: .
+      dockerfile: ./Dockerfile

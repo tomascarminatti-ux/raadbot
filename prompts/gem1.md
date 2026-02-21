@@ -45,16 +45,16 @@ DEBES DEVOLVER EXCLUSIVAMENTE UN OBJETO JSON CON LA SIGUIENTE ESTRUCTURA ESTRICT
   "meta": {
     "search_id": "{{search_id}}",
     "candidate_id": "{{candidate_id}}",
-    "gem": "GEM1",
+    "gem": "GEM_1",
     "timestamp": "ISO 8601",
-    "prompt_version": "1.0",
+    "prompt_version": "v1.2",
     "sources": ["cv", "interview_notes"]
   },
   "content": { },
   "scores": {
     "score_dimension": 8,
-    "confidence": "HIGH"
+    "confidence": 8
   },
-  "issues_found": []
+  "blockers": []
 }
 ```

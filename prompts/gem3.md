@@ -46,16 +46,16 @@ DEBES DEVOLVER EXCLUSIVAMENTE UN OBJETO JSON CON LA SIGUIENTE ESTRUCTURA ESTRICT
   "meta": {
     "search_id": "{{search_id}}",
     "candidate_id": "{{candidate_id}}",
-    "gem": "GEM3",
+    "gem": "GEM_3",
     "timestamp": "ISO 8601",
-    "prompt_version": "1.0",
-    "sources": ["cv", "interview_notes"]
+    "prompt_version": "v1.2",
+    "sources": ["gem1", "gem2", "references", "client_culture"]
   },
   "content": { },
   "scores": {
     "score_dimension": 8,
-    "confidence": "HIGH"
+    "confidence": 8
   },
-  "issues_found": []
+  "blockers": []
 }
 ```

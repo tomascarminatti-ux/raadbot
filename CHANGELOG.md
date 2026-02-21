@@ -1,5 +1,33 @@
 # Changelog
 
+## [v1.5.0] - Arch Architecture Cleanup & Production Ready
+### Added
+- **Configuración Centralizada**: Creado `config.py` para manejar umbrales, precios, modelos y rutas de forma global.
+- **Type Safety**: Implementación de `TypedDict` y mejores hints de tipos en todo el núcleo (`GeminiClient`, `Pipeline`).
+- **Resiliencia de Ingesta**: El cargador de inputs ahora es más tolerante a errores de lectura y mejora el matching de archivos.
+- **Logging Profesional**: Migración total a `rich.console` para una experiencia CLI premium.
+
+### Improved
+- **GeminiClient Robustness**: Regex mejorada para extracción de JSON y manejo de casos donde el LLM no usa etiquetas Markdown.
+- **DriveClient Stability**: Mejor manejo de archivos binarios y re-autenticación de tokens.
+- **API v1.1**: Soporte para timeouts extendidos en webhooks y mejor reporte de errores en tareas de fondo.
+
+### Fixed
+- **Redundancia**: Eliminación de scripts obsoletos (`fix.py`) y limpieza de importaciones duplicadas.
+- **Consistency**: Corregido typo persistente en el nombre del modelo (`gemini-2.5` -> `gemini-2.0`).
+
+## [v1.4.1] - Psycho Level Audit & Robustness
+### Added
+- **Test Suite de Robustez**: Suite de pruebas unitarias (`tests/test_robustness.py`) para verificar el parseo de JSON y normalización de GEMs.
+- **Normalización de GEMs**: El pipeline ahora reconcilia automáticamente nombres como `GEM1`, `GEM_1` o `gem-1` para máxima interoperabilidad con prompts personalizados.
+- **Limpieza de JSON "Psicópata"**: El cliente de Gemini ahora limpia automáticamente errores comunes como comas finales (trailing commas) antes de parsear, previniendo fallos críticos.
+- **Tracking de Finish Reason**: Se captura el motivo de finalización de la API (ej: `MAX_TOKENS`, `STOP`) para mejor diagnóstico.
+
+### Fixed
+- **Imports en test_gemini.py**: Se corrigió el problema de rutas para que los tests básicos funcionen desde cualquier contexto.
+- **Integridad de Estado**: Mejor manejo de errores al cargar archivos de checkpoint corruptos.
+
+
 ## [v1.4.0] - Psycho Level Agent Upgrades
 ### Added
 - **Rich Console UI**: Interfaz de terminal profesional, con spinners de carga, paneles dinámicos y tablas resumen a color.

@@ -4,7 +4,8 @@ drive_client.py – Cliente de Google Drive para leer inputs de candidatos.
 
 import io
 import os
-from typing import Optional
+from typing import Optional, List, Dict, Any
+from rich.console import Console
 
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -12,15 +13,17 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 
+import config
+
+console = Console()
 
 SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
-TOKEN_FILE = "token.json"
 
 
 class DriveClient:
     """Cliente para leer archivos desde Google Drive."""
 
-    def __init__(self, credentials_path: str = "credentials.json"):
+    def __init__(self, credentials_path: str = config.DRIVE_CREDENTIALS_PATH):
         self.credentials_path = credentials_path
         self.service = self._authenticate()
 
@@ -28,15 +31,22 @@ class DriveClient:
         """Autenticación OAuth2 con token cacheado."""
         creds = None
         base_dir = os.path.dirname(os.path.abspath(self.credentials_path))
-        token_path = os.path.join(base_dir, TOKEN_FILE)
+        token_path = os.path.join(base_dir, config.DRIVE_TOKEN_FILE)
 
         if os.path.exists(token_path):
-            creds = Credentials.from_authorized_user_file(token_path, SCOPES)
+            try:
+                creds = Credentials.from_authorized_user_file(token_path, SCOPES)
+            except Exception as e:
+                console.print(f"[yellow]  ⚠️  Error cargando token: {e}. Re-autenticando...[/yellow]")
 
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
+                try:
+                    creds.refresh(Request())
+                except Exception:
+                    creds = None
+            
+            if not creds:
                 if not os.path.exists(self.credentials_path):
                     raise FileNotFoundError(
                         f"No se encontró {self.credentials_path}. "
@@ -45,6 +55,8 @@ class DriveClient:
                 flow = InstalledAppFlow.from_client_secrets_file(
                     self.credentials_path, SCOPES
                 )
+                # Nota: run_local_server requiere navegador. 
+                # En servidores headless se debe proveer el token.json previamente.
                 creds = flow.run_local_server(port=0)
 
             with open(token_path, "w") as token:
@@ -52,7 +64,7 @@ class DriveClient:
 
         return build("drive", "v3", credentials=creds)
 
-    def list_files(self, folder_id: str) -> list[dict]:
+    def list_files(self, folder_id: str) -> List[Dict[str, str]]:
         """
         Lista archivos en una carpeta de Drive.
 
@@ -67,7 +79,7 @@ class DriveClient:
         )
         return results.get("files", [])
 
-    def list_folders(self, folder_id: str) -> list[dict]:
+    def list_folders(self, folder_id: str) -> List[Dict[str, str]]:
         """Lista subcarpetas en una carpeta de Drive."""
         query = (
             f"'{folder_id}' in parents "
@@ -82,14 +94,7 @@ class DriveClient:
         return results.get("files", [])
 
     def download_file(self, file_id: str, mime_type: Optional[str] = None) -> str:
-        """
-        Descarga el contenido de un archivo como texto.
-
-        Soporta:
-        - Google Docs → exporta como texto plano
-        - PDFs → descarga binario (requiere parsing externo)
-        - Archivos de texto → descarga directa
-        """
+        """Descarga el contenido de un archivo como texto decodificado."""
         if mime_type == "application/vnd.google-apps.document":
             # Exportar Google Doc como texto plano
             request = self.service.files().export_media(
@@ -115,13 +120,8 @@ class DriveClient:
 
     def download_folder_as_inputs(
         self, folder_id: str, target_dir: str
-    ) -> dict[str, str]:
-        """
-        Descarga todos los archivos de una carpeta de Drive a un directorio local.
-
-        Returns:
-            Dict de filename → contenido de texto
-        """
+    ) -> Dict[str, str]:
+        """Descarga todos los archivos de una carpeta de Drive a un directorio local."""
         os.makedirs(target_dir, exist_ok=True)
         files = self.list_files(folder_id)
         inputs = {}
@@ -134,8 +134,12 @@ class DriveClient:
             if mime == "application/vnd.google-apps.folder":
                 continue
 
-            print(f"  📥 Descargando: {name}")
-            content = self.download_file(file_info["id"], mime)
+            console.print(f"  [dim]📥 Descargando: {name}[/dim]")
+            try:
+                content = self.download_file(file_info["id"], mime)
+            except Exception as e:
+                console.print(f"[bold red]  ❌ Error descargando {name}: {e}[/bold red]")
+                continue
 
             # Guardar localmente
             safe_name = name.replace("/", "_")
@@ -145,9 +149,8 @@ class DriveClient:
                     safe_name += ".txt"
             else:
                 if mime == "application/pdf" or "wordprocessing" in mime:
-                    raise ValueError(
-                        f"El archivo '{name}' es un binario ({mime}). Por favor súbelo en formato texto (.txt) o como Google Docs exportable. Los PDFs y Word crudos corrompen el output del LLM."
-                    )
+                    console.print(f"[yellow]  ⚠️  Aviso: '{name}' es binario ({mime}). El contenido podría estar corrupto para el LLM.[/yellow]")
+                
                 if not safe_name.endswith(".txt") and mime.startswith("text/"):
                     safe_name += ".txt"
 
@@ -159,9 +162,9 @@ class DriveClient:
 
         return inputs
 
-    def discover_search_structure(self, folder_id: str) -> dict:
+    def discover_search_structure(self, folder_id: str) -> Dict[str, Any]:
         """
-        Descubre la estructura de una carpeta de búsqueda en Drive.
+        Descubre recursivamente la estructura de una carpeta de búsqueda.
 
         Espera estructura:
         <folder>/
@@ -178,8 +181,8 @@ class DriveClient:
         Returns:
             Dict con search_inputs y candidates
         """
-        search_inputs: dict[str, str] = {}
-        candidates: dict[str, dict[str, str]] = {}
+        search_inputs: Dict[str, str] = {}
+        candidates: Dict[str, Dict[str, str]] = {}
 
         files = self.list_files(folder_id)
         folders = self.list_folders(folder_id)
@@ -187,40 +190,46 @@ class DriveClient:
         # Archivos de nivel raíz = inputs de la búsqueda
         for f in files:
             name = f["name"].lower()
-            content = self.download_file(f["id"], f["mimeType"])
+            try:
+                content = self.download_file(f["id"], f["mimeType"])
 
-            if "brief" in name or "jd" in name or "job" in name:
-                search_inputs["jd_text"] = content
-            elif "kickoff" in name or "kick-off" in name or "kick_off" in name:
-                search_inputs["kickoff_notes"] = content
-            elif "company" in name or "context" in name or "compañía" in name:
-                search_inputs["company_context"] = content
-            elif "culture" in name or "cultura" in name:
-                search_inputs["client_culture"] = content
+                if "brief" in name or "jd" in name or "job" in name:
+                    search_inputs["jd_text"] = content
+                elif "kickoff" in name or "kick-off" in name or "kick_off" in name:
+                    search_inputs["kickoff_notes"] = content
+                elif "company" in name or "context" in name or "compañía" in name:
+                    search_inputs["company_context"] = content
+                elif "culture" in name or "cultura" in name:
+                    search_inputs["client_culture"] = content
+            except Exception as e:
+                console.print(f"[bold red]  ❌ Error descargando input de búsqueda {f['name']}: {e}[/bold red]")
 
         # Subcarpetas = candidatos
         for folder in folders:
             candidate_id = folder["name"]
-            print(f"  👤 Candidato encontrado: {candidate_id}")
+            console.print(f"  [cyan]👤 Candidato encontrado: {candidate_id}[/cyan]")
             candidate_files = self.list_files(folder["id"])
             candidate_inputs = {}
 
             for f in candidate_files:
                 name = f["name"].lower()
-                content = self.download_file(f["id"], f["mimeType"])
+                try:
+                    content = self.download_file(f["id"], f["mimeType"])
 
-                if "cv" in name or "resume" in name or "curriculum" in name:
-                    candidate_inputs["cv_text"] = content
-                elif "interview" in name or "entrevista" in name:
-                    candidate_inputs["interview_notes"] = content
-                elif "test" in name or "assessment" in name:
-                    candidate_inputs["tests_text"] = content
-                elif "case" in name or "caso" in name or "conductual" in name:
-                    candidate_inputs["case_notes"] = content
-                elif "reference" in name or "referencia" in name:
-                    candidate_inputs["references_text"] = content
-                elif "culture" in name or "cultura" in name:
-                    candidate_inputs["client_culture"] = content
+                    if "cv" in name or "resume" in name or "curriculum" in name:
+                        candidate_inputs["cv_text"] = content
+                    elif "interview" in name or "entrevista" in name:
+                        candidate_inputs["interview_notes"] = content
+                    elif "test" in name or "assessment" in name:
+                        candidate_inputs["tests_text"] = content
+                    elif "case" in name or "caso" in name or "conductual" in name:
+                        candidate_inputs["case_notes"] = content
+                    elif "reference" in name or "referencia" in name:
+                        candidate_inputs["references_text"] = content
+                    elif "culture" in name or "cultura" in name:
+                        candidate_inputs["client_culture"] = content
+                except Exception as e:
+                    console.print(f"[bold red]  ❌ Error descargando archivo de candidato {f['name']}: {e}[/bold red]")
 
             candidates[candidate_id] = candidate_inputs
 

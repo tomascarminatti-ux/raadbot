@@ -1,0 +1,17 @@
+{
+    "python.defaultInterpreterPath": "/Users/tini/Documents/raadbot/.venv/bin/python",
+    "python.analysis.venvPath": "/Users/tini/Documents/raadbot",
+    "python.analysis.venv": ".venv",
+    "python.analysis.extraPaths": [
+        "/Users/tini/Documents/raadbot",
+        "/Users/tini/Documents/raadbot/.venv/lib/python3.9/site-packages"
+    ],
+    "python.analysis.include": [
+        "/Users/tini/Documents/raadbot"
+    ],
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "off",
+    "python.terminal.activateEnvInSelectedTerminal": true,
+    "python.analysis.diagnosticMode": "workspace",
+    "python.envFile": "${workspaceFolder}/.env"
+}

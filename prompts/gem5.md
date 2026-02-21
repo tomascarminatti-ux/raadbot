@@ -41,17 +41,17 @@ DEBES DEVOLVER EXCLUSIVAMENTE UN OBJETO JSON CON LA SIGUIENTE ESTRUCTURA ESTRICT
 {
   "meta": {
     "search_id": "{{search_id}}",
-    "candidate_id": "N/A",
-    "gem": "GEM5",
+    "candidate_id": null,
+    "gem": "GEM_5",
     "timestamp": "ISO 8601",
-    "prompt_version": "1.0",
-    "sources": ["cv", "interview_notes"]
+    "prompt_version": "v1.2",
+    "sources": ["brief_jd", "kickoff_notes", "company_context"]
   },
   "content": { },
   "scores": {
-    "score_dimension": 8,
-    "confidence": "HIGH"
+    "score_dimension": null,
+    "confidence": 8
   },
-  "issues_found": []
+  "blockers": []
 }
 ```

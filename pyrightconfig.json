@@ -1,0 +1,20 @@
+{
+    "include": [
+        "agent",
+        "utils",
+        "."
+    ],
+    "exclude": [
+        "**/__pycache__",
+        ".git"
+    ],
+    "reportMissingImports": "warning",
+    "pythonVersion": "3.9",
+    "pythonPlatform": "Darwin",
+    "venvPath": ".",
+    "venv": ".venv",
+    "extraPaths": [
+        ".",
+        ".venv/lib/python3.9/site-packages"
+    ]
+}
