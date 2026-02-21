@@ -1,143 +1,176 @@
 # 🤖 Raadbot v2.0 — Executive Search Industrial Pipeline
 
-**Raadbot** es el estándar de oro en sistemas de orquestación de IA para la **Búsqueda Ejecutiva de Alto Nivel**. No es un simple chatbot; es un motor de decisión industrial de grado producción diseñado para transformar la naturaleza de la evaluación de talento C-Level, VP y Directores.
+<aside>
+🎯 **Objetivo**
+
+Raadbot v2.0 es un sistema de orquestación multi‑agente para evaluación de talento ejecutivo, con enfoque *evidence-first*, trazabilidad y control de calidad (QA) antes de emitir veredictos.
+</aside>
 
 ---
 
-## 🌟 Visión y Valor Core
+### 1) Visión y valor core
 
-En el mundo de la búsqueda ejecutiva, la subjetividad es el enemigo. Raadbot nace para eliminar el sesgo mediante una **Trazabilidad de Evidencia Estricta**.
-
-- **Evidence-First**: Los agentes no pueden emitir juicios sin citar la fuente exacta `[Fuente: CV/Entrevista]`.
-- **Rigor Analítico**: Prohíbe el "clinical jargon" y el "fluff". Traduce narrativa vaga a impacto de negocio.
-- **Gating de Calidad**: Si la evidencia no es suficiente el sistema bloquea el reporte, protegiendo la reputación de la firma.
-
----
-
-## 🏗️ Arquitectura de Sistema: GEM 6 Master Orchestrator
-
-Raadbot v2.0 opera bajo un patrón de **Orquestador-Worker** liderado por el motor **GEM 6**. Esta capa gestiona la complejidad de una evaluación multi-agente.
-
-### Componentes de Ingeniería (`agent/gem6/`):
-- **🧠 Master Orchestrator**: El núcleo que gestiona el ciclo de vida, la resiliencia y la orquestación distribuida de los GEMs.
-- **🚥 State Machine**: Máquina de estados determinista que previene regresiones. Un candidato no puede ser evaluado en cultura (GEM 3) si no aprobó los hitos de trayectoria (GEM 1).
-- **🚌 Event Bus**: Sistema de comunicación asíncrono que desacopla la lógica de negocio de los efectos secundarios (logging, métricas, webhooks).
-- **📊 Metrics & Dashboard**: Recolección de KPIs tácticos (latencia, tokens) y estratégicos (scores de ajuste, veredictos).
-- **📝 Audit Ledger**: Registro de auditoría con checksums SHA-256 para cada nodo de decisión, garantizando integridad y cumplimiento legal (compliance).
+- **Evidence‑First (no opiniones sin fuente)**
+    - Todo juicio debe citar evidencia explícita: `[Fuente: CV / Entrevista / Referencia 360]`.
+- **Rigor analítico**
+    - Prohíbe “fluff” y lenguaje clínico.
+    - Traduce narrativa vaga a impacto de negocio (métricas, tamaño de problema, contexto).
+- **Gating de calidad**
+    - Si falta evidencia o hay ambigüedad, el sistema **bloquea** el reporte.
 
 ---
 
-## 🗺️ Mapa de Evaluación (Evaluation Flow v2.0)
+### 2) Arquitectura: GEM 6 Master Orchestrator (patrón Orchestrator‑Worker)
+
+**Core Engine:** `agent/gem6/`
+
+- **🧠 Master Orchestrator**: Gestiona ciclo de vida de la corrida, resiliencia y coordinación de GEMs.
+- **🚥 State Machine (determinista)**: Previene regresiones. Ejemplo de regla: GEM 3 (cultura) no corre si GEM 1 (trayectoria) no pasa umbral.
+- **🚌 Event Bus (asíncrono)**: Desacopla lógica de negocio de efectos secundarios (logging, métricas, webhooks).
+- **📊 Métricas y dashboard**: KPIs tácticos (latencia, tokens) y estratégicos (scores de ajuste, veredictos).
+- **📝 Audit Ledger**: Registro de auditoría por nodo de decisión. Checksums SHA‑256 para integridad y compliance.
+
+---
+
+### 3) Mapa de evaluación (Evaluation Flow v2.0)
 
 ```mermaid
 flowchart TD
-    subgraph INPUTS [Ingesta de Datos]
-        direction TB
-        JD[Job Description / Kickoff]
-        CV[CVs de Candidatos]
-        INT[Interview Transcripts]
-        REF[360 Reference Checks]
-    end
+	subgraph INPUTS[Ingesta de Datos]
+		direction TB
+		JD[Job Description / Kickoff]
+		CV[CVs de Candidatos]
+		INT[Transcripciones de entrevistas]
+		REF[Referencias 360]
+	end
 
-    subgraph ENGINE [GEM 6 Master Orchestrator]
-        direction TB
-        SM[State Machine]
-        EB[Event Bus]
-        MC[Metrics & Audit]
-    end
+	subgraph ENGINE[GEM 6 Master Orchestrator]
+		direction TB
+		SM[State Machine]
+		EB[Event Bus]
+		MC[Metrics & Audit]
+	end
 
-    JD --> G5[<b>GEM 5</b>: Radiografía Estratégica]
-    G5 -->|Mandato Global| G1[<b>GEM 1</b>: Hitos y Trayectoria]
-    
-    G1 -->|Score >= 6.0| G2[<b>GEM 2</b>: Assessment de Negocio]
-    G1 -->|Score < 6.0| Z[Descarte Automático]
-    
-    G2 -->|Score >= 6.0| G3[<b>GEM 3</b>: Veredicto Cultural]
-    G2 -->|Score < 6.0| Z
-    
-    G3 -->|Aprobado/Reserva| G4[<b>GEM 4</b>: Auditor QA]
-    G3 -->|Rechazado| Z
-    
-    G4 -->|Pass >= 7.0| REPORT[<b>REPORTE DE DECISIÓN VR</b>]
-    G4 -->|QA Block| RE[Bucle de Refinamiento]
-    
-    REPORT -.-> MC
-    EB -.->|State Signals| SM
+	JD --> G5[<b>GEM 5</b>: Radiografía Estratégica]
+	G5 -->|Mandato Global| G1[<b>GEM 1</b>: Hitos y Trayectoria]
+
+	G1 -->|Score >= 6.0| G2[<b>GEM 2</b>: Assessment de Negocio]
+	G1 -->|Score < 6.0| Z[Descarte Automático]
+
+	G2 -->|Score >= 6.0| G3[<b>GEM 3</b>: Veredicto Cultural]
+	G2 -->|Score < 6.0| Z
+
+	G3 -->|Aprobado/Reserva| G4[<b>GEM 4</b>: Auditor QA]
+	G3 -->|Rechazado| Z
+
+	G4 -->|Pass >= 7.0| REPORT[<b>REPORTE DE DECISIÓN VR</b>]
+	G4 -->|QA Block| RE[Bucle de Refinamiento]
+
+	REPORT -.- MC
+	EB -.-|State Signals| SM
 ```
 
 ---
 
-## 💎 Los Módulos GEM (v2.0 Analytical Edition)
+### 4) Módulos GEM (v2.0 Analytical Edition)
 
-### 🔵 GEM 5: El Radiólogo Estratégico
-**Input**: Notas de Kick-off + Job Description.  
-**Misión**: Definir el "Dolor del Cliente" a nivel operativo. Produce el **Mandato de Búsqueda** que actuará como ancla contextual para el resto de los módulos.
-
-### 🟢 GEM 1: El Historiador de Logros
-**Misión**: Convertir la narrativa del CV y la entrevista en evidencia calibrada.  
-**Filtro**: Ignora adjetivos autoproclamados y busca métricas cuantificables (%, $, unidades, tiempos).
-
-### 🟡 GEM 2: El Consultor de Negocio
-**Misión**: Contrastar al candidato contra los retos técnicos y de negocio definidos en GEM 5.  
-**Salida**: Evaluación de capacidad de resolución de problemas específicos del cliente.
-
-### 🟣 GEM 3: El Juez de Veredicto
-**Misión**: Realizar la síntesis final basada en referencias 360° y fit cultural.  
-**Decisión**: Emite un veredicto binario: **YES / NO / YES (with reservations)**. No se permite la tibieza.
-
-### 🔴 GEM 4: El Fiscal Auditor
-**Misión**: Control de calidad final.  
-**Acción**: Bloquea cualquier reporte con alucinaciones, falta de fuentes o lenguaje impreciso. Calcula el **Quality Index** del reporte.
+- **🔵 GEM 5 — Radiólogo estratégico**
+    - **Input**: Kick‑off + Job Description.
+    - **Misión**: Definir el “dolor del cliente” a nivel operativo.
+    - **Salida**: **Mandato de búsqueda** (ancla contextual para el resto de módulos).
+- **🟢 GEM 1 — Historiador de logros**
+    - **Misión**: Convertir narrativa (CV + entrevista) en evidencia calibrada.
+    - **Filtro**: Ignora adjetivos; prioriza métricas cuantificables (%, $, unidades, plazos).
+    - **Salida**: Hitos, resultados, y score de trayectoria con citas.
+- **🟡 GEM 2 — Consultor de negocio**
+    - **Misión**: Contrastar al candidato contra retos técnicos y de negocio del mandato (GEM 5).
+    - **Salida**: Evaluación de capacidad para resolver problemas específicos del cliente.
+- **🟣 GEM 3 — Juez de veredicto**
+    - **Misión**: Síntesis final con referencias 360° y fit cultural.
+    - **Decisión**: **YES / NO / YES (with reservations)**.
+    - **Regla**: No se permite ambigüedad.
+- **🔴 GEM 4 — Fiscal auditor (QA)**
+    - **Misión**: Control de calidad final.
+    - **Acción**: Bloquea reportes con alucinaciones, falta de fuentes o lenguaje impreciso.
+    - **Salida**: **Quality Index** y veredicto de QA (Pass o Block).
 
 ---
 
-## 🕹️ Modos de Operación
+### 5) Modos de operación
 
-### 1. Centro de Control (Web Dashboard) 🌐
-Interfaz premium para monitorear ejecuciones y tunear prompts sin tocar código.
-- **Acceso**: `http://localhost:8000/dashboard` (vía `./start_localhost.sh`)
-- **AI Refinement**: Chatea con el orquestador para ajustar el comportamiento de cada GEM.
+#### 5.1 Centro de control (Web Dashboard)
+- **Acceso**: `http://localhost:8000/dashboard`
+- **Funciones**: Monitoreo de ejecuciones en tiempo real y ajuste de prompts vía IA.
 
-### 2. Microservicio Integrado (API REST) 📡
-Listo para conectar con **Netlify**, **n8n** o herramientas internas.
+#### 5.2 Microservicio (API REST)
 - **Trigger**: `POST /api/v1/run`
-- **Search Setup**: `POST /api/v1/search/setup` (GEM 5 initialization)
-- **Health**: `GET /health` (Estado del sistema y versión)
+- **Setup búsqueda (GEM 5 init)**: `POST /api/v1/search/setup`
+- **Healthcheck**: `GET /health`
 
-### 3. Ejecución Masiva (CLI) 💻
-Ideal para procesamiento de lotes grandes o auditorías de búsqueda.
+#### 5.3 Ejecución masiva (CLI)
 ```bash
 python run.py --search-id PROY-01 --local-dir inputs/search_01 --json
 ```
 
 ---
 
-## 🚀 Despliegue y Hardening
+### 6) Despliegue y hardening
 
-### Seguridad y Resiliencia
-- **State Checkpoints**: El archivo `pipeline_state.json` permite reanudar ejecuciones fallidas.
-- **Secret Management**: Soporte nativo para `.env` y variables de entorno seguras.
-- **Docker Ready**: `docker-compose.yml` incluido para despliegues portables y producción.
-
-### Instalación Rápida
+- **Checkpoints**: `pipeline_state.json` permite reanudar corridas fallidas automáticamente.
+- **Secrets**: Gestión vía `.env` y variables de entorno.
+- **Docker**: `docker-compose.yml` incluido para despliegues portables y producción.
+- **Instalación rápida**:
 ```bash
 git clone https://github.com/tomascarminatti-ux/raadbot.git
 cd raadbot
 pip install -r requirements.txt
-cp .env.example .env # Configura tus API Keys
+cp .env.example .env # Configura tus API keys
 ```
 
 ---
 
-## 📈 Observabilidad
-Raadbot exporta en cada corrida:
-1.  **JSON Estructurado**: Para consumo de BI o bases de datos de talento.
-2.  **Markdown Legible**: Reportes formateados para consultores humanos.
-3.  **Metrics Dashboard**: Consumo de tokens, costos por búsqueda y latencia de respuesta.
+### 7) Observabilidad (Artifacts)
+
+1. **JSON estructurado**: Para consumo de BI / base de datos de talento.
+2. **Markdown legible**: Reporte ejecutivo (Decision Report) para consultoría humana.
+3. **Métricas**: Dashboards de tokens, costo por búsqueda y latencia.
 
 ---
 
-## 🤝 Soporte y Contribución
-Para reportar bugs o solicitar nuevas funcionalidades para GEMs específicos, favor de abrir un Issue o contactar al equipo de arquitectura RAAD.
+## 8) Especificación operativa (Operational Spec)
 
-*Version 2.0.0 — Optimizado para Gemini 2.0*
+<aside>
+🧩 Esta sección convierte el README en especificación accionable: qué entra, qué sale, y qué reglas bloquean.
+</aside>
+
+### 8.1 Contrato de inputs (mínimo viable)
+- **JD / Kickoff**: Rol, industria, "dolor" real y restricciones.
+- **CV**: Trayectoria versionada y normalizada.
+- **Entrevistas (transcript)**: Fuente, fecha y segmentación temática.
+- **Referencias 360**: Relación con el candidato y evidencia conductual.
+
+### 8.2 Outputs por GEM (Estructura de Datos)
+- **GEM 5 (Mandato)**: `dolor_cliente`, `retos_criticos`, `criterios_exito`, `red_flags`.
+- **GEM 1 (Trayectoria)**: Lista de `hitos[]` con `claim`, `impacto`, `metrica`, `fuente`.
+- **GEM 2 (Negocio)**: Matriz de Reto vs Evidencia.
+- **GEM 3 (Veredicto)**: `YES | NO | YES_WITH_RESERVATIONS`.
+- **GEM 4 (QA)**: `quality_index`, `bloqueos[]`, `motivo_bloqueo`.
+
+### 8.3 Reglas de Gating
+1. **Evidence Check**: Si un GEM produce un `claim` sin `fuente`, el sistema **bloquea**.
+2. **Trajectory Threshold**: Si `score_trayectoria < 6.0`, se descarta al candidato.
+3. **Quality Threshold**: Si `quality_index < 7.0`, el reporte vuelve al bucle de refinamiento.
+
+### 8.4 Checkpoint Lifecycle (`pipeline_state.json`)
+Almacena `search_id`, `candidate_id`, `estado_actual` (e.g. `GEM1_DONE`), `scores` históricos y `hashes` de integridad.
+
+---
+
+## 9) Backlog de Ingeniería
+
+- [ ] Esquema JSON final versionado (`report_schema_v2.json`).
+- [ ] Diccionario de “lenguaje prohibido” (anti-fluff) con reescritura automática.
+- [ ] Plantillas de reporte dinámicas (VR Decision Report) con citas integradas.
+
+---
+*Version 2.0.0 — Raad Advisory Intelligence Platform*
