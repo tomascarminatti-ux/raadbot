@@ -5,9 +5,9 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
-import os
 
 import config
 from agent.gemini_client import GeminiClient
@@ -31,6 +31,21 @@ app = FastAPI(
     description="API interna para integrar Raadbot con n8n u otros sistemas externos.",
     version="2.0.0",
     lifespan=lifespan,
+)
+
+# --- Configuración de CORS ---
+# Permite que la frontend de Netlify y el dashboard local se comuniquen con la API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://raadbot.netlify.app",
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -142,6 +157,47 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
             return run_pipeline_sync(request)
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
+
+
+class SetupSearchRequest(BaseModel):
+    search_id: str
+    brief_notes: str
+    jd_content: str
+    company_context: Optional[str] = None
+
+@app.post("/api/v1/search/setup")
+async def setup_search(request: SetupSearchRequest):
+    """
+    Inicializa una búsqueda ejecutando únicamente GEM 5 (Radiografía Estratégica).
+    Crea la estructura de carpetas y guarda el mandato inicial.
+    """
+    output_dir = os.path.join("runs", request.search_id, "outputs")
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Simular estructura de inputs para GEM 5
+    search_inputs = {
+        "kickoff_notes": request.brief_notes,
+        "brief_jd": request.jd_content,
+        "company_context": request.company_context or ""
+    }
+    
+    gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
+    # Ejecutar GEM 5 directamente
+    from agent.prompt_builder import build_gem5_prompt
+    prompt = build_gem5_prompt(search_inputs)
+    result = gemini.run_gem(prompt, gem_name="gem5")
+    
+    # Guardar resultados
+    with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
+        json.dump(result.get("data", {}), f, indent=4)
+    with open(os.path.join(output_dir, "gem5.md"), "w", encoding="utf-8") as f:
+        f.write(result.get("markdown", ""))
+        
+    return {
+        "status": "success",
+        "search_id": request.search_id,
+        "gem5_summary": result.get("data", {}).get("mandate_summary", "Mandato generado con éxito.")
+    }
 
 
 # --- Dashboard Endpoints ---
