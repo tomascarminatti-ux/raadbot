@@ -217,10 +217,21 @@ Ejemplos:
         print("  Debe haber una subcarpeta por candidato con al menos cv.txt")
         sys.exit(1)
 
-    print(f"\n  Search inputs: {list(search_inputs.keys())}")
-    print(f"  Candidatos: {list(candidates.keys())}")
-    for cid, cinputs in candidates.items():
-        print(f"    - {cid}: {list(cinputs.keys())}")
+    if not args.json:
+        from rich.table import Table
+        from rich.console import Console
+
+        console = Console()
+        table = Table(title="🔍 Inputs Detectados", header_style="bold magenta")
+        table.add_column("Candidato", style="cyan")
+        table.add_column("Datos Encontrados", style="green")
+        table.add_row("Global (GEM5)", ", ".join(search_inputs.keys()) or "[red]Falta JD![/red]")
+        for cid, cinputs in candidates.items():
+            status = ", ".join(cinputs.keys())
+            if "cv_text" not in cinputs:
+                status += " [bold red](Falta CV!)[/bold red]"
+            table.add_row(cid, status)
+        console.print(table)
 
     # --- Configurar output ---
     output_dir = args.output_dir or os.path.join("runs", args.search_id, "outputs")
@@ -232,7 +243,7 @@ Ejemplos:
     gemini = GeminiClient(api_key=api_key, model=args.model)
     pipeline = Pipeline(gemini=gemini, search_id=args.search_id, output_dir=output_dir)
 
-    results = pipeline.run_full_pipeline(search_inputs, candidates)
+    pipeline.run_full_pipeline(search_inputs, candidates)
 
     # --- Resultado final ---
     summary_path = os.path.join(output_dir, "pipeline_summary.json")

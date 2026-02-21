@@ -100,7 +100,7 @@ def run_pipeline_sync(request: PipelineRequest) -> dict:
         gemini=gemini, search_id=request.search_id, output_dir=output_dir
     )
 
-    results = pipeline.run_full_pipeline(search_inputs, candidates)
+    pipeline.run_full_pipeline(search_inputs, candidates)
 
     # Load the pipeline_summary.json to return it to the caller
     summary_path = os.path.join(output_dir, "pipeline_summary.json")
@@ -138,8 +138,6 @@ def trigger_pipeline(request: PipelineRequest, background_tasks: BackgroundTasks
     Verbo POST para iniciar una corrida del pipeline.
     Soporta webhook_url para ejecuciones asíncronas no bloqueantes.
     """
-    import sys
-
     if request.webhook_url:
         background_tasks.add_task(background_run_pipeline, request)
         return {
