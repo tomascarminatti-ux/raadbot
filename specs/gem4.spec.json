@@ -1,0 +1,26 @@
+{
+  "id": "GEM_4",
+  "name": "Auditor QA (Gate Final)",
+  "scope": "Por candidato, siempre al final",
+  "inputs_required": ["gem1_output", "gem2_output", "gem3_output", "sources_index"],
+  "outputs": ["gem4.json", "gem4.md"],
+  "scoring": {
+    "score_dimension": "1-10",
+    "confidence": "0-10",
+    "threshold_pass": 7
+  },
+  "block_conditions": [
+    "Si score < 7 => BLOCK TOTAL",
+    "Si hay afirmaciones relevantes sin evidencia => puede bloquear",
+    "Si hay contradicciones críticas ocultas => BLOCK"
+  ],
+  "sections_fixed": [
+    "Afirmaciones no sustentadas",
+    "Fluff a eliminar",
+    "Vacíos críticos",
+    "Tensiones / contradicciones",
+    "Score QA + justificación",
+    "Decisión: APROBADO/BLOQUEADO",
+    "Blockers"
+  ]
+}
