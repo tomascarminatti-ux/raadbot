@@ -19,5 +19,7 @@ MAX_RETRIES_ON_BLOCK = 2
 PRICE_PROMPT_1M = 0.075
 PRICE_COMPLETION_1M = 0.30
 
-# Modelo por defecto - Cambiado a gemini-2.0-flash (v2.5 no existe)
+# Configuración del Modelo
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+DEFAULT_TEMPERATURE = 0.3
+DEFAULT_MAX_TOKENS = 8192

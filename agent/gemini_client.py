@@ -8,12 +8,13 @@ import time
 import asyncio
 from google import genai
 from agent.logger import logger
+from agent.config import DEFAULT_TEMPERATURE, DEFAULT_MAX_TOKENS
 
 
 class GeminiClient:
     """Cliente para interactuar con Gemini API."""
 
-    def __init__(self, api_key: str, model: str = "gemini-2.5-flash"):
+    def __init__(self, api_key: str, model: str = "gemini-2.0-flash"):
         self.client = genai.Client(api_key=api_key)
         self.model = model
 
@@ -33,8 +34,8 @@ class GeminiClient:
                     model=self.model,
                     contents=prompt,
                     config={
-                        "temperature": 0.3,
-                        "max_output_tokens": 8192,
+                        "temperature": DEFAULT_TEMPERATURE,
+                        "max_output_tokens": DEFAULT_MAX_TOKENS,
                     },
                 )
 
@@ -82,8 +83,8 @@ class GeminiClient:
                     model=self.model,
                     contents=prompt,
                     config={
-                        "temperature": 0.3,
-                        "max_output_tokens": 8192,
+                        "temperature": DEFAULT_TEMPERATURE,
+                        "max_output_tokens": DEFAULT_MAX_TOKENS,
                     },
                 )
 

@@ -35,7 +35,7 @@ cat > "${RUN_DIR}/logs/metadata.json" << EOF
   "search_id": "${SEARCH_ID}",
   "created_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "status": "initialized",
-  "pipeline_version": "v1.2",
+  "pipeline_version": "v1.5.0",
   "candidates": [],
   "notes": ""
 }
