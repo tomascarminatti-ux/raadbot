@@ -146,7 +146,9 @@ class DriveClient:
             else:
                 if mime == "application/pdf" or "wordprocessing" in mime:
                     raise ValueError(
-                        f"El archivo '{name}' es un binario ({mime}). Por favor súbelo en formato texto (.txt) o como Google Docs exportable. Los PDFs y Word crudos corrompen el output del LLM."
+                        f"El archivo '{name}' es un binario ({mime}). Por favor súbelo "
+                        "en formato texto (.txt) o como Google Docs exportable. "
+                        "Los PDFs y Word crudos corrompen el output del LLM."
                     )
                 if not safe_name.endswith(".txt") and mime.startswith("text/"):
                     safe_name += ".txt"

@@ -3,7 +3,6 @@ import os
 from datetime import datetime, timezone
 from typing import Optional, Any
 
-from jsonschema import validate, ValidationError
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table

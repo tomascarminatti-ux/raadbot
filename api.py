@@ -5,16 +5,16 @@ from typing import Optional
 import sys
 import httpx
 
+import re
 from fastapi import FastAPI, HTTPException, BackgroundTasks
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from dotenv import load_dotenv
-
-# Ensure environment is loaded
-load_dotenv()
-
 from agent.gemini_client import GeminiClient
 from agent.pipeline import Pipeline
 from agent.drive_client import DriveClient
+
+# Ensure environment is loaded
+load_dotenv()
 
 
 @asynccontextmanager
@@ -42,6 +42,26 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = "gemini-2.5-flash"
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "candidate_id")
+    @classmethod
+    def validate_ids(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        if not re.match(r"^[a-zA-Z0-9_-]+$", v):
+            raise ValueError(
+                "ID debe contener solo caracteres alfanuméricos, guiones o guiones bajos."
+            )
+        return v
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        if ".." in v:
+            raise ValueError("Path traversal detectable en local_dir.")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -100,7 +120,7 @@ def run_pipeline_sync(request: PipelineRequest) -> dict:
         gemini=gemini, search_id=request.search_id, output_dir=output_dir
     )
 
-    results = pipeline.run_full_pipeline(search_inputs, candidates)
+    pipeline.run_full_pipeline(search_inputs, candidates)
 
     # Load the pipeline_summary.json to return it to the caller
     summary_path = os.path.join(output_dir, "pipeline_summary.json")
@@ -138,8 +158,6 @@ def trigger_pipeline(request: PipelineRequest, background_tasks: BackgroundTasks
     Verbo POST para iniciar una corrida del pipeline.
     Soporta webhook_url para ejecuciones asíncronas no bloqueantes.
     """
-    import sys
-
     if request.webhook_url:
         background_tasks.add_task(background_run_pipeline, request)
         return {

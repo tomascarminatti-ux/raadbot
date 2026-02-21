@@ -3,7 +3,21 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-client = GeminiClient(api_key=os.getenv("GEMINI_API_KEY"), model="gemini-2.5-flash")
-prompt = "Escribe un cuento muy largo de 5000 palabras."
-res = client.run_gem(prompt)
-print(f"Respuesta length: {len(res['raw'])}")
+
+def test_gemini_basic():
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        import pytest
+        pytest.skip("GEMINI_API_KEY not found")
+
+    client = GeminiClient(api_key=api_key, model="gemini-2.5-flash")
+    prompt = "Escribe un cuento corto de 100 palabras."
+    res = client.run_gem(prompt)
+    assert len(res['raw']) > 0
+    print(f"Respuesta length: {len(res['raw'])}")
+
+if __name__ == "__main__":
+    try:
+        test_gemini_basic()
+    except Exception as e:
+        print(f"Error: {e}")
