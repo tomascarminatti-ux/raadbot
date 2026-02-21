@@ -180,10 +180,12 @@ class Pipeline:
                 return result
             except ValueError as e:
                 if attempt < MAX_RETRIES_ON_BLOCK:
-                    console.print(
+                    msg = (
                         f"[bold yellow]  ⚠️  Error de validación ({e}). "
-                        f"Reintentando {attempt+1}/{MAX_RETRIES_ON_BLOCK}...[/bold yellow]"
+                        f"Reintentando {attempt+1}/{MAX_RETRIES_ON_BLOCK}..."
+                        "[/bold yellow]"
                     )
+                    console.print(msg)
                     time.sleep(2)
                 else:
                     console.print(
