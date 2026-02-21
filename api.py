@@ -9,12 +9,12 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
+# Ensure environment is loaded
+load_dotenv()
+
 from agent.gemini_client import GeminiClient
 from agent.pipeline import Pipeline
 from agent.drive_client import DriveClient
-
-# Ensure environment is loaded
-load_dotenv()
 
 
 @asynccontextmanager
