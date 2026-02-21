@@ -23,6 +23,15 @@ MAX_RETRIES_ON_BLOCK = 2
 PRICE_PROMPT_1M = 0.10  # Example price, adjust to reality
 PRICE_COMPLETION_1M = 0.40 # Example price, adjust to reality
 
+# GEM Technical Configurations (System Prompts v2.0)
+GEM_CONFIGS = {
+    "gem1": {"temperature": 0.2, "top_p": 0.7, "max_tokens": 2500},
+    "gem2": {"temperature": 0.4, "top_p": 0.85, "max_tokens": 3000},
+    "gem3": {"temperature": 0.3, "top_p": 0.75, "max_tokens": 3500},
+    "gem4": {"temperature": 0.1, "top_p": 0.5, "max_tokens": 4000},
+    "gem5": {"temperature": 0.3, "top_p": 0.8, "max_tokens": 2000},
+}
+
 # Google Drive Settings
 DRIVE_CREDENTIALS_PATH = os.getenv("DRIVE_CREDENTIALS_PATH", "credentials.json")
 DRIVE_TOKEN_FILE = "token.json"

@@ -21,7 +21,9 @@ class MetricsCollector:
         
     def record_histogram(self, metric_name: str, value: float):
         """Registra un valor en un histograma (ej: duración)."""
-        self.histograms[metric_name].append(value)
+        current_list = self.histograms[metric_name]
+        current_list.append(value)
+        self.histograms[metric_name] = current_list
         
     def set_gauge(self, metric_name: str, value: float):
         """Establece un valor instantáneo."""

@@ -9,7 +9,7 @@ import httpx
 
 import config
 from agent.gemini_client import GeminiClient
-from agent.pipeline import Pipeline
+from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
 from utils.input_loader import load_local_inputs
 
@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Raadbot API",
     description="API interna para integrar Raadbot con n8n u otros sistemas externos.",
-    version="1.1.0",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -49,32 +49,25 @@ class PipelineResponse(BaseModel):
 
 
 def run_pipeline_sync(request: PipelineRequest) -> dict:
-    """Wrapper síncrono para ejecutar el pipeline completo."""
+    """Wrapper síncrono para ejecutar el pipeline completo usando GEM 6."""
     api_key = config.GEMINI_API_KEY
     if not api_key:
-        raise ValueError("GEMINI_API_KEY no configurada en el archivo .env o variables de entorno.")
+        raise ValueError("GEMINI_API_KEY no configurada.")
 
     if not request.drive_folder and not request.local_dir:
         raise ValueError("Se debe proveer 'drive_folder' o 'local_dir'.")
 
+    # Load inputs (omitted identical logic for brevity in replace, but keeping it in the actual file)
     search_inputs = {}
     candidates = {}
 
     if request.drive_folder:
-        try:
-            drive = DriveClient(credentials_path=config.DRIVE_CREDENTIALS_PATH)
-            structure = drive.discover_search_structure(request.drive_folder)
-            search_inputs = structure["search_inputs"]
-            candidates = structure["candidates"]
-        except Exception as e:
-            raise ValueError(f"Error de sincronización con Google Drive: {str(e)}")
+        drive = DriveClient(credentials_path=config.DRIVE_CREDENTIALS_PATH)
+        structure = drive.discover_search_structure(request.drive_folder)
+        search_inputs = structure["search_inputs"]
+        candidates = structure["candidates"]
     else:
-        try:
-            search_inputs, candidates = load_local_inputs(request.local_dir)
-        except Exception as e:
-            raise ValueError(
-                f"Error cargando directorio local {request.local_dir}: {str(e)}"
-            )
+        search_inputs, candidates = load_local_inputs(request.local_dir)
 
     if request.candidate_id:
         if request.candidate_id not in candidates:
@@ -85,21 +78,17 @@ def run_pipeline_sync(request: PipelineRequest) -> dict:
     os.makedirs(output_dir, exist_ok=True)
 
     gemini = GeminiClient(api_key=api_key, model=request.model)
-    pipeline = Pipeline(
-        gemini=gemini, search_id=request.search_id, output_dir=output_dir
-    )
+    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
 
-    results = pipeline.run_full_pipeline(search_inputs, candidates)
+    import asyncio
+    # Ejecución bloqueante para el worker actual
+    asyncio.run(orchestrator.run_pipeline(search_inputs, candidates))
 
-    # Load the pipeline_summary.json to return it to the caller
     summary_path = os.path.join(output_dir, "pipeline_summary.json")
     summary_data = {}
     if os.path.exists(summary_path):
-        try:
-            with open(summary_path, "r", encoding="utf-8") as f:
-                summary_data = json.load(f)
-        except Exception:
-            summary_data = {"error": "Could not read summary file."}
+        with open(summary_path, "r", encoding="utf-8") as f:
+            summary_data = json.load(f)
 
     return {
         "status": "success",
@@ -158,6 +147,6 @@ def health_check():
     return {
         "status": "ok", 
         "agent": "raadbot", 
-        "version": "1.1.0",
+        "version": "2.0.0",
         "model": config.DEFAULT_MODEL
     }

@@ -153,7 +153,7 @@ class GEM6Orchestrator:
         prompt = build_prompt(gem_name, prompt_vars)
         
         # Simulamos reintentos de red o validación si es necesario
-        result = self.gemini.run_gem(prompt)
+        result = self.gemini.run_gem(prompt, gem_name=gem_name)
         
         # 3. VALIDAR Y EXTRAER SCORE
         json_data = result.get("json", {})

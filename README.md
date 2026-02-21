@@ -8,7 +8,7 @@ Este proyecto utiliza **Gemini 2.5 Flash / Pro** (vía Google GenAI SDK) y está
 
 ## 🏗️ Arquitectura del Sistema
 
-El sistema opera bajo un patrón de **Pipeline Secuencial con Gating**. Los candidatos deben superar umbrales específicos de puntaje para avanzar al siguiente "GEM" (Módulo de Evaluación Gemini).
+El sistema opera bajo un patrón de **Orquestador-Worker (GEM 6)**. El orquestador gestiona una máquina de estados, un bus de eventos y métricas en tiempo real para evaluar candidatos a través de múltiples módulos especializados (GEM).
 
 ### El Workflow GEM
 

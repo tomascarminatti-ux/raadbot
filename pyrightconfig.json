@@ -13,8 +13,15 @@
     "pythonPlatform": "Darwin",
     "venvPath": ".",
     "venv": ".venv",
-    "extraPaths": [
-        ".",
-        ".venv/lib/python3.9/site-packages"
+    "executionEnvironments": [
+        {
+            "root": "agent",
+            "extraPaths": [
+                ".."
+            ]
+        },
+        {
+            "root": "."
+        }
     ]
 }

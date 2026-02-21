@@ -22,7 +22,7 @@ from rich.console import Console
 import config
 from utils.input_loader import load_local_inputs
 from agent.gemini_client import GeminiClient
-from agent.pipeline import Pipeline
+from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
 
 console = Console()
@@ -130,11 +130,19 @@ Ejemplos:
     # --- Output configuration ---
     output_dir = args.output_dir or os.path.join("runs", args.search_id, "outputs")
 
-    # --- Run Pipeline ---
+    # --- Run GEM 6 Orchestrator ---
     gemini = GeminiClient(api_key=api_key, model=args.model)
-    pipeline = Pipeline(gemini=gemini, search_id=args.search_id, output_dir=output_dir)
+    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=args.search_id, output_dir=output_dir)
 
-    results = pipeline.run_full_pipeline(search_inputs, candidates)
+    # El orquestador maneja los eventos y el procesamiento asíncrono
+    try:
+        import asyncio
+        results = asyncio.run(orchestrator.run_pipeline(search_inputs, candidates))
+    except Exception as e:
+        console.print(f"[bold red]❌ Error durante la ejecución del pipeline: {e}[/bold red]")
+        import traceback
+        console.print(traceback.format_exc())
+        sys.exit(1)
 
     # --- Final result ---
     summary_path = os.path.join(output_dir, "pipeline_summary.json")

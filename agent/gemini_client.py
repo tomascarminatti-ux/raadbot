@@ -28,21 +28,30 @@ class GeminiClient:
         self.client = genai.Client(api_key=api_key)
         self.model = model
 
-    def run_gem(self, prompt: str, max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
+    def run_gem(self, prompt: str, gem_name: Optional[str] = None, max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
         """
         Envía un prompt al modelo Gemini y parsea la respuesta.
+
+        Args:
+            prompt: Texto del prompt.
+            gem_name: Nombre opcional del GEM para cargar configuraciones técnicas.
+            max_retries: Máximo de reintentos.
 
         Returns:
             GeminiResult con el contenido parseado y metadatos de uso.
         """
+        # Cargar configuración específica o usar default
+        cfg = config.GEM_CONFIGS.get(gem_name, {"temperature": 0.3, "top_p": 0.8, "max_tokens": 4096})
+        
         for attempt in range(max_retries + 1):
             try:
                 response = self.client.models.generate_content(
                     model=self.model,
                     contents=prompt,
                     config={
-                        "temperature": 0.3,
-                        "max_output_tokens": 8192,
+                        "temperature": cfg.get("temperature"),
+                        "top_p": cfg.get("top_p"),
+                        "max_output_tokens": cfg.get("max_tokens"),
                     },
                 )
 
