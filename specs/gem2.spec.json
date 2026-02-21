@@ -1,0 +1,24 @@
+{
+  "id": "GEM_2",
+  "name": "Assessment a Negocio",
+  "scope": "Por candidato",
+  "inputs_required": ["gem1_output", "tests_assessment", "case_notes", "gem5_key_challenge"],
+  "outputs": ["gem2.json", "gem2.md"],
+  "scoring": {
+    "score_dimension": "0-10",
+    "confidence": "0-10",
+    "threshold_pass": 6
+  },
+  "block_conditions": [
+    "Contradicciones críticas no resueltas entre test/entrevista/caso => FLAG + baja score"
+  ],
+  "sections_fixed": [
+    "Capacidad de ejecución",
+    "Desempeño bajo presión",
+    "Estilo de trabajo",
+    "Encaje vs desafío crítico",
+    "Tensiones y contradicciones",
+    "Score + confidence",
+    "Blockers"
+  ]
+}

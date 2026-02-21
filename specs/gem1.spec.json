@@ -1,0 +1,25 @@
+{
+  "id": "GEM_1",
+  "name": "Trayectoria y Logros",
+  "scope": "Por candidato",
+  "inputs_required": ["cv_candidato", "notas_entrevista", "gem5_summary"],
+  "outputs": ["gem1.json", "gem1.md"],
+  "scoring": {
+    "score_dimension": "0-10",
+    "confidence": "0-10",
+    "threshold_pass": 6
+  },
+  "block_conditions": [
+    "Si faltan métricas clave en logros => FLAG (no bloquea, pero baja score)",
+    "Si hay vacíos >3 meses sin explicación => FLAG"
+  ],
+  "sections_fixed": [
+    "Resumen ejecutivo",
+    "Trayectoria: coherencia y progresión",
+    "Logros calibrados",
+    "Señales de riesgo",
+    "Vacíos e inconsistencias",
+    "Score + confidence",
+    "Blockers"
+  ]
+}

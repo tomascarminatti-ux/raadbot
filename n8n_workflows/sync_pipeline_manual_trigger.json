@@ -1,0 +1,87 @@
+{
+    "name": "Raadbot Candidate Pipeline (Local Test)",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "1d8bf638-31cc-4e08-9993-e4d0c9f1acb1",
+            "name": "Cuando se haga clic en Ejecutar",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+                -20,
+                240
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://localhost:8000/api/v1/run",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "{\n  \"search_id\": \"SEARCH-TEST-001\",\n  \"local_dir\": \"runs/SEARCH-TEST-001/inputs\"\n}",
+                "options": {}
+            },
+            "id": "6a9f4c39-e962-4b2a-aec5-1c3906a5b28a",
+            "name": "Llamada Síncrona HTTP",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                220,
+                240
+            ]
+        },
+        {
+            "parameters": {
+                "content": "### Prueba Local (Larga duración)\nEsta prueba bloqueará la interfaz de n8n durante varios minutos mientras processa a tus candidatos. Si tu pipeline excede el timeout por defecto de Axios (60s), fallará en la interfaz pero Raadbot por detrás completará su ciclo.",
+                "height": 269,
+                "width": 386.3155829986326
+            },
+            "id": "403163eb-6eb2-43e8-8c11-d00d23f2f84b",
+            "name": "Sticky Note",
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                -60,
+                140
+            ]
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "id": "1ca5fc0e-1ef2-4d1a-9669-e743666f7f63",
+            "name": "Leer Resultados JSON",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 2,
+            "position": [
+                460,
+                240
+            ]
+        }
+    ],
+    "connections": {
+        "Cuando se haga clic en Ejecutar": {
+            "main": [
+                [
+                    {
+                        "node": "Llamada Síncrona HTTP",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Llamada Síncrona HTTP": {
+            "main": [
+                [
+                    {
+                        "node": "Leer Resultados JSON",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {}
+}
