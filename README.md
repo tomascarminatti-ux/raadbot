@@ -6,39 +6,58 @@ Este proyecto utiliza **Gemini 2.5 Flash / Pro** (vía Google GenAI SDK) y está
 
 ---
 
-## 🏗️ Arquitectura del Sistema
+## 🏗️ Arquitectura del Sistema: GEM 6 Master Orchestrator
 
-El sistema opera bajo un patrón de **Orquestador-Worker (GEM 6)**. El orquestador gestiona una máquina de estados, un bus de eventos y métricas en tiempo real para evaluar candidatos a través de múltiples módulos especializados (GEM).
+Raadbot opera bajo un patrón de **Orquestador-Worker (GEM 6)** de grado industrial. A diferencia de un pipeline lineal, el sistema utiliza un **Cerebro Central** que coordina la ejecución mediante eventos, estados y validaciones en tiempo real.
 
-### El Workflow GEM
+### Componentes Core (agente/gem6/):
+- **🧠 Orchestrator**: El motor central que maneja el ciclo de vida de cada candidato.
+- **🚥 State Machine**: Controla las transiciones (GEM5 -> GEM1 -> GEM2 -> ...) y previene estados inválidos.
+- **🚌 Event Bus**: Comunicación desacoplada entre módulos para máxima escalabilidad.
+- **📊 Metrics Collector**: KPIs en tiempo real (Tokens, Tiempo, Latencia, Scores).
+- **📝 Audit Logger**: Trazabilidad inmutable con checksums SHA-256 para cada decisión.
+
+### 🗺️ Diagrama de Flujo (Evaluation Flow v2.0)
 
 ```mermaid
-graph TD
-    A[<b>Inputs Crudos</b><br/>CV, Entrevistas, Tests, JD] --> B[<b>GEM5</b><br/>Radiografía del Rol]
-    B -->|Carga Contexto| C[<b>GEM1</b><br/>Trayectoria y Logros]
-    C -->|Score >= 6| D[<b>GEM2</b><br/>Assessment a Negocio]
-    C -->|Score < 6| Z[Descartado]
-    D -->|Score >= 6| E[<b>GEM3</b><br/>Veredicto + Ref 360]
-    D -->|Score < 6| Z
-    E -->|Score >= 6| F[<b>GEM4</b><br/>Auditor QA]
-    E -->|Score < 6| Z
-    F -->|Aprobado >= 7| G[<b>REPORTE FINAL</b>]
-    F -->|Bloqueado| H{Retries < 2?}
-    H -->|Sí| F
-    H -->|No| I[Escalar a Consultor]
+flowchart TD
+    subgraph GEM6_Orchestrator [GEM 6 Master Orchestrator]
+        direction TB
+        SM[State Machine]
+        EB[Event Bus]
+        MC[Metrics Collector]
+    end
+
+    A[Inputs Crudos: JD, CV, Interviews] --> G5[<b>GEM 5</b>: Radiografía del Rol]
+    G5 -->|Contexto Global| G1[<b>GEM 1</b>: Trayectoria y Logros]
+    
+    G1 -->|Score >= 6.0| G2[<b>GEM 2</b>: Assessment a Negocio]
+    G1 -->|Score < 6.0| Z[Descartado]
+    
+    G2 -->|Score >= 6.0| G3[<b>GEM 3</b>: Veredicto Final]
+    G2 -->|Score < 6.0| Z
+    
+    G3 -->|Aprobado/Reserva| G4[<b>GEM 4</b>: Auditor Raad]
+    G3 -->|No Recomendado| Z
+    
+    G4 -->|QA Pass >= 7.0| REPORT[<b>REPORTE FINAL GENERADO</b>]
+    G4 -->|QA Block| RE[Reintento / Ajuste de Prompt]
+    
+    MC -.->|KPIs| REPORT
+    EB -.->|Events| SM
 ```
 
 ---
 
-## 💎 Módulos GEM (Gemini Evaluation Modules)
+## 💎 Módulos GEM (Gemini Evaluation Modules) v2.0
 
-Cada módulo tiene una responsabilidad única y un contrato JSON estricto:
+Cada módulo opera en **Modo Analítico-Estratégico** con contratos JSON estrictos:
 
-1.  **GEM5 (Radiografía Estratégica):** Analiza la Job Description y las notas de Kick-off para entender el "Problema Real" que el candidato debe resolver. Se ejecuta una vez por búsqueda.
-2.  **GEM1 (Trayectoria y Logros):** Evalúa el CV y notas de entrevista. Busca hitos cuantificables y estabilidad.
-3.  **GEM2 (Assessment a Negocio):** Contrasta al candidato contra los retos técnicos y de negocio definidos en GEM5.
-4.  **GEM3 (Veredicto y Cultura):** Cruza las referencias 360° y el encaje cultural con el cliente.
-5.  **GEM4 (Auditor QA):** Actúa como un "fiscal" interno. Revisa que todas las afirmaciones de los módulos anteriores tengan fuentes citadas `[Fuente: ...]` y que no existan alucinaciones.
+1.  **🔵 GEM 5 (Radiografía Estratégica):** Define el "dolor real" del cliente y el mandato de éxito a 18 meses. Es el ancla de todo el proceso.
+2.  **🟢 GEM 1 (Trayectoria y Logros):** Convierte narrativa en evidencia calibrada. Marca logros como "no calibrados" si falta data.
+3.  **🟡 GEM 2 (Assessment a Negocio):** Traduce psicometría y business cases a impacto ejecutivo (CEO language).
+4.  **🟣 GEM 3 (Veredicto Final):** Emite recomendación binaria (SÍ/NO) integrando todas las fuentes y referencias 360°.
+5.  **🔴 GEM 4 (Auditor Raad):** Actúa como fiscal de calidad. Bloquea reportes con "fluff", alucinaciones o falta de evidencia.
 
 ---
 
