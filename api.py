@@ -3,9 +3,11 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import httpx
+import os
 
 import config
 from agent.gemini_client import GeminiClient
@@ -141,6 +143,80 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
+
+# --- Dashboard Endpoints ---
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def get_dashboard():
+    """Sirve la interfaz del Dashboard."""
+    try:
+        with open("templates/dashboard.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "Dashboard template not found. Please create templates/dashboard.html"
+
+@app.get("/api/v1/gems")
+async def list_gems():
+    """Lista metadatos y prompts actuales de los GEMs."""
+    gems = []
+    gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
+    
+    for g in gem_list:
+        prompt_path = f"prompts/{g}.md"
+        prompt_content = ""
+        if os.path.exists(prompt_path):
+            with open(prompt_path, "r", encoding="utf-8") as f:
+                prompt_content = f.read()
+        
+        gems.append({
+            "id": g,
+            "name": g.upper(),
+            "prompt": prompt_content,
+            "config": config.GEM_CONFIGS.get(g, {})
+        })
+    
+    return gems
+
+class RefineRequest(BaseModel):
+    gem_id: str
+    instruction: str
+
+@app.post("/api/v1/gems/refine")
+async def refine_gem(request: RefineRequest):
+    """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
+    prompt_path = f"prompts/{request.gem_id}.md"
+    if not os.path.exists(prompt_path):
+        raise HTTPException(status_code=404, detail="GEM prompt file not found")
+        
+    with open(prompt_path, "r", encoding="utf-8") as f:
+        current_prompt = f.read()
+        
+    refinement_prompt = f"""
+    Eres un experto en Prompt Engineering. Tu misión es REFINAR el siguiente System Prompt de RAADBOT v2.0.
+    
+    ESTRUCTURA ACTUAL:
+    {current_prompt}
+    
+    INSTRUCCIÓN DEL USUARIO:
+    {request.instruction}
+    
+    REGLAS:
+    1. Mantén la estructura de secciones (ROL, CONTEXTO, INSTRUCCIONES CORE, etc.).
+    2. Aplica la instrucción del usuario de forma profesional y precisa.
+    3. Devuelve el prompt REFINADO completo en formato Markdown.
+    4. NO agregues explicaciones, solo el contenido del nuevo prompt.
+    """
+    
+    gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
+    result = gemini.run_gem(refinement_prompt)
+    new_prompt = result.get("markdown", "") or result.get("raw", "")
+    
+    if new_prompt:
+        with open(prompt_path, "w", encoding="utf-8") as f:
+            f.write(new_prompt)
+        return {"status": "success", "new_prompt": new_prompt}
+    
+    return {"status": "error", "message": "Failed to generate new prompt"}
 
 @app.get("/health")
 def health_check():
