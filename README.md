@@ -16,6 +16,7 @@ El sistema utiliza **GEM 6** como el orquestador central que valida contratos y 
 graph TD
     User([User Context]) --> GEM6[GEM6 Orchestrator]
     GEM6 --> DB[(DB API - FastAPI)]
+    GEM6 <--> GEM5[GEM5 Strategy]
     GEM6 <--> GEM1[GEM1 Discovery]
     GEM6 <--> GEM2[GEM2 Scoring]
     GEM6 <--> GEM3[GEM3 Decision]
@@ -24,6 +25,7 @@ graph TD
     
     subgraph "Infrastructure (Docker Compose)"
     GEM6
+    GEM5
     GEM1
     GEM2
     GEM3
@@ -43,6 +45,7 @@ graph TD
 
 ### 2) 🤖 Agentes Especializados (Spokes)
 
+- **🟣 GEM 5 — Strategy**: Radiografía de mandatos y validación de proyectos (Go/No-Go).
 - **🔵 GEM 1 — Discovery**: Descubrimiento masivo y verificación inicial de datos.
 - **🟢 GEM 2 — Scoring & Filtrado**: Evaluación de calidad y fit inicial.
 - **🟡 GEM 3 — Decisión**: Motor de veredicto final (Accept/Review/Reject).
