@@ -1,10 +1,8 @@
 # 🤖 Raadbot v3.0 — Industrial Multi-Agent Intelligence
 
-<aside>
-🎯 **Objetivo**
-
-Raadbot v3.0 es un ecosistema multi-agente industrial basado en el framework GEM, orquestado por GEM 6 bajo una arquitectura **Hub-and-Spoke**. Diseñado para procesamiento masivo, trazabilidad total en base de datos y visualización ejecutiva en Google Sheets.
-</aside>
+> 🎯 **Objetivo**
+>
+> Raadbot v3.0 es un ecosistema multi-agente industrial basado en el framework GEM, orquestado por GEM 6 bajo una arquitectura **Hub-and-Spoke**. Diseñado para procesamiento masivo, trazabilidad total en base de datos y visualización ejecutiva en Google Sheets.
 
 ---
 
@@ -102,4 +100,4 @@ Para VS Code, el proyecto incluye un archivo `.vscode/settings.json` preconfigur
 - [SCALABILITY.md](file:///Users/tini/Documents/raadbot/SCALABILITY.md): Estrategia de crecimiento a multinodo y optimización de costos.
 
 ---
-*Version 3.0.0 — Raad Advisory Industrial Platform*
+Version 3.0.0 — Raad Advisory Industrial Platform
