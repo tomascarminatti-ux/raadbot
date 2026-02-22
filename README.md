@@ -39,21 +39,25 @@ graph TD
 ## 🧩 Componentes del Ecosistema
 
 ### 1) 🧠 GEM 6 — Master Orchestrator (The Hub)
+
 - **Misión**: Controlar el ciclo de vida, validar contratos JSON y aplicar umbrales operativos (Threshold Enforcement).
 - **Gating**: Si un agente falla el contrato o no alcanza el score mínimo (e.g. GEM2 < 0.4), GEM 6 detiene el flujo o descarta la entidad.
 
 ### 2) 🤖 Agentes Especializados (Spokes)
+
 - **🔵 GEM 1 — Discovery**: Descubrimiento masivo y verificación inicial de datos.
 - **🟢 GEM 2 — Scoring & Filtrado**: Evaluación de calidad y fit inicial.
 - **🟡 GEM 3 — Decisión**: Motor de veredicto final (Accept/Review/Reject).
 - **🔴 GEM 4 — QA Gate**: Auditoría final para prevenir alucinaciones e inconsistencias.
 
 ### 3) 🗄️ Database Layer (Source of Truth)
+
 - **Servicio**: FastAPI + SQLite (Migrable a PostgreSQL).
 - **Tablas**: `entity_state`, `discarded_entities`, `discovery_logs`, `performance_metrics`.
 - **Acceso**: `http://localhost:8000/docs`
 
 ### 4) 📤 Google Sheets Sync
+
 - **Misión**: Vista humana simplificada. Sincroniza el estado de la DB con un dashboard en la nube para auditoría no técnica.
 
 ---
@@ -63,6 +67,7 @@ graph TD
 El sistema está contenedorizado totalmente para garantizar reproducibilidad industrial.
 
 ### Instalación Rápida
+
 ```bash
 git clone https://github.com/tomascarminatti-ux/raadbot.git
 cd raadbot
@@ -71,9 +76,14 @@ docker compose up -d --build
 ```
 
 ### Comandos Críticos
+
 - **Ver Logs**: `docker compose logs -f gem6`
 - **Métricas**: `python scripts/metrics_summary.py`
 - **Sincronización**: `python scripts/sheets_dump.py`
+
+### Entorno de Desarrollo (IDE)
+
+Para VS Code, el proyecto incluye un archivo `.vscode/settings.json` preconfigurado. Pylance está configurado para usar el entorno virtual (`.venv/bin/python`) y leer la carpeta raíz para resolver importaciones internas como `agent` o `utils`. No se requiere `pyrightconfig.json`.
 
 ---
 
@@ -93,4 +103,3 @@ docker compose up -d --build
 
 ---
 *Version 3.0.0 — Raad Advisory Industrial Platform*
-
