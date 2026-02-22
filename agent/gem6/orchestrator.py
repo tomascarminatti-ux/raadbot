@@ -2,8 +2,9 @@ import os
 import json
 import uuid
 import asyncio
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
+from agent.prompt_builder import build_prompt, build_agent_prompt
 import config
 
 class GEM6Orchestrator:
@@ -48,82 +49,120 @@ class GEM6Orchestrator:
         trace_id = str(uuid.uuid4())
         entity_id = context_data.get("entity_id", "unknown")
         
-        logger.info(f"Starting orchestration for {entity_id} | Trace: {trace_id}")
+        logger.info(f"Starting AUTONOMOUS orchestration for {entity_id} | Trace: {trace_id}")
         
-        # 1. GEM1: Discovery
-        gem1_output = await self.call_agent("gem1", context_data)
-        if not await self.validate_step(entity_id, "GEM1", gem1_output, "contracts/gem1_output.schema.json", trace_id):
-            return {"status": "FAILED", "reason": "GEM1_CONTRACT_VIOLATION"}
+        working_memory = []
+        max_steps = 10
+        step = 0
+        
+        initial_context = {
+            "search_inputs": context_data.get("search_inputs", {}),
+            "candidate_data": context_data.get("candidate_data", {}),
+            "search_id": self.search_id,
+            "entity_id": entity_id
+        }
 
-        # 2. GEM2: Scoring
-        gem2_output = await self.call_agent("gem2", gem1_output)
-        score = gem2_output.get("score", 0)
-        
-        if score < self.thresholds["scoring_cutoff"]:
-            await self.client.discard_entity({
-                "entity_id": entity_id,
-                "stage_at_discard": "GEM2",
-                "reason": f"Low score: {score}",
-                "score_at_discard": float(score),
-                "agent_responsible": "GEM2",
-                "trace_id": trace_id
+        while step < max_steps:
+            step += 1
+            logger.info(f"Step {step} for {entity_id}")
+
+            # 1. Build GEM 6 prompt with current memory
+            prompt = build_prompt("gem6", {
+                "search_id": self.search_id,
+                "candidate_id": entity_id,
+                "context": {
+                    **initial_context,
+                    "working_memory": working_memory
+                }
             })
-            return {"status": "DISCARDED", "reason": "LOW_SCORE", "score": score}
 
-        # 3. GEM3: Decision
-        gem3_output = await self.call_agent("gem3", gem2_output)
-        if not await self.validate_step(entity_id, "GEM3", gem3_output, "contracts/gem3_output.schema.json", trace_id):
-            return {"status": "FAILED", "reason": "GEM3_CONTRACT_VIOLATION"}
+            # 2. Call GEM 6 for reasoning
+            result = self.gemini.run_gem(prompt, gem_name="gem6")
+            gem6_decision = result.get("json", {})
 
-        # 4. GEM4: QA Gate
-        gem4_output = await self.call_agent("gem4", gem3_output)
-        qa_score = gem4_output.get("qa_score", 0)
-        
-        if qa_score < self.thresholds["qa_cutoff"]:
-            await self.client.upsert_entity({
-                "entity_id": entity_id,
-                "current_stage": "GEM4",
-                "state": "REVIEW_REQUIRED",
-                "human_required": True,
-                "agent_responsible": "GEM4",
-                "trace_id": trace_id,
-                "last_score": float(qa_score)
-            })
-            return {"status": "HUMAN_REVIEW", "reason": f"Low QA score: {qa_score}", "qa_score": qa_score}
+            if not gem6_decision:
+                logger.error(f"GEM 6 failed to return JSON at step {step}")
+                # Log error to DB
+                await self.client.log_execution({
+                    "entity_id": entity_id,
+                    "agent_id": "GEM6",
+                    "status": "ERROR",
+                    "error": "INVALID_JSON",
+                    "trace_id": trace_id
+                })
+                return {"status": "FAILED", "reason": "GEM6_INVALID_JSON"}
 
-        # Final Success
-        await self.client.upsert_entity({
-            "entity_id": entity_id,
-            "current_stage": "COMPLETED",
-            "state": "SUCCESS",
-            "agent_responsible": "GEM6",
-            "trace_id": trace_id,
-            "last_score": float(qa_score)
-        })
-        return {"status": "SUCCESS", "qa_score": qa_score}
+            action = gem6_decision.get("action")
+            thought = gem6_decision.get("thought", "No thought provided.")
+            logger.info(f"GEM 6 Thought: {thought}")
+
+            if action == "finalize":
+                status = gem6_decision.get("status", "SUCCESS")
+                final_output = gem6_decision.get("final_output", {})
+
+                # Final State Update
+                await self.client.upsert_entity({
+                    "entity_id": entity_id,
+                    "current_stage": "COMPLETED",
+                    "state": status,
+                    "agent_responsible": "GEM6",
+                    "trace_id": trace_id,
+                    "metadata": {"final_thought": thought}
+                })
+
+                return {"status": status, "output": final_output, "thought": thought}
+
+            if action == "call_agent":
+                agent_id = gem6_decision.get("agent_id")
+                payload = gem6_decision.get("payload", {})
+
+                logger.info(f"Executing Agent: {agent_id}")
+
+                # Call specialized agent
+                agent_output = await self.call_agent(agent_id, payload)
+
+                # Validation (Contract + Verification)
+                contract_path = f"contracts/{agent_id}_output.schema.json"
+                is_valid = await self.validate_step(entity_id, agent_id, agent_output, contract_path, trace_id)
+
+                # Update memory
+                working_memory.append({
+                    "step": step,
+                    "agent": agent_id,
+                    "thought": thought,
+                    "observation": agent_output,
+                    "valid_contract": is_valid
+                })
+
+                # Log transition to DB
+                await self.client.upsert_entity({
+                    "entity_id": entity_id,
+                    "current_stage": agent_id,
+                    "state": "PROCESSING",
+                    "agent_responsible": "GEM6",
+                    "trace_id": trace_id,
+                    "metadata": {"last_thought": thought}
+                })
+            else:
+                logger.warning(f"Unknown action: {action}")
+                return {"status": "FAILED", "reason": f"UNKNOWN_ACTION_{action}"}
+
+        return {"status": "FAILED", "reason": "MAX_STEPS_REACHED"}
 
     async def call_agent(self, agent_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Calls the agent using GeminiClient or fallback to mock if client missing"""
         logger.info(f"Calling agent {agent_id}")
         
         if self.gemini:
-            # Real LLM call
-            # In a real system, we'd load a specific prompt for the agent
-            prompt_file = f"prompts/{agent_id}.md"
-            system_prompt = ""
-            if os.path.exists(prompt_file):
-                with open(prompt_file, "r") as f:
-                    system_prompt = f.read()
-            
-            full_prompt = f"{system_prompt}\n\nINPUT DATA:\n{json.dumps(payload)}\n\nRespond strictly in JSON."
-            
             try:
-                # Assuming GeminiClient.run_gem returns a dict with 'data'
+                # Use prompt_builder for consistent templating
+                full_prompt = build_agent_prompt(agent_id, payload)
+
                 result = self.gemini.run_gem(full_prompt, gem_name=agent_id)
-                return result.get("data", {})
+                return result.get("json", {}) or {}
             except Exception as e:
                 logger.error(f"Error calling Gemini for {agent_id}: {e}")
-                return {}
+                return {"error": str(e)}
         
         # Fallback to mock for local testing/demo if no Gemini client
         await asyncio.sleep(0.1)
@@ -138,6 +177,10 @@ class GEM6Orchestrator:
         return {}
 
     async def validate_step(self, entity_id, agent_id, output, contract_path, trace_id):
+        if not os.path.exists(contract_path):
+            logger.warning(f"No contract found for {agent_id} at {contract_path}. Skipping strict validation.")
+            return True
+
         is_ok = validate_contract(output, contract_path)
         await self.client.log_execution({
             "entity_id": entity_id,
