@@ -12,7 +12,7 @@ services:
     networks:
       - gem_network
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/entities" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -27,11 +27,6 @@ services:
     depends_on:
       db-api:
         condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
     networks:
       - gem_network
 

@@ -65,8 +65,8 @@ class PipelineResponse(BaseModel):
     summary: dict
 
 
-def run_pipeline_sync(request: PipelineRequest) -> dict:
-    """Wrapper síncrono para ejecutar el pipeline completo usando GEM 6."""
+async def run_pipeline(request: PipelineRequest) -> dict:
+    """Wrapper asíncrono para ejecutar el pipeline completo usando GEM 6."""
     api_key = config.GEMINI_API_KEY
     if not api_key:
         raise ValueError("GEMINI_API_KEY no configurada.")
@@ -74,7 +74,6 @@ def run_pipeline_sync(request: PipelineRequest) -> dict:
     if not request.drive_folder and not request.local_dir:
         raise ValueError("Se debe proveer 'drive_folder' o 'local_dir'.")
 
-    # Load inputs (omitted identical logic for brevity in replace, but keeping it in the actual file)
     search_inputs = {}
     candidates = {}
 
@@ -97,9 +96,8 @@ def run_pipeline_sync(request: PipelineRequest) -> dict:
     gemini = GeminiClient(api_key=api_key, model=request.model)
     orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
 
-    import asyncio
-    # Ejecución bloqueante para el worker actual
-    asyncio.run(orchestrator.run_pipeline(search_inputs, candidates))
+    # Ejecución asíncrona no bloqueante
+    await orchestrator.run_pipeline(search_inputs, candidates)
 
     summary_path = os.path.join(output_dir, "pipeline_summary.json")
     summary_data = {}
@@ -115,24 +113,26 @@ def run_pipeline_sync(request: PipelineRequest) -> dict:
     }
 
 
-def background_run_pipeline(request: PipelineRequest):
+async def background_run_pipeline(request: PipelineRequest):
     """Ejecuta el pipeline de fondo y llama a un webhook si existe."""
     try:
-        resultado = run_pipeline_sync(request)
+        resultado = await run_pipeline(request)
         if request.webhook_url:
-            httpx.post(request.webhook_url, json=resultado, timeout=60.0)
+            async with httpx.AsyncClient() as client:
+                await client.post(request.webhook_url, json=resultado, timeout=60.0)
     except Exception as e:
         if request.webhook_url:
             try:
-                httpx.post(
-                    request.webhook_url,
-                    json={
-                        "status": "error", 
-                        "search_id": request.search_id, 
-                        "message": str(e)
-                    },
-                    timeout=30.0,
-                )
+                async with httpx.AsyncClient() as client:
+                    await client.post(
+                        request.webhook_url,
+                        json={
+                            "status": "error", 
+                            "search_id": request.search_id, 
+                            "message": str(e)
+                        },
+                        timeout=30.0,
+                    )
             except Exception:
                 pass
 
@@ -151,10 +151,8 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
             "search_id": request.search_id,
         }
     else:
-        # Nota: Esto sigue siendo bloqueante para el worker de FastAPI. 
-        # En producción se recomienda usar siempre el modo asíncrono con webhooks.
         try:
-            return run_pipeline_sync(request)
+            return await run_pipeline(request)
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 

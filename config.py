@@ -11,6 +11,9 @@ if not GEMINI_API_KEY:
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
 # Gating Thresholds
+SCORING_CUTOFF = float(os.getenv("SCORING_CUTOFF", "0.4"))
+QA_GATE_CUTOFF = float(os.getenv("QA_GATE_CUTOFF", "0.85"))
+
 THRESHOLDS = {
     "gem1": 6,
     "gem2": 6,
@@ -19,7 +22,7 @@ THRESHOLDS = {
 }
 
 # Max retries for validation/JSON failures
-MAX_RETRIES_ON_BLOCK = 2
+MAX_RETRIES_ON_BLOCK = int(os.getenv("MAX_RETRIES_ON_BLOCK", "2"))
 
 # Gemini Pricing (per 1M tokens) - Update as needed
 # Prices for Gemini 2.0 Flash (current as of late 2024/early 2025)

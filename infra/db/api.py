@@ -144,6 +144,10 @@ async def log_discovery(data: Dict[str, Any]):
     finally:
         conn.close()
 
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "service": "db-api"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
