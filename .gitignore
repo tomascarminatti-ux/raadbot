@@ -1,22 +1,19 @@
-/Users/tini/Documents/raadbot/zeroclaw/target/release/deps/hashbrown-d3fcb72810383d5d.d: /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/lib.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/macros.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/mod.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/alloc.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/bitmask.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/external_trait_impls/mod.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/map.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/scopeguard.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/set.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/table.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/neon.rs
-
-/Users/tini/Documents/raadbot/zeroclaw/target/release/deps/libhashbrown-d3fcb72810383d5d.rlib: /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/lib.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/macros.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/mod.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/alloc.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/bitmask.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/external_trait_impls/mod.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/map.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/scopeguard.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/set.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/table.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/neon.rs
-
-/Users/tini/Documents/raadbot/zeroclaw/target/release/deps/libhashbrown-d3fcb72810383d5d.rmeta: /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/lib.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/macros.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/mod.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/alloc.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/bitmask.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/external_trait_impls/mod.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/map.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/scopeguard.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/set.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/table.rs /Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/neon.rs
-
-/Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/lib.rs:
-/Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/macros.rs:
-/Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/mod.rs:
-/Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/alloc.rs:
-/Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/bitmask.rs:
-/Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/external_trait_impls/mod.rs:
-/Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/map.rs:
-/Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/scopeguard.rs:
-/Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/set.rs:
-/Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/table.rs:
-/Users/tini/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.14.5/src/raw/neon.rs:
-
+# Environment
 .venv/
 .env
 __pycache__/
 *.pyc
+
+# IDEs
+.vscode/
+
+# Python tools
+.pyre/
+.pytest_cache/
+.pytype/
+.mypy_cache/
+
+# Project specific
+zeroclaw/target/
+runs/
+api.log

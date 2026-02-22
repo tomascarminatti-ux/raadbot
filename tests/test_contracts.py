@@ -34,7 +34,7 @@ def test_validate_contract_types():
     
     # Missing key
     missing_data = valid_data.copy()
-    del missing_data["name"]
+    missing_data.pop("name", None)
     assert validate_contract(missing_data, contract_path) is False
 
     # Cleanup
