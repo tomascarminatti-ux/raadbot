@@ -4,7 +4,7 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Optional, Any
 
-from jsonschema import validate, ValidationError
+from jsonschema import ValidationError, Draft7Validator
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -26,6 +26,7 @@ class Pipeline:
         self.search_id = search_id
         self.output_dir = output_dir
         self.schema = self._load_schema()
+        self.validator = Draft7Validator(self.schema) if self.schema else None
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -64,7 +65,7 @@ class Pipeline:
             with open(self.state_file, "w", encoding="utf-8") as f:
                 json.dump(self.state, f, ensure_ascii=False, indent=2)
 
-    async def _track_usage(self, usage: dict):
+    async def _track_usage(self, usage: dict, save_state: bool = True):
         """Suma tokens y calcula costo acumulado."""
         if not usage:
             return
@@ -80,7 +81,8 @@ class Pipeline:
             cost_c = (c_tokens / 1_000_000) * PRICE_COMPLETION_1M
             self.state["usage"]["total_cost_usd"] += cost_p + cost_c
 
-        await self._save_state()
+        if save_state:
+            await self._save_state()
 
     async def _save_output(
         self, gem_name: str, result: dict, candidate_id: Optional[str] = None
@@ -96,9 +98,9 @@ class Pipeline:
             base = self.output_dir
             state_key = "search"
 
-        # Track usage
+        # Track usage (don't save state yet, we do it at the end of this method)
         if "usage" in result:
-            await self._track_usage(result["usage"])
+            await self._track_usage(result["usage"], save_state=False)
 
         async with self._lock:
             # Update state cache
@@ -133,10 +135,10 @@ class Pipeline:
         return json_path, md_path
 
     def _validate_output(self, json_data: dict, gem_name: str) -> bool:
-        if not self.schema or not json_data:
+        if not self.validator or not json_data:
             raise ValueError(f"Output nulo o sin JSON válido en {gem_name}")
         try:
-            validate(instance=json_data, schema=self.schema)
+            self.validator.validate(instance=json_data)
             return True
         except ValidationError as e:
             raise ValueError(f"Schema fallido en {gem_name}: {e.message}")
