@@ -1,11 +1,6 @@
 {
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
-    "python.analysis.venvPath": "${workspaceFolder}",
-    "python.analysis.venv": ".venv",
     "python.analysis.extraPaths": [
-        "${workspaceFolder}"
-    ],
-    "python.analysis.include": [
         "${workspaceFolder}"
     ],
     "python.analysis.autoImportCompletions": true,

@@ -31,7 +31,7 @@ class MetricsCollector:
         
     def export(self) -> Dict[str, Any]:
         """Exporta todas las métricas en un formato estructurado."""
-        results = {
+        results: Dict[str, Any] = {
             'counters': dict(self.counters),
             'histograms': {},
             'gauges': dict(self.gauges),
