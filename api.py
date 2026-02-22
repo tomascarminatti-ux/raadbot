@@ -6,7 +6,8 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+import re
+from pydantic import BaseModel, field_validator
 import httpx
 
 import config
@@ -56,6 +57,30 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "candidate_id", "local_dir")
+    @classmethod
+    def prevent_traversal(cls, v: Optional[str]):
+        if v is None:
+            return v
+        if ".." in v or v.startswith("/") or "\\" in v:
+            raise ValueError("Potential path traversal detected in input")
+        return v
+
+    @field_validator("webhook_url")
+    @classmethod
+    def validate_webhook_url(cls, v: Optional[str]):
+        if v is None:
+            return v
+        # Simple SSRF protection: block localhost and private IP ranges
+        blocked_patterns = [
+            r"localhost", r"127\.0\.0\.1", r"0\.0\.0\.0",
+            r"10\.", r"192\.168\.", r"172\.(1[6-9]|2[0-9]|3[0-1])\."
+        ]
+        for pattern in blocked_patterns:
+            if re.search(pattern, v):
+                raise ValueError("webhook_url must be a public URL")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -165,6 +190,13 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id")
+    @classmethod
+    def prevent_traversal(cls, v: str):
+        if ".." in v or v.startswith("/") or "\\" in v:
+            raise ValueError("Potential path traversal detected in input")
+        return v
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -183,8 +215,8 @@ async def setup_search(request: SetupSearchRequest):
     
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     # Ejecutar GEM 5 directamente
-    from agent.prompt_builder import build_gem5_prompt
-    prompt = build_gem5_prompt(search_inputs)
+    from agent.prompt_builder import build_prompt
+    prompt = build_prompt("gem5", search_inputs)
     result = gemini.run_gem(prompt, gem_name="gem5")
     
     # Guardar resultados
@@ -236,6 +268,13 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id")
+    @classmethod
+    def prevent_traversal(cls, v: str):
+        if ".." in v or v.startswith("/") or "\\" in v:
+            raise ValueError("Potential path traversal detected in input")
+        return v
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
