@@ -81,3 +81,22 @@ def get_required_variables(gem_name: str) -> list[str]:
     # Filtrar las que se resuelven automáticamente
     auto_resolved = {"PROMPT_MAESTRO", "VERSION"}
     return [v for v in set(variables) if v not in auto_resolved]
+
+
+def build_gem5_prompt(search_inputs: dict) -> str:
+    """Helper para construir el prompt de GEM 5 (usado en api.py)."""
+    return build_prompt("gem5", {"input": search_inputs})
+
+
+def build_agent_prompt(gem_id: str, payload: dict) -> str:
+    """Helper genérico para construir prompts de agentes con inyección de datos."""
+    base_prompt = load_prompt(gem_id)
+    # Intentamos inyectar en {{input}} o {{context}}
+    prompt = build_prompt(gem_id, {"input": payload, "context": payload})
+
+    # Si no se encontró ningún placeholder de datos en el prompt original, los anexamos al final
+    if "{{input}}" not in base_prompt and "{{context}}" not in base_prompt:
+        import json
+        prompt += f"\n\n### DATA INPUT:\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
+
+    return prompt
