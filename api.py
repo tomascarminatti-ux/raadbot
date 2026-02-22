@@ -3,7 +3,7 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import re
@@ -197,6 +197,7 @@ class SetupSearchRequest(BaseModel):
             raise ValueError("Potential path traversal detected in input")
         return v
 
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -248,22 +249,23 @@ async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
     gems = []
     gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
-    
+
     for g in gem_list:
         prompt_path = f"prompts/{g}.md"
         prompt_content = ""
         if os.path.exists(prompt_path):
             with open(prompt_path, "r", encoding="utf-8") as f:
                 prompt_content = f.read()
-        
+
         gems.append({
             "id": g,
             "name": g.upper(),
             "prompt": prompt_content,
             "config": config.GEM_CONFIGS.get(g, {})
         })
-    
+
     return gems
+
 
 class RefineRequest(BaseModel):
     gem_id: str
@@ -275,6 +277,7 @@ class RefineRequest(BaseModel):
         if ".." in v or v.startswith("/") or "\\" in v:
             raise ValueError("Potential path traversal detected in input")
         return v
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
@@ -312,6 +315,7 @@ async def refine_gem(request: RefineRequest):
         return {"status": "success", "new_prompt": new_prompt}
     
     return {"status": "error", "message": "Failed to generate new prompt"}
+
 
 @app.get("/health")
 def health_check():
