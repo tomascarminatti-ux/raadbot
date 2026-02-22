@@ -5,6 +5,9 @@ load_dotenv()
 
 # Gemini Settings
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise RuntimeError("GEMINI_API_KEY not set")
+
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
 # Gating Thresholds

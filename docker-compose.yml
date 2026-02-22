@@ -21,12 +21,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.agents
-    command: python agents/gem6/orchestrator.py
+    command: python agent/gem6/orchestrator.py
     environment:
       - DB_API_URL=http://db-api:8000
     depends_on:
       db-api:
         condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - gem_network
 
