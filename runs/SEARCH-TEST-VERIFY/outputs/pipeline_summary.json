@@ -1,0 +1,10 @@
+{
+  "search_id": "SEARCH-TEST-VERIFY",
+  "timestamp": "2026-02-21T17:11:49.055651+00:00",
+  "candidates": {
+    "CAND-001": {
+      "decision": "DESCARTADO_GEM2",
+      "gem4_score": null
+    }
+  }
+}

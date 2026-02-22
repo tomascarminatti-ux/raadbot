@@ -1,0 +1,5 @@
+{
+    "decision": "string",
+    "decision_confidence": "number",
+    "reasoning_summary": "string"
+}

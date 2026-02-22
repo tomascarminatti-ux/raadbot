@@ -1,0 +1,76 @@
+```json
+{
+  "meta": {
+    "search_id": "AUTO-TEST-N8N",
+    "candidate_id": "N/A",
+    "gem": "GEM5",
+    "timestamp": "2024-07-30T12:34:56Z",
+    "prompt_version": "v1.2",
+    "sources": ["Brief/JD", "Notas kick-off", "Contexto compañía"]
+  },
+  "content": {
+    "problema_real_rol": [
+      "La operación actual está desorganizada y perdiendo dinero por ineficiencias logísticas, lo que impacta directamente la rentabilidad de la compañía [Fuente: Notas kick-off].",
+      "El rápido crecimiento generó caos: procesos manuales, falta de KPIs claros y silos entre las áreas de almacén y transporte, impidiendo una gestión eficiente [Fuente: Contexto compañía].",
+      "Existe una necesidad crítica de transformar la cultura de trabajo hacia una más orientada a resultados, requiriendo un liderazgo con 'mano dura' pero empático [Fuente: Notas kick-off]."
+    ],
+    "exitos_esperados_12_18_meses": [
+      "Reducir los costos logísticos en un 15% y optimizar la cadena de suministro, impactando positivamente el margen operativo [Fuente: Brief/JD – Responsabilidades].",
+      "Implementar exitosamente nuevos sistemas tecnológicos para la gestión de inventario, mejorando la visibilidad y eficiencia operativa [Fuente: Brief/JD – Responsabilidades].",
+      "Consolidar y transformar el equipo de operaciones (más de 200 personas) hacia una cultura de alto rendimiento y orientación a resultados [Fuente: Brief/JD – Responsabilidades; Notas kick-off].",
+      "Escalar la operación con la apertura y puesta en marcha eficiente de 2 nuevos centros de distribución, soportando el crecimiento proyectado [Fuente: Notas kick-off].",
+      "Establecer KPIs claros y eliminar los silos funcionales entre almacén y transporte, profesionalizando la gestión operativa [Fuente: Contexto compañía]."
+    ],
+    "no_fits": [
+      "**Perfiles puramente estratégicos o consultivos sin experiencia 'hands-on'**: Se busca a alguien que 'se arremangue y entienda la operación desde el piso del almacén', no un perfil que solo delegue [Fuente: Notas kick-off].",
+      "**Líderes con estilo de gestión pasivo o excesivamente político**: La empresa necesita un liderazgo directo y con 'mano dura' para impulsar el cambio, evitando 'políticos de oficina' [Fuente: Notas kick-off].",
+      "**Candidatos sin historial comprobable en transformaciones operativas y escalamiento rápido**: El principal dolor es la desorganización y la necesidad de escalar rápidamente, lo que requiere experiencia directa en estos desafíos [Fuente: Notas kick-off; Contexto compañía]."
+    ],
+    "stakeholders_criticos_tensiones": [
+      "**CEO**: Tensión por la urgencia de revertir las pérdidas operativas y la expectativa de una transformación cultural y de procesos rápida y efectiva [Fuente: Notas kick-off].",
+      "**Equipo de Operaciones (200+ personas)**: Tensión por la resistencia potencial al cambio, la necesidad de adoptar nuevos procesos y sistemas, y la adaptación a un liderazgo más exigente y orientado a resultados [Fuente: Brief/JD – Responsabilidades; Notas kick-off].",
+      "**Líderes de otras áreas (ej. Tecnología, Comercial)**: Tensión por la necesidad de colaboración interdepartamental para la implementación de nuevos sistemas y la alineación de procesos, superando posibles silos existentes [Fuente: Contexto compañía].",
+      "**Inversionistas/Consejo (implícito)**: Tensión por la presión de demostrar rentabilidad y eficiencia operativa en un contexto de rápido crecimiento y expansión, justificando las inversiones [Fuente: Contexto compañía]."
+    ],
+    "mapa_mercado": {
+      "targets": [
+        {"categoria": "E-commerce y Retail con operaciones complejas", "descripcion": "Empresas con alto volumen, múltiples centros de distribución y necesidad de optimización logística.", "ejemplos": "Amazon, Mercado Libre, Walmart (e-commerce/logística), Liverpool, Coppel, Rappi, Cornershop", "justificacion": "Experiencia directa en el sector, manejo de grandes volúmenes y equipos, familiaridad con la dinámica de crecimiento rápido y optimización de cadena de suministro."},
+        {"categoria": "Empresas de Logística y 3PLs con enfoque en e-commerce/retail", "descripcion": "Proveedores de servicios logísticos que gestionan operaciones complejas para grandes clientes.", "ejemplos": "DHL Supply Chain, Estafeta (división e-commerce), Femsa Logística", "justificacion": "Expertise en optimización de rutas, gestión de almacenes, implementación de tecnología logística y escalabilidad."}
+      ],
+      "no_go": [
+        {"categoria": "Manufactura pesada o industria tradicional sin e-commerce", "descripcion": "Operaciones con ciclos largos, poca variabilidad o sin componente de última milla.", "ejemplos": "Empresas automotrices (producción), minería, energía", "justificacion": "La dinámica operativa y logística es muy diferente; carecen de la agilidad y el enfoque en el cliente final del e-commerce."},
+        {"categoria": "Servicios financieros o consultoría sin rol operativo directo", "descripcion": "Roles sin responsabilidad directa sobre la ejecución y gestión de la cadena de suministro.", "ejemplos": "Bancos, firmas de consultoría estratégica (sin implementación operativa)", "justificacion": "No cumplen con el requisito de experiencia 'hands-on' y liderazgo de grandes equipos operativos."}
+      ],
+      "competidores": [
+        {"categoria": "Otros e-commerce regionales o startups en crecimiento", "descripcion": "Empresas con desafíos similares de escalamiento y optimización.", "ejemplos": "Kavak, Jüsto, Didi Food (operaciones)", "justificacion": "Pueden ofrecer roles similares o atraer perfiles con la experiencia deseada."},
+        {"categoria": "Grandes retailers con transformación digital", "descripcion": "Empresas tradicionales que están invirtiendo fuertemente en su canal online y logística.", "ejemplos": "Chedraui (e-commerce), Soriana (logística online)", "justificacion": "Buscan perfiles similares para liderar sus transformaciones."}
+      ]
+    },
+    "riesgos_mandato": [
+      "**Operacional: Resistencia a la implementación de nuevos sistemas y procesos**: El equipo actual está acostumbrado a procesos manuales, y la transición puede generar fricción y retrasos en la adopción [Fuente: Contexto compañía].",
+      "**Operacional: Dificultad para mantener el nivel de servicio durante la transformación**: Los cambios en la cadena de suministro y la apertura de nuevos CDCs pueden impactar temporalmente la eficiencia y la experiencia del cliente [Fuente: Notas kick-off; Contexto compañía].",
+      "**Político: Resistencia cultural interna y 'políticos de oficina'**: La cultura actual, aunque innovadora, es caótica. Un liderazgo 'mano dura' puede generar resistencia si no se maneja con empatía y comunicación efectiva [Fuente: Notas kick-off; Contexto compañía].",
+      "**Político: Desalineación con otras áreas**: Los silos existentes pueden dificultar la colaboración necesaria para una transformación integral, afectando la implementación de soluciones transversales [Fuente: Contexto compañía].",
+      "**Reputacional: Impacto en la moral y retención del equipo**: Un cambio de cultura y procesos sin una gestión del cambio adecuada puede afectar la motivación y la retención del personal clave [Fuente: Notas kick-off].",
+      "**Estratégico: Fallo en el escalamiento rápido**: La incapacidad de integrar eficientemente los 2 nuevos CDCs podría limitar el crecimiento proyectado de la compañía y su posición en el mercado [Fuente: Notas kick-off]."
+    ],
+    "criterios_decision_final": [
+      "**Historial comprobable de reducción de costos logísticos y optimización de cadena de suministro (mínimo 15%)**: Evidencia de impacto directo y medible en la rentabilidad operativa [Fuente: Brief/JD – Responsabilidades; Notas kick-off].",
+      "**Experiencia liderando y escalando operaciones en entornos de alto crecimiento (e-commerce/retail)**: Capacidad demostrada para gestionar el caos, implementar procesos y expandir infraestructura rápidamente [Fuente: Brief/JD – Requisitos; Notas kick-off; Contexto compañía].",
+      "**Liderazgo transformacional con capacidad de 'mano dura' y empatía**: Habilidad para impulsar el cambio cultural, gestionar equipos grandes (200+) y fomentar una mentalidad orientada a resultados [Fuente: Brief/JD – Responsabilidades; Notas kick-off].",
+      "**Experiencia en implementación de sistemas tecnológicos para gestión de inventario/operaciones**: Capacidad para modernizar la infraestructura tecnológica y mejorar la visibilidad y eficiencia operativa [Fuente: Brief/JD – Responsabilidades].",
+      "**Habilidades analíticas y financieras sólidas**: Capacidad para identificar ineficiencias, tomar decisiones basadas en datos y gestionar presupuestos operativos complejos [Fuente: Brief/JD – Requisitos].",
+      "**Mentalidad 'hands-on' y orientación a la acción**: Disposición para involucrarse en el detalle de la operación y resolver problemas desde el 'piso del almacén', sin delegar exclusivamente [Fuente: Notas kick-off]."
+    ]
+  },
+  "scores": {
+    "score_dimension": null,
+    "confidence": "HIGH"
+  },
+  "issues_found": []
+}
+```
+
+# Radiografía Estratégica (GEM 5) – Búsqueda: AUTO-TEST-N8N
+
+**Puesto:** Director de Operaciones (COO)

@@ -1,0 +1,21 @@
+# MARTÍN GÓMEZ - Curriculum Vitae
+
+**Perfil:**
+Líder de Operaciones con 12 años de experiencia en supply chain y e-commerce. Especializado en escalar operaciones y reducir costos.
+
+**Experiencia Profesional:**
+
+**Director de Logística - GlobalShop (2020 - Presente)**
+- Lideré la operación logística de 4 almacenes con un equipo de 150 personas.
+- Reduje el tiempo de entrega de última milla en un 20% implementando un nuevo ruteador inteligente.
+- Optimicé los costos operativos en un 12% durante 2022 renegociando contratos de transporte.
+- Superé la crisis de suministro de la pandemia sin roturas de stock críticas.
+
+**Gerente de Almacén - FastRetail (2015 - 2020)**
+- Supervisé a 80 operarios de piso. 
+- Implementé el primer WMS (Warehouse Management System) de la compañía.
+- Reduje la merma de inventario del 3% al 0.5% en dos años.
+
+**Educación:**
+- Ingeniería Industrial - Universidad Nacional Autónoma de México (UNAM) (2008-2013)
+- MBA Ejecutivo - IPADE (2021)

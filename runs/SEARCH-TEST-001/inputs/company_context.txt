@@ -1,0 +1,3 @@
+TechMart es un e-commerce regional en rápido crecimiento (30% YoY). Pasaron de ser una startup de 50 personas a una empresa de 500 empleados en 3 años.
+El crecimiento trajo caos: procesos manuales, falta de KPIs claros y silos entre áreas de almacén y transporte. 
+La cultura es muy acelerada, a veces caótica, pero orientada a la innovación. Valoran mucho la agilidad sobre la perfección.

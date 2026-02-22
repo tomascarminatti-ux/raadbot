@@ -1,0 +1,56 @@
+{
+  "meta": {
+    "search_id": "SEARCH-TEST-003",
+    "candidate_id": "CAND-001",
+    "gem": "GEM 3",
+    "prompt_version": "v1.2",
+    "timestamp": "2024-07-30T12:00:00Z",
+    "sources": [
+      "CV",
+      "Entrevista",
+      "Notas kick-off",
+      "Contexto compañía",
+      "Brief/JD",
+      "GEM 1 Output",
+      "GEM 2 Output"
+    ]
+  },
+  "scores": {
+    "score_dimension": 4,
+    "confidence": 3
+  },
+  "blockers": [
+    "Ausencia de referencias 360° para validar trayectoria, logros y estilo de trabajo.",
+    "Ausencia de información sobre la cultura del cliente para evaluar el encaje cultural."
+  ],
+  "content": {
+    "resumen_ejecutivo_final": "Martín Gómez es un profesional con 12 años de experiencia en operaciones y supply chain, con un historial sólido en optimización logística y reducción de costos en entornos de retail y e-commerce. Ha demostrado capacidad para liderar equipos y gestionar la continuidad operativa bajo presión. Sin embargo, presenta brechas críticas en la experiencia de apertura de centros de distribución a gran escala y en la gestión de cambios culturales en equipos de más de 200 personas, requisitos fundamentales para el rol. La ausencia de referencias y de información sobre la cultura del cliente limita la validación y el nivel de confianza en la evaluación final.",
+    "fortalezas_clave": [
+      "Historial comprobado en reducción de costos operativos (12%) y optimización de la última milla (20%) [Fuente: CV – Experiencia, Director de Logística].",
+      "Experiencia en implementación de sistemas de gestión de almacenes (WMS) y reducción de merma (del 3% al 0.5%) [Fuente: CV – Experiencia, Gerente de Almacén].",
+      "Capacidad demostrada para liderar operaciones logísticas complejas y mantener la continuidad operativa en situaciones de crisis (pandemia) [Fuente: CV – Experiencia, Director de Logística].",
+      "Estilo de liderazgo 'ejecutor y pragmático' con comunicación directa, orientado a resultados [Fuente: Entrevista; Notas kick-off]."
+    ],
+    "debilidades_criticas": [
+      "Experiencia limitada en la apertura de centros de distribución desde cero a gran escala, habiendo abierto 'solo uno pequeño en 2018', lo cual es una brecha crítica para el requisito de operacionalizar 2 nuevos CDDs [Fuente: Entrevista; Notas kick-off; GEM2 – Encaje desafío crítico].",
+      "Falta de evidencia concreta en la gestión de cambio cultural y mejora de productividad/compromiso en equipos de más de 200 personas [Fuente: GEM1 – Vacíos; GEM2 – Encaje desafío crítico].",
+      "Reticencia a profundizar en fracasos ('error con un proveedor en 2017'), lo que podría indicar una falta de autocrítica o dificultad para aprender explícitamente de errores significativos [Fuente: Entrevista; GEM2 – Estilo de trabajo]."
+    ],
+    "riesgos_latentes": [
+      "El candidato podría enfrentar dificultades significativas en la operacionalización y escalamiento de los 2 nuevos CDDs debido a su limitada experiencia en proyectos de esta envergadura [Fuente: Entrevista; Notas kick-off].",
+      "La transformación cultural requerida podría no ser abordada con la profundidad necesaria, impactando la productividad y el compromiso de equipos grandes, dada la falta de evidencia en esta área [Fuente: GEM1 – Vacíos].",
+      "La posible falta de autocrítica podría dificultar la identificación temprana y corrección de errores en un entorno de alta transformación y riesgo [Fuente: Entrevista]."
+    ],
+    "requerimientos_no_cubiertos": [
+      "Experiencia en la apertura y escalamiento de centros de distribución de gran tamaño o complejidad [Fuente: Entrevista; Notas kick-off].",
+      "Evidencia concreta de gestión de cambio cultural y mejora de productividad/compromiso en equipos de más de 200 personas [Fuente: GEM1 – Vacíos].",
+      "Habilidades analíticas y financieras sólidas más allá de KPIs básicos, como modelado de costos complejos o análisis de rentabilidad de proyectos de inversión en tecnología [Fuente: GEM1 – Vacíos]."
+    ],
+    "recomendacion_preliminar": "NO",
+    "justificacion_recomendacion": [
+      "La experiencia limitada en la apertura de centros de distribución a gran escala es una brecha crítica para un requisito fundamental del rol, que implica operacionalizar 2 nuevos CDDs [Fuente: Entrevista; Notas kick-off; GEM2].",
+      "Existe un vacío de evidencia en la gestión de cambio cultural y mejora de productividad/compromiso en equipos de más de 200 personas, lo cual es clave para transformar una cultura caótica [Fuente: GEM1 – Vacíos; GEM2].",
+      "La ausencia de referencias 360° y de información sobre la cultura del cliente impide validar y mitigar los riesgos identificados, reduciendo la confianza en un encaje exitoso [Fuente: No proporcionado en fuentes]."
+    ]
+  }
+}

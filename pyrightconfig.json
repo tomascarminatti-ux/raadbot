@@ -1,19 +1,16 @@
 {
+    "venvPath": ".",
+    "venv": ".venv",
+    "pythonVersion": "3.9",
     "include": [
         "."
     ],
     "exclude": [
         "**/__pycache__",
         ".git",
-        ".venv"
+        ".venv",
+        "zeroclaw"
     ],
-    "venvPath": ".",
-    "venv": ".venv",
-    "reportMissingImports": "error",
-    "pythonVersion": "3.9",
-    "pythonPlatform": "Darwin",
-    "extraPaths": [
-        "."
-    ],
+    "reportMissingImports": "warning",
     "typeCheckingMode": "basic"
 }

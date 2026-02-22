@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "search_id": "SEARCH-TEST-003",
+    "candidate_id": "CAND-001",
+    "gem": "GEM 2",
+    "prompt_version": "v1.2",
+    "timestamp": "2024-07-30T12:00:00Z",
+    "sources": [
+      "CV",
+      "Entrevista",
+      "Notas kick-off",
+      "Contexto compañía",
+      "Brief/JD",
+      "GEM 1 Output"
+    ]
+  },
+  "scores": {
+    "score_dimension": 6,
+    "confidence": 6
+  },
+  "blockers": [],
+  "content": {
+    "capacidad_ejecucion": [
+      "Redujo el tiempo de entrega de última milla en un 20% mediante la implementación de un ruteador inteligente [Fuente: CV – Experiencia, Director de Logística].",
+      "Optimizó los costos operativos en un 12% durante 2022 a través de la renegociación de contratos de transporte [Fuente: CV – Experiencia, Director de Logística].",
+      "Lideró la operación logística de 4 almacenes durante la pandemia, evitando roturas de stock críticas [Fuente: CV – Experiencia, Director de Logística].",
+      "Implementó el primer WMS de la compañía, mejorando la gestión y eficiencia del inventario, y redujo la merma de inventario del 3% al 0.5% en dos años [Fuente: CV – Experiencia, Gerente de Almacén]."
+    ],
+    "desempeno_bajo_presion": [
+      "Demostró capacidad para mantener la continuidad operativa y evitar crisis de suministro al liderar la logística de 4 almacenes durante la pandemia, sin roturas de stock críticas [Fuente: CV – Experiencia, Director de Logística].",
+      "Abordó la desorganización y resistencia al cambio en GlobalShop mediante la reestructuración del equipo de gerencia, logrando la adaptación al nuevo ritmo de trabajo [Fuente: Entrevista]."
+    ],
+    "estilo_trabajo": [
+      "Posee un estilo de liderazgo 'ejecutor y pragmático' con comunicación directa, orientado a la consecución de resultados, lo cual puede ser eficaz para impulsar transformaciones [Fuente: Entrevista; Notas kick-off].",
+      "Su reticencia a profundizar en fracasos, minimizando el impacto de un 'error con un proveedor en 2017', sugiere una posible dificultad para la autocrítica profunda o el aprendizaje explícito de errores significativos [Fuente: Entrevista].",
+      "Su enfoque en la reestructuración del equipo de gerencia (cambio de dos gerentes) para adaptar al nuevo ritmo de trabajo indica una preferencia por acciones directas para alinear al equipo, lo que podría implicar un trade-off con enfoques más graduales de desarrollo de talento o gestión del cambio cultural [Fuente: Entrevista].",
+      "Su experiencia limitada en la apertura de centros de distribución a gran escala (solo uno pequeño en 2018) representa un riesgo para el desafío de operacionalizar 2 nuevos CDDs de gran envergadura [Fuente: Entrevista; Notas kick-off]."
+    ],
+    "encaje_desafio_critico": [
+      {
+        "requisito": "Organizar operación desorganizada, implementar procesos eficientes y KPIs, reducir pérdidas.",
+        "evidencia_match": [
+          "Reducción del 20% en tiempo de entrega de última milla con ruteador inteligente [Fuente: CV].",
+          "Optimización del 12% en costos operativos por renegociación de contratos [Fuente: CV].",
+          "Implementación exitosa del primer WMS [Fuente: CV].",
+          "Reducción de merma de inventario del 3% al 0.5% [Fuente: CV]."
+        ],
+        "evidencia_mismatch_gap": [
+          "No informado en fuentes sobre experiencia en implementación de KPIs desde cero en una operación desorganizada a gran escala."
+        ]
+      },
+      {
+        "requisito": "Transformar cultura caótica y reactiva hacia orientación a resultados y agilidad.",
+        "evidencia_match": [
+          "Estilo de liderazgo 'ejecutor y pragmático' con comunicación directa, propicio para impulsar resultados [Fuente: Entrevista; Notas kick-off].",
+          "Reestructuración del equipo de gerencia para adaptar al nuevo ritmo de trabajo [Fuente: Entrevista]."
+        ],
+        "evidencia_mismatch_gap": [
+          "Vacío: Evidencia concreta de gestión de cambio cultural y mejora de productividad/compromiso en equipos de más de 200 personas [Fuente: GEM1 – Vacíos]. La reestructuración mencionada es de menor escala."
+        ]
+      },
+      {
+        "requisito": "Escalar operaciones rápidamente con apertura de 2 nuevos CDDs e implementar estructura sólida.",
+        "evidencia_match": [
+          "12 años de experiencia en supply chain y e-commerce con progresión en complejidad [Fuente: CV].",
+          "Especialización en escalar operaciones [Fuente: CV]."
+        ],
+        "evidencia_mismatch_gap": [
+          "Experiencia limitada en la apertura de centros de distribución desde cero a gran escala, habiendo abierto 'solo uno pequeño en 2018' [Fuente: Entrevista; Notas kick-off]. Esto es una brecha crítica para el requisito."
+        ]
+      }
+    ],
+    "tensiones_contradicciones": [
+      "La trayectoria profesional en el CV muestra una progresión sólida y logros cuantitativos en optimización logística, lo que sugiere una alta capacidad ejecutiva. Sin embargo, la entrevista revela una experiencia limitada en la apertura de centros de distribución a gran escala, un requisito crítico para el rol [Fuente: CV vs Entrevista; Notas kick-off].",
+      "Martín se describe como un líder ejecutor y pragmático, pero su reticencia a profundizar en un 'error con un proveedor en 2017' y la minimización de su impacto [Fuente: Entrevista] genera una tensión con la necesidad de un líder que demuestre autocrítica y capacidad de aprendizaje de errores significativos en un entorno de alta transformación.",
+      "El interés explícito en un puesto 'C-level' [Fuente: Entrevista] indica ambición y disposición para un rol de alto impacto, lo cual es positivo. No obstante, la falta de evidencia concreta en gestión de cambio cultural a gran escala (equipos >200 personas) [Fuente: GEM1 – Vacíos] podría generar una tensión entre su ambición y su preparación actual para un desafío de esta magnitud."
+    ]
+  }
+}

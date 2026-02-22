@@ -1,0 +1,5 @@
+{
+    "qa_score": "number",
+    "issues": "array",
+    "human_required": "boolean"
+}

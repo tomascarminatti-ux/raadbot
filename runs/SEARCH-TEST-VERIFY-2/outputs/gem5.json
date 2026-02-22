@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "search_id": "SEARCH-TEST-VERIFY-2",
+    "candidate_id": null,
+    "gem": "GEM5",
+    "timestamp": "2024-07-30T12:00:00Z",
+    "prompt_version": "v1.2",
+    "sources": [
+      "brief_jd",
+      "kickoff_notes",
+      "company_context"
+    ]
+  },
+  "content": {
+    "problema_real_del_rol": [
+      "La operación actual está desorganizada y genera pérdidas significativas debido a ineficiencias logísticas y procesos manuales [Fuente: Notas kick-off, Contexto compañía].",
+      "Existe una falta de KPIs claros y silos entre las áreas de almacén y transporte, impidiendo una gestión unificada y eficiente de la cadena de suministro [Fuente: Contexto compañía].",
+      "La cultura operativa necesita una transformación hacia una mayor orientación a resultados, requiriendo un liderazgo capaz de implementar cambios con 'mano dura' pero empática [Fuente: Notas kick-off]."
+    ],
+    "exitos_esperados_12_18_meses": [
+      "Reducir los costos logísticos en un 15% en el primer año, optimizando la cadena de suministro [Fuente: JD – Responsabilidades Principales].",
+      "Implementar nuevos sistemas tecnológicos para la gestión de inventario, mejorando la visibilidad y eficiencia operativa [Fuente: JD – Responsabilidades Principales].",
+      "Escalar las operaciones para soportar la apertura exitosa de 2 nuevos centros de distribución, garantizando la continuidad del crecimiento [Fuente: Notas kick-off].",
+      "Establecer y monitorear KPIs claros en toda la operación, eliminando silos y promoviendo una cultura orientada a resultados [Fuente: Contexto compañía, Notas kick-off].",
+      "Liderar y consolidar un equipo de más de 200 personas, mejorando la productividad y el compromiso hacia los objetivos de la compañía [Fuente: JD – Responsabilidades Principales, Notas kick-off]."
+    ],
+    "no_fits": [
+      "Perfiles con mentalidad de 'político de oficina' que no estén dispuestos a involucrarse directamente en la operación ('arremangarse') y entenderla desde el piso del almacén [Fuente: Notas kick-off].",
+      "Candidatos sin experiencia comprobable en logística y operaciones de alto volumen en el sector minorista o e-commerce, o que no hayan liderado transformaciones operativas significativas [Fuente: JD – Requisitos].",
+      "Líderes que prioricen la perfección sobre la agilidad o que no puedan adaptarse y prosperar en un entorno de rápido crecimiento, a veces caótico, como el de TechMart [Fuente: Contexto compañía]."
+    ],
+    "stakeholders_criticos_tensiones": [
+      "CEO: Espera una transformación rápida y tangible de la operación, con reducción de costos y escalabilidad inmediata. Tensión: Urgencia por resolver el caos actual vs. la complejidad de implementar cambios profundos en una organización en crecimiento [Fuente: Notas kick-off, Contexto compañía].",
+      "Equipo de Operaciones (200+ personas): Necesidad de adaptarse a nuevos procesos, KPIs y una cultura más exigente. Tensión: Resistencia al cambio y a la 'mano dura' vs. la necesidad de mejorar la eficiencia y la orientación a resultados [Fuente: JD – Responsabilidades Principales, Notas kick-off, Contexto compañía].",
+      "Equipo de Tecnología: Requerimiento de colaboración para la implementación de nuevos sistemas de gestión de inventario. Tensión: Priorización de recursos y proyectos tecnológicos para operaciones vs. otras iniciativas de la empresa [Fuente: JD – Responsabilidades Principales].",
+      "Gerentes de Centros de Distribución: Deben adoptar y liderar la implementación de los nuevos procesos y KPIs en sus respectivas ubicaciones. Tensión: Superar los silos existentes y la inercia de los procesos manuales vs. la necesidad de una operación unificada y eficiente [Fuente: Contexto compañía]."
+    ],
+    "mapa_de_mercado": {
+      "targets": [
+        "Grandes e-commerce regionales o nacionales (ej. Mercado Libre, Amazon, Rappi)",
+        "Retailers con fuerte componente omnicanal y logística propia (ej. Liverpool, Palacio de Hierro, Walmart)",
+        "Empresas de logística y distribución de última milla con operaciones complejas (ej. Estafeta, DHL eCommerce)",
+        "Startups de tecnología logística o 'quick commerce' que hayan escalado rápidamente"
+      ],
+      "no_go": [
+        "Empresas de manufactura tradicional sin componente de e-commerce",
+        "Servicios financieros o consultoría sin experiencia operativa directa",
+        "Empresas con cadenas de suministro simples o de bajo volumen",
+        "Organizaciones con culturas excesivamente burocráticas y lentas"
+      ],
+      "competidores_por_talento": [
+        "Mercado Libre",
+        "Amazon México",
+        "Walmart México (e-commerce)",
+        "Rappi",
+        "Liverpool"
+      ]
+    },
+    "riesgos_del_mandato": [
+      "Operacional: Resistencia significativa del equipo a los nuevos procesos y la cultura de resultados, lo que podría retrasar o sabotear la implementación de mejoras y la reducción de costos [Fuente: Notas kick-off, Contexto compañía].",
+      "Operacional: Fallo en la implementación de nuevos sistemas tecnológicos o en la optimización de la cadena de suministro, lo que agravaría las ineficiencias y pérdidas [Fuente: JD – Responsabilidades Principales, Notas kick-off].",
+      "Político: Generación de conflictos internos o fricción con otros departamentos debido a la necesidad de una 'mano dura' y la priorización de recursos para la transformación operativa [Fuente: Notas kick-off].",
+      "Financiero: No alcanzar la meta de reducción del 15% en costos logísticos, lo que impactaría negativamente la rentabilidad de la empresa y la credibilidad del COO [Fuente: JD – Responsabilidades Principales, Notas kick-off].",
+      "Crecimiento: Incapacidad para escalar la operación y soportar la apertura de los 2 nuevos centros de distribución, lo que frenaría la expansión estratégica de TechMart [Fuente: Notas kick-off].",
+      "Reputacional: Un manejo ineficaz de la cadena de suministro podría afectar la experiencia del cliente y la reputación de TechMart en un mercado e-commerce competitivo [Fuente: Contexto compañía]."
+    ],
+    "criterios_de_decision_final": [
+      "Experiencia comprobada en transformación operativa y reducción de costos (ej. 15% en 1er año) en entornos de e-commerce o retail de alto volumen [Fuente: JD – Requisitos, Notas kick-off].",
+      "Capacidad demostrada para liderar y escalar operaciones complejas con equipos grandes (200+ personas, múltiples DCs) y planes de expansión acelerada [Fuente: JD – Responsabilidades Principales, Notas kick-off].",
+      "Habilidades de liderazgo que combinen 'mano dura' con empatía, con un historial de éxito en el cambio cultural hacia una mayor orientación a resultados [Fuente: Notas kick-off].",
+      "Experiencia práctica en la implementación y optimización de sistemas tecnológicos para la gestión de inventario y la cadena de suministro [Fuente: JD – Responsabilidades Principales].",
+      "Fuerte capacidad analítica y financiera para identificar ineficiencias, tomar decisiones basadas en datos y gestionar presupuestos operativos [Fuente: JD – Requisitos, Notas kick-off].",
+      "Agilidad y adaptabilidad para operar eficazmente en un entorno de rápido crecimiento, a veces caótico, valorando la innovación sobre la perfección [Fuente: Contexto compañía]."
+    ]
+  },
+  "scores": {
+    "score_dimension": null,
+    "confidence": 8
+  },
+  "blockers": []
+}
