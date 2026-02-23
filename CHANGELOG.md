@@ -1,5 +1,18 @@
 # Changelog
 
+## [v3.0.0] - Industrial Multi-Agent (Hub-and-Spoke 3.0)
+### Added
+- **GEM 6 Orchestrator**: Nuevo cerebro central autónomo con bucle Thought-Action-Observation.
+- **Arquitectura Dinámica**: Transición de pipeline secuencial a modelo Hub-and-Spoke 3.0.
+- **Integración con n8n**: Soporte nativo para webhooks asíncronos y triggers externos.
+- **Validación de Contratos**: Sistema de validación estricta via JSON Schema entre agentes.
+- **GEM 5 Strategy**: Nuevo agente especializado en radiografía de proyectos y mandatos.
+
+### Improved
+- **Documentación Industrial**: README totalmente renovado con diagramas Mermaid detallados.
+- **Trazabilidad Total**: Implementación de Trace IDs para auditar cada paso del razonamiento.
+- **Control de Costos**: Lógica de Early Exit mejorada basada en scoring de GEM 2.
+
 ## [v1.5.0] - Arch Architecture Cleanup & Production Ready
 ### Added
 - **Configuración Centralizada**: Creado `config.py` para manejar umbrales, precios, modelos y rutas de forma global.

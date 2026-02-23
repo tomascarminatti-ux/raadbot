@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Raadbot API",
     description="API interna para integrar Raadbot con n8n u otros sistemas externos.",
-    version="2.0.0",
+    version="3.0.0",
     lifespan=lifespan,
 )
 
@@ -277,6 +277,6 @@ def health_check():
     return {
         "status": "ok", 
         "agent": "raadbot", 
-        "version": "2.0.0",
+        "version": "3.0.0",
         "model": config.DEFAULT_MODEL
     }
