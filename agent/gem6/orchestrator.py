@@ -6,6 +6,7 @@ from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
 import config
+from utils.ws_logger import broadcast_log
 
 class GEM6Orchestrator:
     def __init__(self, *args, **kwargs):
@@ -100,6 +101,15 @@ class GEM6Orchestrator:
                 status = gem6_decision.get("status", "SUCCESS")
                 final_output = gem6_decision.get("final_output", {})
 
+                # Broadcast final log
+                await broadcast_log({
+                    "gem": "GEM6_FINAL",
+                    "action": "Orquestación finalizada",
+                    "status": status,
+                    "entity_id": entity_id,
+                    "thought": thought
+                })
+
                 # Final State Update
                 await self.client.upsert_entity({
                     "entity_id": entity_id,
@@ -133,6 +143,23 @@ class GEM6Orchestrator:
                     "observation": agent_output,
                     "valid_contract": is_valid
                 })
+
+                # Broadcast log for real-time dashboard
+                try:
+                    score = agent_output.get("score") or agent_output.get("qa_score") or 0
+                    passed = is_valid and (score >= self.thresholds.get("scoring_cutoff", 0.4))
+
+                    await broadcast_log({
+                        "gem": agent_id.upper(),
+                        "action": "Procesamiento completado",
+                        "score": score,
+                        "status": "OK" if passed else "BLOCKED",
+                        "output_preview": str(agent_output)[:300] + "...",
+                        "entity_id": entity_id,
+                        "step": step
+                    })
+                except Exception as e:
+                    logger.error(f"Error broadcasting log: {e}")
 
                 # Log transition to DB
                 await self.client.upsert_entity({
