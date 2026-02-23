@@ -1,0 +1,3 @@
+## 2025-05-14 - [Prompt Building Optimization]
+**Learning:** Sequential `.replace()` calls on large strings (like prompt templates) can be a significant bottleneck ($O(M \times N)$). Using `re.sub()` with a callback function allows for a single-pass replacement ($O(N)$), which is much more efficient. Additionally, caching templates with `lru_cache` eliminates redundant disk I/O, which is critical when processing multiple candidates.
+**Action:** Always prefer `re.sub()` for multiple variable injections in templates and use `lru_cache` for static file loading. Avoid adding new dependencies like `ujson` unless they are already in the project's dependency tree or explicitly required, as the standard `json` library is often sufficient after algorithmic optimizations.
