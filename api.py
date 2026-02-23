@@ -7,7 +7,6 @@ from fastapi import (
     FastAPI,
     HTTPException,
     BackgroundTasks,
-    Request,
     WebSocket,
     WebSocketDisconnect,
 )
@@ -269,13 +268,13 @@ async def refine_gem(request: RefineRequest):
 
     refinement_prompt = f"""
     Eres un experto en Prompt Engineering. Tu misión es REFINAR el siguiente System Prompt de RAADBOT v2.0.
-    
+
     ESTRUCTURA ACTUAL:
     {current_prompt}
-    
+
     INSTRUCCIÓN DEL USUARIO:
     {request.instruction}
-    
+
     REGLAS:
     1. Mantén la estructura de secciones (ROL, CONTEXTO, INSTRUCCIONES CORE, etc.).
     2. Aplica la instrucción del usuario de forma profesional y precisa.
