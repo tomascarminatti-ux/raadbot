@@ -3,17 +3,19 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
+import asyncio
 
 import config
 from agent.gemini_client import GeminiClient
 from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
 from utils.input_loader import load_local_inputs
+from utils.ws_logger import active_connections
 
 
 @asynccontextmanager
@@ -272,11 +274,24 @@ async def refine_gem(request: RefineRequest):
     
     return {"status": "error", "message": "Failed to generate new prompt"}
 
+@app.websocket("/ws/logs")
+async def websocket_logs(websocket: WebSocket):
+    await websocket.accept()
+    active_connections.append(websocket)
+    try:
+        while True:
+            # Keep connection alive
+            await asyncio.sleep(60)
+    except WebSocketDisconnect:
+        if websocket in active_connections:
+            active_connections.remove(websocket)
+
 @app.get("/health")
 def health_check():
     return {
         "status": "ok", 
         "agent": "raadbot", 
         "version": "3.0.0",
-        "model": config.DEFAULT_MODEL
+        "model": config.DEFAULT_MODEL,
+        "provider": config.LLM_PROVIDER
     }

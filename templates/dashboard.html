@@ -83,7 +83,23 @@
         </div>
     </main>
 
+    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
+        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
+        <div id="logs-container"></div>
+    </div>
     <script>
+        const logsContainer = document.getElementById('logs-container');
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const socket = new WebSocket(`${protocol}//${window.location.host}/ws/logs`);
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const logEntry = document.createElement('div');
+            logEntry.style.marginBottom = '5px';
+            const time = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
+            logEntry.innerHTML = `[${time}] <span style="color:#3b82f6">${data.gem}</span>: ${data.action} - <span style="color:${data.status === 'OK' ? '#4ade80' : '#f87171'}">${data.status}</span> (Score: ${data.score || 'N/A'})`;
+            logsContainer.prepend(logEntry);
+        };
+
         let gems = [];
         let activeGem = null;
 

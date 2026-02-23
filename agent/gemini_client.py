@@ -1,9 +1,12 @@
 import json
 import re
 import time
+import os
 from typing import TypedDict, Any, Optional
 from google import genai
 from rich.console import Console
+import httpx
+import asyncio
 
 import config
 
@@ -22,13 +25,68 @@ class GeminiResult(TypedDict):
     usage: GeminiUsage
 
 class GeminiClient:
-    """Cliente para interactuar con Gemini API."""
+    """Cliente para interactuar con Gemini API u Ollama."""
 
     def __init__(self, api_key: str, model: str = config.DEFAULT_MODEL):
-        self.client = genai.Client(api_key=api_key)
-        self.model = model
+        self.provider = config.LLM_PROVIDER
+        if self.provider == "gemini":
+            self.client = genai.Client(api_key=api_key)
+        self.model = model if self.provider == "gemini" else config.OLLAMA_MODEL
 
     def run_gem(self, prompt: str, gem_name: Optional[str] = None, max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
+        if self.provider == "ollama":
+            return self._run_ollama(prompt, gem_name, max_retries)
+        return self._run_gemini(prompt, gem_name, max_retries)
+
+    def _run_ollama(self, prompt: str, gem_name: Optional[str], max_retries: int) -> GeminiResult:
+        """Envía un prompt a Ollama."""
+        url = f"{config.OLLAMA_BASE_URL}/api/generate"
+        cfg = config.GEM_CONFIGS.get(gem_name, {"temperature": 0.3, "top_p": 0.8, "max_tokens": 4096})
+
+        payload = {
+            "model": self.model,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": cfg.get("temperature", 0.3),
+                "top_p": cfg.get("top_p", 0.8),
+                "num_predict": cfg.get("max_tokens", 4096),
+                "seed": int(os.getenv("SEED", "42"))
+            }
+        }
+
+        for attempt in range(max_retries + 1):
+            try:
+                with httpx.Client(timeout=120.0) as client:
+                    response = client.post(url, json=payload)
+                    response.raise_for_status()
+                    data = response.json()
+
+                    raw_text = data.get("response", "")
+
+                    usage: GeminiUsage = {
+                        "prompt_tokens": data.get("prompt_eval_count", 0),
+                        "candidates_tokens": data.get("eval_count", 0),
+                        "total_tokens": data.get("prompt_eval_count", 0) + data.get("eval_count", 0),
+                        "finish_reason": "STOP"
+                    }
+
+                    result_content = self._parse_response(raw_text)
+
+                    return {
+                        "json": result_content["json"],
+                        "markdown": result_content["markdown"],
+                        "raw": raw_text,
+                        "usage": usage
+                    }
+            except Exception as e:
+                if attempt < max_retries:
+                    time.sleep(2 ** (attempt + 1))
+                else:
+                    raise RuntimeError(f"Ollama falló: {e}")
+        raise RuntimeError("Unreachable")
+
+    def _run_gemini(self, prompt: str, gem_name: Optional[str] = None, max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
         """
         Envía un prompt al modelo Gemini y parsea la respuesta.
 
