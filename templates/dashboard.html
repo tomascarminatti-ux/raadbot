@@ -109,11 +109,12 @@
         let activeGem = null;
         let copyTimeout = null;
 
-        function copyPrompt() {
+        async function copyPrompt() {
             const content = document.getElementById('prompt-content').innerText;
             if (!activeGem) return;
 
-            navigator.clipboard.writeText(content).then(() => {
+            try {
+                await navigator.clipboard.writeText(content);
                 const btn = document.getElementById('copy-btn');
                 const icon = document.getElementById('copy-icon');
                 const text = document.getElementById('copy-text');
@@ -131,7 +132,11 @@
                     btn.classList.replace('bg-green-500/20', 'bg-blue-400/10');
                     btn.classList.replace('text-green-400', 'text-blue-400');
                 }, 2000);
-            });
+            } catch (err) {
+                console.error('Falló la copia:', err);
+                // Fallback: al menos dar feedback de que algo pasó
+                alert('No se pudo copiar al portapapeles. Por favor, selecciona el texto manualmente.');
+            }
         }
 
         async function loadGems() {
