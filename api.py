@@ -3,7 +3,14 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    BackgroundTasks,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -14,6 +21,7 @@ import config
 from agent.gemini_client import GeminiClient
 from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
+from agent.prompt_builder import load_prompt
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
 
@@ -96,7 +104,9 @@ async def run_pipeline(request: PipelineRequest) -> dict:
     os.makedirs(output_dir, exist_ok=True)
 
     gemini = GeminiClient(api_key=api_key, model=request.model)
-    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
+    orchestrator = GEM6Orchestrator(
+        gemini=gemini, search_id=request.search_id, output_dir=output_dir
+    )
 
     # Ejecución asíncrona no bloqueante
     await orchestrator.run_pipeline(search_inputs, candidates)
@@ -129,9 +139,9 @@ async def background_run_pipeline(request: PipelineRequest):
                     await client.post(
                         request.webhook_url,
                         json={
-                            "status": "error", 
-                            "search_id": request.search_id, 
-                            "message": str(e)
+                            "status": "error",
+                            "search_id": request.search_id,
+                            "message": str(e),
                         },
                         timeout=30.0,
                     )
@@ -165,6 +175,7 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -173,34 +184,38 @@ async def setup_search(request: SetupSearchRequest):
     """
     output_dir = os.path.join("runs", request.search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Simular estructura de inputs para GEM 5
     search_inputs = {
         "kickoff_notes": request.brief_notes,
         "brief_jd": request.jd_content,
-        "company_context": request.company_context or ""
+        "company_context": request.company_context or "",
     }
-    
+
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     # Ejecutar GEM 5 directamente
     from agent.prompt_builder import build_gem5_prompt
+
     prompt = build_gem5_prompt(search_inputs)
     result = gemini.run_gem(prompt, gem_name="gem5")
-    
+
     # Guardar resultados
     with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
         json.dump(result.get("data", {}), f, indent=4)
     with open(os.path.join(output_dir, "gem5.md"), "w", encoding="utf-8") as f:
         f.write(result.get("markdown", ""))
-        
+
     return {
         "status": "success",
         "search_id": request.search_id,
-        "gem5_summary": result.get("data", {}).get("mandate_summary", "Mandato generado con éxito.")
+        "gem5_summary": result.get("data", {}).get(
+            "mandate_summary", "Mandato generado con éxito."
+        ),
     }
 
 
 # --- Dashboard Endpoints ---
+
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard():
@@ -211,31 +226,36 @@ async def get_dashboard():
     except FileNotFoundError:
         return "Dashboard template not found. Please create templates/dashboard.html"
 
+
 @app.get("/api/v1/gems")
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
     gems = []
     gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
-    
+
     for g in gem_list:
-        prompt_path = f"prompts/{g}.md"
-        prompt_content = ""
-        if os.path.exists(prompt_path):
-            with open(prompt_path, "r", encoding="utf-8") as f:
-                prompt_content = f.read()
-        
-        gems.append({
-            "id": g,
-            "name": g.upper(),
-            "prompt": prompt_content,
-            "config": config.GEM_CONFIGS.get(g, {})
-        })
-    
+        try:
+            # Bolt ⚡: Use cached loader
+            prompt_content = load_prompt(g)
+        except Exception:
+            prompt_content = ""
+
+        gems.append(
+            {
+                "id": g,
+                "name": g.upper(),
+                "prompt": prompt_content,
+                "config": config.GEM_CONFIGS.get(g, {}),
+            }
+        )
+
     return gems
+
 
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
@@ -243,10 +263,10 @@ async def refine_gem(request: RefineRequest):
     prompt_path = f"prompts/{request.gem_id}.md"
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
-        
+
     with open(prompt_path, "r", encoding="utf-8") as f:
         current_prompt = f.read()
-        
+
     refinement_prompt = f"""
     Eres un experto en Prompt Engineering. Tu misión es REFINAR el siguiente System Prompt de RAADBOT v2.0.
     
@@ -262,17 +282,22 @@ async def refine_gem(request: RefineRequest):
     3. Devuelve el prompt REFINADO completo en formato Markdown.
     4. NO agregues explicaciones, solo el contenido del nuevo prompt.
     """
-    
+
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     result = gemini.run_gem(refinement_prompt)
     new_prompt = result.get("markdown", "") or result.get("raw", "")
-    
+
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write(new_prompt)
+
+        # Bolt ⚡: Invalidate prompt cache after update
+        load_prompt.cache_clear()
+
         return {"status": "success", "new_prompt": new_prompt}
-    
+
     return {"status": "error", "message": "Failed to generate new prompt"}
+
 
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
@@ -286,12 +311,13 @@ async def websocket_logs(websocket: WebSocket):
         if websocket in active_connections:
             active_connections.remove(websocket)
 
+
 @app.get("/health")
 def health_check():
     return {
-        "status": "ok", 
-        "agent": "raadbot", 
+        "status": "ok",
+        "agent": "raadbot",
         "version": "3.0.0",
         "model": config.DEFAULT_MODEL,
-        "provider": config.LLM_PROVIDER
+        "provider": config.LLM_PROVIDER,
     }
