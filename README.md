@@ -2,73 +2,135 @@
 
 > 🎯 **Objetivo**
 >
-> Raadbot v3.0 es un ecosistema multi-agente industrial basado en el framework GEM, orquestado por GEM 6 bajo una arquitectura **Hub-and-Spoke**. Diseñado para procesamiento masivo, trazabilidad total en base de datos y visualización ejecutiva en Google Sheets.
+> Raadbot v3.0 es un ecosistema multi-agente industrial basado en el framework GEM, orquestado por **GEM 6 (The Architect)** bajo una arquitectura **Hub-and-Spoke 3.0**. Diseñado para procesamiento masivo de candidatos, trazabilidad total y decisiones autónomas de alta precisión.
 
 ---
 
-## 🏗️ Arquitectura Técnica: Hub-and-Spoke
+## 🏗️ Arquitectura del Sistema: Hub-and-Spoke 3.0
 
-El sistema utiliza **GEM 6** como el orquestador central que valida contratos y gestiona el flujo de trabajo entre agentes especializados (GEM 1-4), manteniendo una separación clara entre la lógica de negocio, la persistencia de datos (FastAPI) y la vista humana (Sheets).
+A diferencia de las versiones anteriores secuenciales, Raadbot v3.0 utiliza un modelo de **Orquestación Autónoma**. GEM 6 actúa como el cerebro central que decide dinámicamente qué agentes invocar basándose en el contexto del candidato y los objetivos del mandato.
 
-### 📊 Diagrama de Flujo
+### 📊 Diagrama de Arquitectura Detallada
 
 ```mermaid
-graph TD
-    User([User Context]) --> GEM6[GEM6 Orchestrator]
-    GEM6 --> DB[(DB API - FastAPI)]
-    GEM6 <--> GEM5[GEM5 Strategy]
-    GEM6 <--> GEM1[GEM1 Discovery]
-    GEM6 <--> GEM2[GEM2 Scoring]
-    GEM6 <--> GEM3[GEM3 Decision]
-    GEM6 <--> GEM4[GEM4 QA Gate]
-    DB --> Sheets[Google Sheets Dashboard]
-    
-    subgraph "Infrastructure (Docker Compose)"
-    GEM6
-    GEM5
-    GEM1
-    GEM2
-    GEM3
-    GEM4
-    DB
+graph TB
+    subgraph "Ecosistema Externo"
+        User([Usuario / Cliente])
+        n8n[n8n Workflow Engine]
+        Sheets[Google Sheets Dashboard]
+        Drive[Google Drive Storage]
     end
+
+    subgraph "Raadbot Core (Docker Stack)"
+        API[FastAPI Gateway]
+        DB[(Source of Truth - SQLite/PG)]
+
+        subgraph "Capa de Inteligencia (Hub)"
+            GEM6{{"🧠 GEM 6<br/>Orchestrator<br/>(The Architect)"}}
+        end
+
+        subgraph "Agentes Especializados (Spokes)"
+            GEM1["🔵 GEM 1<br/>Discovery & Facts"]
+            GEM2["🟢 GEM 2<br/>Scoring & Fit"]
+            GEM3["🟡 GEM 3<br/>Decision & Veredict"]
+            GEM4["🔴 GEM 4<br/>QA & Audit"]
+            GEM5["🟣 GEM 5<br/>Strategy & Mandate"]
+        end
+
+        subgraph "Capa de Validación"
+            Contracts{{"📜 JSON Contracts<br/>(jsonschema)"}}
+        end
+    end
+
+    User -->|POST /api/v1/run| API
+    n8n -->|Webhook Trigger| API
+    API -->|Background Task| GEM6
+    API <--> DB
+
+    GEM6 <-->|Reasoning Loop| GEM1
+    GEM6 <-->|Reasoning Loop| GEM2
+    GEM6 <-->|Reasoning Loop| GEM3
+    GEM6 <-->|Reasoning Loop| GEM4
+    GEM6 <-->|Reasoning Loop| GEM5
+
+    GEM1 & GEM2 & GEM3 & GEM4 & GEM5 -.->|Check| Contracts
+
+    GEM6 -->|Final Veredict| API
+    API -->|Webhook Response| n8n
+    API -->|Sync| Sheets
+    API -->|Read Inputs| Drive
 ```
 
 ---
 
-## 🧩 Componentes del Ecosistema
+## 🧠 Ciclo de Razonamiento GEM 6
 
-### 1) 🧠 GEM 6 — Master Orchestrator (The Hub)
+El orquestador no sigue un script lineal; opera en un bucle de **Pensamiento -> Acción -> Observación** (máximo 10 pasos por entidad).
 
-- **Misión**: Controlar el ciclo de vida, validar contratos JSON y aplicar umbrales operativos (Threshold Enforcement).
-- **Gating**: Si un agente falla el contrato o no alcanza el score mínimo (e.g. GEM2 < 0.4), GEM 6 detiene el flujo o descarta la entidad.
+### 🔄 Flujo de Ejecución Autónoma
 
-### 2) 🤖 Agentes Especializados (Spokes)
+```mermaid
+sequenceDiagram
+    participant G6 as GEM 6 (Architect)
+    participant DB as Database/Context
+    participant AG as Specialized Agent (GEM 1-5)
+    participant VAL as Contract Validator
 
-- **🟣 GEM 5 — Strategy**: Radiografía de mandatos y validación de proyectos (Go/No-Go).
-- **🔵 GEM 1 — Discovery**: Descubrimiento masivo y verificación inicial de datos.
-- **🟢 GEM 2 — Scoring & Filtrado**: Evaluación de calidad y fit inicial.
-- **🟡 GEM 3 — Decisión**: Motor de veredicto final (Accept/Review/Reject).
-- **🔴 GEM 4 — QA Gate**: Auditoría final para prevenir alucinaciones e inconsistencias.
+    Note over G6, DB: Inicio del Ciclo (Paso 1 de 10)
+    G6->>DB: Leer Memoria de Trabajo & Contexto
+    Note right of G6: Thought: Analiza qué falta para el veredicto
+    G6->>G6: Decide Acción (Call Agent vs Finalize)
 
-### 3) 🗄️ Database Layer (Source of Truth)
-
-- **Servicio**: FastAPI + SQLite (Migrable a PostgreSQL).
-- **Tablas**: `entity_state`, `discarded_entities`, `discovery_logs`, `performance_metrics`.
-- **Acceso**: `http://localhost:8000/docs`
-
-### 4) 📤 Google Sheets Sync
-
-- **Misión**: Vista humana simplificada. Sincroniza el estado de la DB con un dashboard en la nube para auditoría no técnica.
+    alt Acción: call_agent
+        G6->>AG: Envía Payload con Instrucciones
+        AG-->>G6: Retorna JSON con Hallazgos
+        G6->>VAL: Valida contra JSON Schema
+        VAL-->>G6: Resultado (Valid / Error)
+        G6->>DB: Loguea Observación y Actualiza Memoria
+    else Acción: finalize
+        G6->>DB: Consolida Veredicto Final
+        G6->>DB: Marca Entidad como COMPLETED
+    end
+    Note over G6, DB: Repite bucle si no ha finalizado
+```
 
 ---
 
-## 🚀 Despliegue Reproducible
+## 🧩 Agentes Especializados (The Spokes)
 
-El sistema está contenedorizado totalmente para garantizar reproducibilidad industrial.
+| Agente | Color | Misión | Tooling Interno |
+| :--- | :---: | :--- | :--- |
+| **GEM 5** | 🟣 | **Strategy**: Define la radiografía del proyecto y el mandato. | Análisis de JD y Briefing. |
+| **GEM 1** | 🔵 | **Discovery**: Extrae hechos, métricas y trayectoria real. | Análisis de CV y Entrevistas. |
+| **GEM 2** | 🟢 | **Scoring**: Evalúa el fit técnico y cultural (0.0 a 1.0). | Rúbricas de calibración. |
+| **GEM 3** | 🟡 | **Decision**: Genera el veredicto final y argumentos 360°. | Síntesis de evidencia. |
+| **GEM 4** | 🔴 | **QA Gate**: Audita el proceso buscando alucinaciones. | Verificación cruzada. |
 
-### Instalación Rápida
+---
 
+## 🚦 Estados del Candidato (Lifecycle)
+
+El sistema gestiona el ciclo de vida de cada candidato de forma independiente, permitiendo paradas tempranas (*early exits*) si la calidad no es suficiente.
+
+```mermaid
+stateDiagram-v2
+    [*] --> DISCOVERY: Triggered
+    DISCOVERY --> SCORING: GEM 1 Completed
+    SCORING --> DECISION: Score >= Threshold (0.4)
+    SCORING --> DISCARDED: Score < Threshold
+    DECISION --> AUDIT: GEM 3 Completed
+    AUDIT --> SUCCESS: QA Passed
+    AUDIT --> MANUAL_REVIEW: QA Issues Found (Score < 0.85)
+    SUCCESS --> [*]
+    DISCARDED --> [*]
+    MANUAL_REVIEW --> [*]
+```
+
+---
+
+## 🚀 Despliegue y Uso
+
+### Instalación con Docker
 ```bash
 git clone https://github.com/tomascarminatti-ux/raadbot.git
 cd raadbot
@@ -76,31 +138,22 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-### Comandos Críticos
+### Integración con n8n
+Raadbot está diseñado para ser "API-First". Puedes disparar el pipeline desde n8n enviando un POST a `/api/v1/run` con un `webhook_url`. El sistema procesará los candidatos en segundo plano y notificará a n8n cuando termine.
 
-- **Ver Logs**: `docker compose logs -f gem6`
-- **Métricas**: `python scripts/metrics_summary.py`
-- **Sincronización**: `python scripts/sheets_dump.py`
-
-### Entorno de Desarrollo (IDE)
-
-Para VS Code, el proyecto incluye un archivo `.vscode/settings.json` preconfigurado. Pylance está configurado para usar el entorno virtual (`.venv/bin/python`) y leer la carpeta raíz para resolver importaciones internas como `agent` o `utils`. No se requiere `pyrightconfig.json`.
-
----
-
-## 🛡️ Estándares Industriales
-
-- **Contratos JSON**: Cada agente opera bajo esquemas estrictos alojados en `contracts/`.
-- **Logging Estructurado**: Logs en formato JSON para ingesta en ELK o monitoreo avanzado.
-- **Control de Costos**: Gestión de `max_tokens` y paradas tempranas (*early exits*) basadas en scores.
-- **Trazabilidad**: Cada acción genera un `trace_id` único vinculado en la DB.
+### Endpoints Críticos
+- `POST /api/v1/run`: Inicia el pipeline autónomo.
+- `POST /api/v1/search/setup`: Ejecuta GEM 5 para definir la estrategia de una búsqueda.
+- `GET /dashboard`: Visualización en tiempo real del estado de los agentes.
+- `GET /health`: Estado del sistema y versión.
 
 ---
 
-## 📘 Documentación Adicional
+## 🛡️ Estándares Industriales y Calidad
 
-- [RUNBOOK.md](file:///Users/tini/Documents/raadbot/RUNBOOK.md): Guía operativa ante fallos y reinicios.
-- [SCALABILITY.md](file:///Users/tini/Documents/raadbot/SCALABILITY.md): Estrategia de crecimiento a multinodo y optimización de costos.
+- **Contratos JSON**: Cada agente tiene un esquema en `contracts/`. Si el LLM falla el contrato, GEM 6 detecta el error y puede reintentar o marcar falla.
+- **Trazabilidad (Trace ID)**: Cada decisión de GEM 6 y cada respuesta de los agentes está vinculada a un `trace_id` único en la DB para auditorías.
+- **Cost Control**: Implementación de *Early Exit* en GEM 2 para no procesar candidatos de bajo fit en agentes más costosos (GEM 3/4).
 
 ---
 Version 3.0.0 — Raad Advisory Industrial Platform
