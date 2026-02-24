@@ -222,7 +222,7 @@ class Pipeline:
         self,
         candidate_id: str,
         gem4_vars: dict,
-    ) -> tuple[dict, Optional[int], bool]:
+    ) -> tuple[dict, Optional[int], bool, int]:
         """Ejecuta GEM4 con reintentos cuando QA bloquea el reporte."""
         attempts = MAX_RETRIES_ON_BLOCK + 1
         last_result: dict[str, Any] = {}
@@ -262,14 +262,60 @@ class Pipeline:
                 console.print(
                     f"[green]  ✅ gem4 aprobado[/green] (score {last_score}, intento {attempt}/{attempts})"
                 )
-                return last_result, last_score, True
+                return last_result, last_score, True, attempt
 
             if attempt < attempts:
                 console.print(
                     f"[bold yellow]  ⚠️  GEM4 bloqueado (score {last_score}). Reintentando... ({attempt}/{attempts})[/bold yellow]"
                 )
 
-        return last_result, last_score, False
+        return last_result, last_score, False, attempts
+
+    def _build_supervisor_payload(
+        self,
+        candidate_id: str,
+        decision: str,
+        gem1_pass: bool,
+        gem2_pass: bool,
+        gem3_pass: bool,
+        gem4_pass: bool,
+        qa_attempt_count: int,
+    ) -> dict:
+        """Construye una salida estructurada del Supervisor General."""
+        return {
+            "meta": {
+                "search_id": self.search_id,
+                "candidate_id": candidate_id,
+                "gem": "SUPERVISOR_GENERAL",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "prompt_version": "v1.0",
+            },
+            "gates": {
+                "gem1_pass": gem1_pass,
+                "gem2_pass": gem2_pass,
+                "gem3_pass": gem3_pass,
+                "gem4_pass": gem4_pass,
+                "qa_attempt_count": qa_attempt_count,
+                "qa_max_retries": MAX_RETRIES_ON_BLOCK,
+            },
+            "decision": decision,
+            "rationale": [
+                f"Decisión consolidada por supervisor: {decision}",
+                "Gates evaluados en secuencia GEM1→GEM4",
+            ],
+            "required_actions": [],
+        }
+
+    def _persist_supervisor_result(self, candidate_id: str, payload: dict) -> dict:
+        """Guarda resultado del Supervisor General como artefacto del candidato."""
+        decision = payload.get("decision", "N/A")
+        result = {
+            "json": payload,
+            "markdown": f"# Supervisor General\n\n- Decision: {decision}\n",
+            "raw": json.dumps(payload, ensure_ascii=False, indent=2),
+        }
+        self._save_output("supervisor_general", result, candidate_id)
+        return result
 
     def run_gem5(self, search_inputs: dict) -> dict:
         console.print(
@@ -345,7 +391,20 @@ class Pipeline:
         )
         results["gems"]["gem1"] = gem1_result
         if not passed1:
-            results["decision"] = "DESCARTADO_GEM1"
+            decision = "DESCARTADO_GEM1"
+            results["decision"] = decision
+            supervisor_payload = self._build_supervisor_payload(
+                candidate_id,
+                decision,
+                gem1_pass=False,
+                gem2_pass=False,
+                gem3_pass=False,
+                gem4_pass=False,
+                qa_attempt_count=0,
+            )
+            results["supervisor"] = self._persist_supervisor_result(
+                candidate_id, supervisor_payload
+            )
             return results
 
         # --- GEM2 ---
@@ -362,7 +421,20 @@ class Pipeline:
         )
         results["gems"]["gem2"] = gem2_result
         if not passed2:
-            results["decision"] = "DESCARTADO_GEM2"
+            decision = "DESCARTADO_GEM2"
+            results["decision"] = decision
+            supervisor_payload = self._build_supervisor_payload(
+                candidate_id,
+                decision,
+                gem1_pass=True,
+                gem2_pass=False,
+                gem3_pass=False,
+                gem4_pass=False,
+                qa_attempt_count=0,
+            )
+            results["supervisor"] = self._persist_supervisor_result(
+                candidate_id, supervisor_payload
+            )
             return results
 
         # --- GEM3 ---
@@ -383,7 +455,20 @@ class Pipeline:
         )
         results["gems"]["gem3"] = gem3_result
         if not passed3:
-            results["decision"] = "DESCARTADO_GEM3"
+            decision = "DESCARTADO_GEM3"
+            results["decision"] = decision
+            supervisor_payload = self._build_supervisor_payload(
+                candidate_id,
+                decision,
+                gem1_pass=True,
+                gem2_pass=True,
+                gem3_pass=False,
+                gem4_pass=False,
+                qa_attempt_count=0,
+            )
+            results["supervisor"] = self._persist_supervisor_result(
+                candidate_id, supervisor_payload
+            )
             return results
 
         # --- GEM4 ---
@@ -409,7 +494,7 @@ class Pipeline:
             "gem3": gem3_result.get("json") or gem3_result.get("raw", ""),
             "sources_index": ", ".join(sources),
         }
-        gem4_result, gem4_score, passed4 = self._run_gem4_with_retries(
+        gem4_result, gem4_score, passed4, qa_attempt_count = self._run_gem4_with_retries(
             candidate_id, gem4_vars
         )
         results["gems"]["gem4"] = gem4_result
@@ -424,6 +509,18 @@ class Pipeline:
 
         results["decision"] = decision
         results["gem4_score"] = gem4_score
+        supervisor_payload = self._build_supervisor_payload(
+            candidate_id,
+            decision,
+            gem1_pass=True,
+            gem2_pass=True,
+            gem3_pass=True,
+            gem4_pass=bool(passed4),
+            qa_attempt_count=qa_attempt_count,
+        )
+        results["supervisor"] = self._persist_supervisor_result(
+            candidate_id, supervisor_payload
+        )
 
         if decision == "APROBADO":
             console.print(

@@ -220,6 +220,7 @@ El pipeline actual implementa el protocolo con los siguientes comportamientos op
 - Gating duro: GEM1/GEM2/GEM3 con umbral `>=6`; GEM4 con umbral `>=7`.
 - Reintentos de GEM4: hasta 2 reintentos adicionales cuando QA bloquea (total de 3 intentos).
 - Persistencia por intento: `gem4`, `gem4_retry_1`, `gem4_retry_2` en outputs por candidato.
+- Persistencia de supervisión: `supervisor_general.json/.md/.raw.txt` por candidato con gates y decisión consolidada.
 - Decisión final automática:
   - `APROBADO` si GEM4 pasa gate y no está bloqueado.
   - `ESCALADO_CONSULTOR_SENIOR` si GEM4 no logra aprobar tras reintentos.
