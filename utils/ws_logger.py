@@ -6,9 +6,11 @@ from datetime import datetime
 from typing import List, Optional
 from fastapi import WebSocket
 
+
 active_connections: List[WebSocket] = []
 _steps_cache: Optional[List[dict]] = None
 _write_lock = threading.Lock()
+
 
 def _write_state(steps: List[dict]):
     """Sync helper to write state to disk without blocking the event loop."""
@@ -19,6 +21,7 @@ def _write_state(steps: List[dict]):
                 json.dump({"steps": steps}, f, indent=2, ensure_ascii=False)
         except Exception as e:
             print(f"Error updating pipeline_state.json: {e}")
+
 
 async def broadcast_log(data: dict):
     """
