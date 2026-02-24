@@ -42,6 +42,18 @@ Cada módulo tiene una responsabilidad única y un contrato JSON estricto:
 
 ---
 
+
+## 🧭 Protocolo oficial de agentes y supervisor
+
+Se documentó el protocolo completo de operación para los 5 agentes GEM y el Supervisor General (gobernanza, gates, reintentos y escalamiento) en:
+
+- `docs/PROTOCOLO_MULTIAGENTE.md`
+- `prompts/supervisor_general.md`
+
+Este marco alinea prompts, pipeline, QA final y decisión de supervisión.
+
+---
+
 ## 🚀 Guía de Instalación
 
 ### Requisitos

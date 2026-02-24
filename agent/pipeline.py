@@ -218,6 +218,59 @@ class Pipeline:
 
         return result, score, passed
 
+    def _run_gem4_with_retries(
+        self,
+        candidate_id: str,
+        gem4_vars: dict,
+    ) -> tuple[dict, Optional[int], bool]:
+        """Ejecuta GEM4 con reintentos cuando QA bloquea el reporte."""
+        attempts = MAX_RETRIES_ON_BLOCK + 1
+        last_result: dict[str, Any] = {}
+        last_score: Optional[int] = None
+        last_passed = False
+
+        for attempt in range(1, attempts + 1):
+            label = (
+                "GEM4 – Auditor QA (Gate Final)"
+                if attempt == 1
+                else f"GEM4 – Auditor QA (Reintento {attempt-1}/{MAX_RETRIES_ON_BLOCK})"
+            )
+            console.print(f"\n[bold]📋 {label}[/bold]")
+
+            if attempt == 1 and "gem4" in self.state["completed_gems"].get(candidate_id, []):
+                console.print("[dim]  ⏭️  Recuperando GEM4 de caché...[/dim]")
+                last_result = self.state["results_cache"].get(candidate_id, {}).get("gem4", {})
+            else:
+                with console.status("[blue]Ejecutando gem4...[/blue]"):
+                    last_result = self._run_gem_with_validation("gem4", gem4_vars)
+                save_name = "gem4" if attempt == 1 else f"gem4_retry_{attempt-1}"
+                self._save_output(save_name, last_result, candidate_id)
+
+            last_score = self._get_score(last_result.get("json"))
+            if last_score is None:
+                console.print(
+                    "[bold red]  ❌ Error parseando score en gem4. Bloqueo automático.[/bold red]"
+                )
+                last_passed = False
+            else:
+                last_passed = self._check_gate("gem4", last_score)
+
+            decision = (last_result.get("json") or {}).get("decision", "BLOQUEADO")
+            approved = bool(last_passed and decision != "BLOQUEADO")
+
+            if approved:
+                console.print(
+                    f"[green]  ✅ gem4 aprobado[/green] (score {last_score}, intento {attempt}/{attempts})"
+                )
+                return last_result, last_score, True
+
+            if attempt < attempts:
+                console.print(
+                    f"[bold yellow]  ⚠️  GEM4 bloqueado (score {last_score}). Reintentando... ({attempt}/{attempts})[/bold yellow]"
+                )
+
+        return last_result, last_score, False
+
     def run_gem5(self, search_inputs: dict) -> dict:
         console.print(
             Panel(
@@ -356,8 +409,8 @@ class Pipeline:
             "gem3": gem3_result.get("json") or gem3_result.get("raw", ""),
             "sources_index": ", ".join(sources),
         }
-        gem4_result, gem4_score, passed4 = self._run_generic_gem_step(
-            "gem4", candidate_id, gem4_vars, "GEM4 – Auditor QA (Gate Final)"
+        gem4_result, gem4_score, passed4 = self._run_gem4_with_retries(
+            candidate_id, gem4_vars
         )
         results["gems"]["gem4"] = gem4_result
 
@@ -366,6 +419,8 @@ class Pipeline:
 
         if gem4_score is not None and passed4 and decision != "BLOQUEADO":
             decision = "APROBADO"
+        elif not passed4:
+            decision = "ESCALADO_CONSULTOR_SENIOR"
 
         results["decision"] = decision
         results["gem4_score"] = gem4_score
