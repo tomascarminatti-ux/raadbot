@@ -1,8 +1,4 @@
- Entiendo que quieres modificar el **GEM 1** para que, en lugar de (o además de) analizar CVs, haga **scraping masivo con Google X-Ray** (también conocido como Google Dorking) para encontrar perfiles profesionales y exportar los resultados a Excel/Spreadsheets.
 
-Aquí te presento la **nueva versión del prompt de GEM 1** adaptada para esta función:
-
----
 
 ## 🟢 GEM 1 — Scraping de Perfiles (Google X-Ray) + Dump a Excel/Sheets
 
