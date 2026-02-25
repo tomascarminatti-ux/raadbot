@@ -1,0 +1,3 @@
+## 2025-05-15 - [PromptBuilder: Caching and Single-Pass Replacement]
+**Learning:** Sequential `.replace()` calls on large strings are $O(N \times K)$. Using a single-pass `re.sub()` with a callback reduces this to $O(N)$. However, when using a modular prompt system with a "Maestro" prompt, order of replacement matters: `{{PROMPT_MAESTRO}}` must be injected before the single-pass regex replacement to allow variables within the Maestro content to be resolved.
+**Action:** Use `functools.lru_cache` for static template loading and prioritize `re.sub` for batch variable injection, but always check for nested placeholder dependencies.
