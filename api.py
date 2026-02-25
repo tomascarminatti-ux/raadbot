@@ -1,12 +1,13 @@
 import os
 import json
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Optional, Any
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -51,6 +52,60 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    # Content Security Policy
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data:; "
+        "connect-src 'self' ws: wss:;"
+    )
+    response.headers["Content-Security-Policy"] = csp
+    return response
+
+
+def is_safe_url(url: str) -> bool:
+    """Verifica si un URL es seguro (previene SSRF)."""
+    try:
+        parsed = urlparse(url)
+        if not parsed.hostname:
+            return False
+        hostname = parsed.hostname.lower()
+        forbidden = ["localhost", "127.0.0.1", "0.0.0.0"]
+        if hostname in forbidden:
+            return False
+        # Bloquear rangos privados (10.x, 192.168.x, 172.16-31.x)
+        if hostname.startswith("10.") or hostname.startswith("192.168."):
+            return False
+        if hostname.startswith("172."):
+            parts = hostname.split(".")
+            if len(parts) >= 2 and parts[1].isdigit():
+                second_octet = int(parts[1])
+                if 16 <= second_octet <= 31:
+                    return False
+        return True
+    except Exception:
+        return False
+
+
+def validate_path_safe(v: Any) -> Any:
+    """Valida que un string no contenga patrones de path traversal."""
+    if not isinstance(v, str):
+        return v
+    if ".." in v or v.startswith("/") or v.startswith("\\"):
+        raise ValueError("Path traversal detected")
+    if len(v) >= 2 and v[1] == ":" and v[0].isalpha():
+        raise ValueError("Path traversal detected (Windows drive)")
+    return v
+
+
 class PipelineRequest(BaseModel):
     search_id: str
     drive_folder: Optional[str] = None
@@ -58,6 +113,18 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "local_dir", "candidate_id")
+    @classmethod
+    def check_path_traversal(cls, v):
+        return validate_path_safe(v)
+
+    @field_validator("webhook_url")
+    @classmethod
+    def check_ssrf(cls, v):
+        if v and not is_safe_url(v):
+            raise ValueError("SSRF detected in webhook_url")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -165,6 +232,12 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id")
+    @classmethod
+    def check_path_traversal(cls, v):
+        return validate_path_safe(v)
+
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -236,6 +309,12 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id")
+    @classmethod
+    def check_path_traversal(cls, v):
+        return validate_path_safe(v)
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
