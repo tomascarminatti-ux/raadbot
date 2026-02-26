@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -51,6 +51,25 @@ app.add_middleware(
 )
 
 
+# --- Middleware de Seguridad ---
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    # Permite self, Tailwind CDN para estilos y Google Fonts
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "
+        "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data:; "
+        "connect-src 'self' ws: wss:;"
+    )
+    return response
+
+
 class PipelineRequest(BaseModel):
     search_id: str
     drive_folder: Optional[str] = None
@@ -58,6 +77,49 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "local_dir", "candidate_id")
+    @classmethod
+    def prevent_path_traversal(cls, v: Optional[str]) -> Optional[str]:
+        if not v:
+            return v
+        # Bloquear intentos de path traversal (..), paths absolutos (/ o \) y letras de unidad (:)
+        if ".." in v or v.startswith("/") or v.startswith("\\") or ":" in v:
+            raise ValueError(f"Formato de path o ID no permitido: {v}")
+        return v
+
+    @field_validator("webhook_url")
+    @classmethod
+    def validate_webhook_url(cls, v: Optional[str]) -> Optional[str]:
+        if not v:
+            return v
+        from urllib.parse import urlparse
+        import ipaddress
+
+        try:
+            parsed = urlparse(v)
+            if not parsed.scheme or not parsed.hostname:
+                raise ValueError("URL inválida")
+
+            # Bloquear localhost y hostnames obvios
+            if parsed.hostname in ["localhost", "127.0.0.1", "0.0.0.0"]:
+                raise ValueError("SSRF detectado: localhost no permitido")
+
+            # Intentar resolver si es IP para bloquear privadas
+            try:
+                ip = ipaddress.ip_address(parsed.hostname)
+                if ip.is_private or ip.is_loopback:
+                    raise ValueError("SSRF detectado: IP privada no permitida")
+            except ValueError as e:
+                # No es IP, es hostname (se asume que el DNS externo resolverá o fallará)
+                if "SSRF" in str(e):
+                    raise e
+                pass
+        except Exception as e:
+            if "SSRF" in str(e):
+                raise ValueError(str(e))
+            raise ValueError(f"URL de webhook no válida: {v}")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -165,6 +227,13 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id")
+    @classmethod
+    def prevent_path_traversal(cls, v: str) -> str:
+        if ".." in v or v.startswith("/") or v.startswith("\\") or ":" in v:
+            raise ValueError(f"Formato de ID no permitido: {v}")
+        return v
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -236,6 +305,13 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id")
+    @classmethod
+    def prevent_path_traversal(cls, v: str) -> str:
+        if ".." in v or v.startswith("/") or v.startswith("\\") or ":" in v:
+            raise ValueError(f"Formato de GEM ID no permitido: {v}")
+        return v
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
