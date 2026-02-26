@@ -1,8 +1,9 @@
-import pytest
 from fastapi.testclient import TestClient
 from api import app
 
+
 client = TestClient(app)
+
 
 def test_security_headers():
     response = client.get("/health")
@@ -11,6 +12,7 @@ def test_security_headers():
     assert response.headers["X-Frame-Options"] == "DENY"
     assert response.headers["X-XSS-Protection"] == "1; mode=block"
     assert "Content-Security-Policy" in response.headers
+
 
 def test_path_traversal_protection_run():
     # Test search_id
@@ -29,6 +31,7 @@ def test_path_traversal_protection_run():
     assert response.status_code == 422
     assert "path o ID no permitido" in response.text
 
+
 def test_path_traversal_protection_setup():
     # Test absolute path
     response = client.post("/api/v1/search/setup", json={
@@ -39,6 +42,7 @@ def test_path_traversal_protection_setup():
     assert response.status_code == 422
     assert "ID no permitido" in response.text
 
+
 def test_path_traversal_protection_refine():
     # Test path traversal pattern
     response = client.post("/api/v1/gems/refine", json={
@@ -47,6 +51,7 @@ def test_path_traversal_protection_refine():
     })
     assert response.status_code == 422
     assert "GEM ID no permitido" in response.text
+
 
 def test_ssrf_protection():
     # Test localhost
