@@ -4,11 +4,14 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import json
+from functools import lru_cache
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
 
+@lru_cache(maxsize=32)
 def load_prompt(gem_name: str) -> str:
     """Carga un prompt desde el directorio de prompts."""
     filename = f"{gem_name}.md"
@@ -21,6 +24,7 @@ def load_prompt(gem_name: str) -> str:
         return f.read()
 
 
+@lru_cache(maxsize=1)
 def load_maestro() -> str:
     """Carga el prompt maestro."""
     return load_prompt("00_prompt_maestro")
@@ -32,7 +36,7 @@ def build_prompt(gem_name: str, variables: dict) -> str:
 
     1. Carga el prompt del GEM
     2. Inyecta {{PROMPT_MAESTRO}}
-    3. Reemplaza todas las {{variables}}
+    3. Reemplaza todas las {{variables}} en una sola pasada
     4. Valida que no queden variables sin reemplazar
 
     Args:
@@ -44,19 +48,22 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     """
     # Cargar prompt maestro y del GEM
     maestro = load_maestro()
-    prompt = load_prompt(gem_name)
+    template = load_prompt(gem_name)
 
-    # Inyectar prompt maestro
-    prompt = prompt.replace("{{PROMPT_MAESTRO}}", maestro)
+    # Inyectar prompt maestro (primera pasada)
+    prompt = template.replace("{{PROMPT_MAESTRO}}", maestro)
 
-    # Inyectar variables
-    for key, value in variables.items():
-        placeholder = "{{" + key + "}}"
-        if isinstance(value, dict):
-            import json
+    # Inyectar variables en una sola pasada con re.sub
+    def _replace(match):
+        key = match.group(1)
+        if key in variables:
+            val = variables[key]
+            if isinstance(val, dict):
+                return json.dumps(val, ensure_ascii=False, indent=2)
+            return str(val)
+        return match.group(0)
 
-            value = json.dumps(value, ensure_ascii=False, indent=2)
-        prompt = prompt.replace(placeholder, str(value))
+    prompt = re.sub(r"\{\{(\w+)\}\}", _replace, prompt)
 
     # Validar que no queden variables sin reemplazar
     remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
