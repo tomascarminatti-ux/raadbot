@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -51,6 +51,25 @@ app.add_middleware(
 )
 
 
+# --- Middleware de Seguridad ---
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    # Permite self, Tailwind CDN para estilos y Google Fonts
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "
+        "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data:; "
+        "connect-src 'self' ws: wss:;"
+    )
+    return response
+
+
 class PipelineRequest(BaseModel):
     search_id: str
     drive_folder: Optional[str] = None
@@ -58,6 +77,49 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "local_dir", "candidate_id")
+    @classmethod
+    def prevent_path_traversal(cls, v: Optional[str]) -> Optional[str]:
+        if not v:
+            return v
+        # Bloquear intentos de path traversal (..), paths absolutos (/ o \) y letras de unidad (:)
+        if ".." in v or v.startswith("/") or v.startswith("\\") or ":" in v:
+            raise ValueError(f"Formato de path o ID no permitido: {v}")
+        return v
+
+    @field_validator("webhook_url")
+    @classmethod
+    def validate_webhook_url(cls, v: Optional[str]) -> Optional[str]:
+        if not v:
+            return v
+        from urllib.parse import urlparse
+        import ipaddress
+
+        try:
+            parsed = urlparse(v)
+            if not parsed.scheme or not parsed.hostname:
+                raise ValueError("URL inválida")
+
+            # Bloquear localhost y hostnames obvios
+            if parsed.hostname in ["localhost", "127.0.0.1", "0.0.0.0"]:
+                raise ValueError("SSRF detectado: localhost no permitido")
+
+            # Intentar resolver si es IP para bloquear privadas
+            try:
+                ip = ipaddress.ip_address(parsed.hostname)
+                if ip.is_private or ip.is_loopback:
+                    raise ValueError("SSRF detectado: IP privada no permitida")
+            except ValueError as e:
+                # No es IP, es hostname (se asume que el DNS externo resolverá o fallará)
+                if "SSRF" in str(e):
+                    raise e
+                pass
+        except Exception as e:
+            if "SSRF" in str(e):
+                raise ValueError(str(e))
+            raise ValueError(f"URL de webhook no válida: {v}")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -129,8 +191,8 @@ async def background_run_pipeline(request: PipelineRequest):
                     await client.post(
                         request.webhook_url,
                         json={
-                            "status": "error", 
-                            "search_id": request.search_id, 
+                            "status": "error",
+                            "search_id": request.search_id,
                             "message": str(e)
                         },
                         timeout=30.0,
@@ -165,6 +227,14 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id")
+    @classmethod
+    def prevent_path_traversal(cls, v: str) -> str:
+        if ".." in v or v.startswith("/") or v.startswith("\\") or ":" in v:
+            raise ValueError(f"Formato de ID no permitido: {v}")
+        return v
+
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -173,26 +243,26 @@ async def setup_search(request: SetupSearchRequest):
     """
     output_dir = os.path.join("runs", request.search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Simular estructura de inputs para GEM 5
     search_inputs = {
         "kickoff_notes": request.brief_notes,
         "brief_jd": request.jd_content,
         "company_context": request.company_context or ""
     }
-    
+
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     # Ejecutar GEM 5 directamente
     from agent.prompt_builder import build_gem5_prompt
     prompt = build_gem5_prompt(search_inputs)
     result = gemini.run_gem(prompt, gem_name="gem5")
-    
+
     # Guardar resultados
     with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
         json.dump(result.get("data", {}), f, indent=4)
     with open(os.path.join(output_dir, "gem5.md"), "w", encoding="utf-8") as f:
         f.write(result.get("markdown", ""))
-        
+
     return {
         "status": "success",
         "search_id": request.search_id,
@@ -201,6 +271,7 @@ async def setup_search(request: SetupSearchRequest):
 
 
 # --- Dashboard Endpoints ---
+
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard():
@@ -211,31 +282,41 @@ async def get_dashboard():
     except FileNotFoundError:
         return "Dashboard template not found. Please create templates/dashboard.html"
 
+
 @app.get("/api/v1/gems")
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
     gems = []
     gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
-    
+
     for g in gem_list:
         prompt_path = f"prompts/{g}.md"
         prompt_content = ""
         if os.path.exists(prompt_path):
             with open(prompt_path, "r", encoding="utf-8") as f:
                 prompt_content = f.read()
-        
+
         gems.append({
             "id": g,
             "name": g.upper(),
             "prompt": prompt_content,
             "config": config.GEM_CONFIGS.get(g, {})
         })
-    
+
     return gems
+
 
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id")
+    @classmethod
+    def prevent_path_traversal(cls, v: str) -> str:
+        if ".." in v or v.startswith("/") or v.startswith("\\") or ":" in v:
+            raise ValueError(f"Formato de GEM ID no permitido: {v}")
+        return v
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
@@ -243,36 +324,37 @@ async def refine_gem(request: RefineRequest):
     prompt_path = f"prompts/{request.gem_id}.md"
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
-        
+
     with open(prompt_path, "r", encoding="utf-8") as f:
         current_prompt = f.read()
-        
+
     refinement_prompt = f"""
     Eres un experto en Prompt Engineering. Tu misión es REFINAR el siguiente System Prompt de RAADBOT v2.0.
-    
+
     ESTRUCTURA ACTUAL:
     {current_prompt}
-    
+
     INSTRUCCIÓN DEL USUARIO:
     {request.instruction}
-    
+
     REGLAS:
     1. Mantén la estructura de secciones (ROL, CONTEXTO, INSTRUCCIONES CORE, etc.).
     2. Aplica la instrucción del usuario de forma profesional y precisa.
     3. Devuelve el prompt REFINADO completo en formato Markdown.
     4. NO agregues explicaciones, solo el contenido del nuevo prompt.
     """
-    
+
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     result = gemini.run_gem(refinement_prompt)
     new_prompt = result.get("markdown", "") or result.get("raw", "")
-    
+
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write(new_prompt)
         return {"status": "success", "new_prompt": new_prompt}
-    
+
     return {"status": "error", "message": "Failed to generate new prompt"}
+
 
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
@@ -286,11 +368,12 @@ async def websocket_logs(websocket: WebSocket):
         if websocket in active_connections:
             active_connections.remove(websocket)
 
+
 @app.get("/health")
 def health_check():
     return {
-        "status": "ok", 
-        "agent": "raadbot", 
+        "status": "ok",
+        "agent": "raadbot",
         "version": "3.0.0",
         "model": config.DEFAULT_MODEL,
         "provider": config.LLM_PROVIDER
