@@ -78,8 +78,8 @@
 
                 <div class="space-y-3">
                     <textarea id="refine-input" aria-label="Instrucciones para refinar el GEM" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
-                    <button onclick="refineGem()" id="send-btn" aria-label="Refinar Prompt" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
-                        <span>🚀</span> Refinar Prompt
+                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                        <span aria-hidden="true">🚀</span> Refinar Prompt
                     </button>
                 </div>
             </section>
