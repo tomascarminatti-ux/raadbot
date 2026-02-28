@@ -270,6 +270,9 @@ async def refine_gem(request: RefineRequest):
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write(new_prompt)
+        # Invalidate the cache for load_prompt
+        import agent.prompt_builder
+        agent.prompt_builder.load_prompt.cache_clear()
         return {"status": "success", "new_prompt": new_prompt}
     
     return {"status": "error", "message": "Failed to generate new prompt"}
