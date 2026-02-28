@@ -1,0 +1,3 @@
+## 2024-05-22 - Optimized Prompt Building in Python
+**Learning:** Multiple `.replace()` calls on large strings create many intermediate string copies, which significantly impacts performance as the number of variables and string size grow. A single-pass `re.sub()` with a substitution callback is much more efficient. Additionally, repeated disk I/O for static prompt templates is a major bottleneck in a pipeline-heavy application.
+**Action:** Use `re.sub()` with a regex pattern like `r"\{\{\s*(\w+)\s*\}\}"` and a mapping callback for multi-variable substitution. Apply `functools.lru_cache` to template loading functions to eliminate redundant file reads.
