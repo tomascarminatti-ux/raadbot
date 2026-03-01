@@ -1,0 +1,3 @@
+## 2024-05-24 - Optimized Prompt Construction
+**Learning:** In LLM agents that use complex templates (like Raadbot), performing multiple `.replace()` calls for variable injection becomes a bottleneck when handling large context windows (CVs, interview notes). String immutable nature in Python causes $O(k \cdot n)$ complexity where $k$ is number of variables and $n$ is string length. Using `re.sub` with a callback reduces this to a single $O(n)$ pass. Additionally, template disk I/O should be cached as they are static.
+**Action:** Use `functools.lru_cache` for template loading and `re.sub(pattern, callback, text)` for multi-variable substitution in performance-critical prompt builders.
