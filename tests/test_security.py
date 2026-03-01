@@ -1,8 +1,8 @@
-import pytest
 from fastapi.testclient import TestClient
 from api import app
 
 client = TestClient(app)
+
 
 def test_pipeline_run_search_id_traversal():
     # Valid search_id should pass pydantic but might fail later (expected)
@@ -14,6 +14,7 @@ def test_pipeline_run_search_id_traversal():
     response = client.post("/api/v1/run", json=payload)
     assert response.status_code == 422
 
+
 def test_pipeline_run_local_dir_absolute():
     payload = {
         "search_id": "valid_id",
@@ -21,6 +22,7 @@ def test_pipeline_run_local_dir_absolute():
     }
     response = client.post("/api/v1/run", json=payload)
     assert response.status_code == 422
+
 
 def test_pipeline_run_local_dir_traversal():
     payload = {
@@ -31,6 +33,7 @@ def test_pipeline_run_local_dir_traversal():
     assert response.status_code == 422
     assert "Path traversal sequence '..' not allowed" in response.text
 
+
 def test_pipeline_run_candidate_id_invalid():
     payload = {
         "search_id": "valid_id",
@@ -39,6 +42,7 @@ def test_pipeline_run_candidate_id_invalid():
     }
     response = client.post("/api/v1/run", json=payload)
     assert response.status_code == 422
+
 
 def test_setup_search_id_traversal():
     payload = {
@@ -49,6 +53,7 @@ def test_setup_search_id_traversal():
     response = client.post("/api/v1/search/setup", json=payload)
     assert response.status_code == 422
 
+
 def test_refine_gem_id_traversal():
     payload = {
         "gem_id": "gem1/../../../etc/passwd",
@@ -56,6 +61,7 @@ def test_refine_gem_id_traversal():
     }
     response = client.post("/api/v1/gems/refine", json=payload)
     assert response.status_code == 422
+
 
 def test_valid_payload_passes_pydantic():
     # This should pass pydantic but might fail later due to missing API key or files
