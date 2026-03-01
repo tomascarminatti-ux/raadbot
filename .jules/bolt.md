@@ -1,0 +1,3 @@
+## 2025-05-15 - Optimizing Prompt Construction
+**Learning:** In a template system where a base "Maestro" prompt is injected into others, a single-pass `re.sub` for variables can break functional correctness if variables are present inside the Maestro itself. The Maestro must be injected first, and then the entire resulting string should be processed for variable substitution. Caching the file I/O with `lru_cache` provides the most significant speedup in this Python-based architecture.
+**Action:** Always inject nested templates (like Maestro) before performing a single-pass regex substitution for dynamic variables. Clear all related caches when template files are updated.
