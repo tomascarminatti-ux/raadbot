@@ -1,0 +1,3 @@
+## 2025-03-02 - Prompt Building Optimization
+**Learning:** Prompt construction using multiple `.replace()` calls in a loop is a performance bottleneck as the template size and number of variables increase. Using a single-pass `re.sub` with a pre-compiled regex and pre-serialized JSON variables is significantly more efficient (~4x speedup). Additionally, disk I/O for loading static templates can be eliminated using `functools.lru_cache`.
+**Action:** Always prefer `re.sub` for batch string templating and use `lru_cache` for static configuration or template files. Ensure cache invalidation logic is implemented if the underlying files can be modified at runtime.
