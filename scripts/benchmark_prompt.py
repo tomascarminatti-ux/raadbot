@@ -1,8 +1,6 @@
 import time
 import sys
 import os
-import json
-import functools
 
 # Add parent directory to path to import agent
 sys.path.append(os.getcwd())
@@ -10,6 +8,7 @@ sys.path.append(os.getcwd())
 from agent.prompt_builder import build_prompt
 
 def benchmark():
+    """Benchmark the prompt building process."""
     variables = {
         "candidate_id": "CAND-001",
         "search_id": "SEARCH-001",
