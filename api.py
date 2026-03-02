@@ -3,10 +3,10 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 import httpx
 import asyncio
 
@@ -52,12 +52,19 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(..., max_length=100, pattern='^[a-zA-Z0-9_-]+$')
     drive_folder: Optional[str] = None
-    local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    local_dir: Optional[str] = Field(None, max_length=255, pattern=r'^[^/\\][^:]*$')
+    candidate_id: Optional[str] = Field(None, max_length=100, pattern='^[a-zA-Z0-9_-]+$')
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator('local_dir')
+    @classmethod
+    def validate_local_dir(cls, v: str) -> str:
+        if v and '..' in v:
+            raise ValueError("Path traversal sequence '..' is not allowed")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -129,8 +136,8 @@ async def background_run_pipeline(request: PipelineRequest):
                     await client.post(
                         request.webhook_url,
                         json={
-                            "status": "error", 
-                            "search_id": request.search_id, 
+                            "status": "error",
+                            "search_id": request.search_id,
                             "message": str(e)
                         },
                         timeout=30.0,
@@ -160,10 +167,11 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(..., max_length=100, pattern='^[a-zA-Z0-9_-]+$')
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
+
 
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
@@ -234,8 +242,9 @@ async def list_gems():
     return gems
 
 class RefineRequest(BaseModel):
-    gem_id: str
-    instruction: str
+    gem_id: str = Field(..., max_length=10, pattern='^gem[1-5]$')
+    instruction: str = Field(..., max_length=1000)
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
