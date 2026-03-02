@@ -1,8 +1,9 @@
-import pytest
 from fastapi.testclient import TestClient
 from api import app
 
+
 client = TestClient(app)
+
 
 def test_run_pipeline_path_traversal_search_id():
     # Attempting to use a search_id that goes out of the runs directory
@@ -17,6 +18,7 @@ def test_run_pipeline_path_traversal_search_id():
     # We WANT it to return 422 (Unprocessable Entity) after we add validation
     assert response.status_code == 422
 
+
 def test_run_pipeline_path_traversal_local_dir():
     response = client.post(
         "/api/v1/run",
@@ -26,6 +28,7 @@ def test_run_pipeline_path_traversal_local_dir():
         }
     )
     assert response.status_code == 422
+
 
 def test_setup_search_path_traversal():
     response = client.post(
@@ -37,6 +40,7 @@ def test_setup_search_path_traversal():
         }
     )
     assert response.status_code == 422
+
 
 def test_refine_gem_path_traversal():
     response = client.post(
