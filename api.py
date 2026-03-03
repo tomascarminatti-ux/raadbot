@@ -6,8 +6,9 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 import httpx
+from urllib.parse import urlparse
 import asyncio
 
 import config
@@ -51,13 +52,59 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+        "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; "
+        "connect-src 'self' ws: wss:;"
+    )
+    return response
+
+
 class PipelineRequest(BaseModel):
-    search_id: str
-    drive_folder: Optional[str] = None
-    local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    search_id: str = Field(..., pattern=r"^[a-zA-Z0-9_-]+$", max_length=100)
+    drive_folder: Optional[str] = Field(None, max_length=100)
+    local_dir: Optional[str] = Field(None, pattern=r"^[^/\\][^:]*$", max_length=100)
+    candidate_id: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_-]+$", max_length=100)
     model: str = config.DEFAULT_MODEL
-    webhook_url: Optional[str] = None  # Para n8n asíncrono
+    webhook_url: Optional[str] = Field(None, max_length=255)
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_local_dir(cls, v):
+        if v and ".." in v:
+            raise ValueError("Path traversal sequence '..' not allowed")
+        return v
+
+    @field_validator("webhook_url")
+    @classmethod
+    def validate_webhook_url(cls, v):
+        if not v:
+            return v
+        parsed = urlparse(v)
+        hostname = parsed.hostname
+        if not hostname:
+            raise ValueError("Invalid webhook URL")
+        forbidden = ["localhost", "127.0.0.1", "0.0.0.0", "::1"]
+        if hostname in forbidden:
+            raise ValueError("Internal webhook URLs are not allowed")
+        # Private IP ranges
+        if hostname.startswith("10.") or hostname.startswith("192.168.") or hostname.startswith("169.254."):
+            raise ValueError("Private network webhooks are not allowed")
+        if hostname.startswith("172."):
+            parts = hostname.split(".")
+            if len(parts) >= 2 and parts[1].isdigit():
+                second_octet = int(parts[1])
+                if 16 <= second_octet <= 31:
+                    raise ValueError("Private network webhooks are not allowed")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -160,7 +207,7 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(..., pattern=r"^[a-zA-Z0-9_-]+$", max_length=100)
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
@@ -234,7 +281,7 @@ async def list_gems():
     return gems
 
 class RefineRequest(BaseModel):
-    gem_id: str
+    gem_id: str = Field(..., pattern=r"^[a-zA-Z0-9_-]+$", max_length=100)
     instruction: str
 
 @app.post("/api/v1/gems/refine")
