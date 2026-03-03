@@ -5,7 +5,7 @@ except ImportError:
     pass
 
 @pytest.mark.skipif("playwright" not in globals() and "Page" not in globals(), reason="Playwright not installed")
-def test_dashboard_ui_improvements(page: Page, context):
+def test_dashboard_ui_improvements(page: "Page", context):
     context.grant_permissions(['clipboard-write', 'clipboard-read'])
     # Go to the dashboard
     page.goto("http://localhost:8000/dashboard")
