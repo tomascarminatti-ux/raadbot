@@ -1,12 +1,10 @@
-import os
-import pytest
 from fastapi.testclient import TestClient
 from api import app
 
 client = TestClient(app)
 
 def test_path_traversal_local_dir():
-    print("\nTesting path traversal in local_dir...")
+    """Verifica que el acceso a rutas absolutas en local_dir sea bloqueado."""
     response = client.post(
         "/api/v1/run",
         json={
@@ -14,12 +12,11 @@ def test_path_traversal_local_dir():
             "local_dir": "/etc"
         }
     )
-    print(f"Status Code: {response.status_code}")
-    print(f"Response: {response.json()}")
     assert response.status_code == 422
+    assert "String should match pattern" in response.text
 
 def test_path_traversal_search_id():
-    print("\nTesting path traversal in search_id...")
+    """Verifica que secuencias de traversal en search_id sean bloqueadas."""
     response = client.post(
         "/api/v1/search/setup",
         json={
@@ -28,12 +25,10 @@ def test_path_traversal_search_id():
             "jd_content": "test"
         }
     )
-    print(f"Status Code: {response.status_code}")
-    # print(f"Response: {response.json()}")
     assert response.status_code == 422
 
 def test_ssrf_webhook():
-    print("\nTesting SSRF in webhook_url...")
+    """Verifica que URLs de webhook internas o privadas sean bloqueadas."""
     urls = [
         "http://localhost:22",
         "http://127.0.0.1:8000",
@@ -50,20 +45,14 @@ def test_ssrf_webhook():
                 "webhook_url": url
             }
         )
-        print(f"URL {url} -> Status Code: {response.status_code}")
         assert response.status_code == 422
+        assert "Internal webhook URLs are not allowed" in response.text or \
+               "Private network webhooks are not allowed" in response.text
 
 def test_security_headers():
-    print("\nTesting security headers...")
+    """Verifica que las cabeceras de seguridad estén presentes."""
     response = client.get("/health")
     headers = response.headers
-    print(f"X-Frame-Options: {headers.get('X-Frame-Options')}")
-    assert headers.get("X-Frame-Options") == "DENY"
-    assert headers.get("X-Content-Type-Options") == "nosniff"
-    assert "Content-Security-Policy" in headers
-
-if __name__ == "__main__":
-    test_path_traversal_local_dir()
-    test_path_traversal_search_id()
-    test_ssrf_webhook()
-    test_security_headers()
+    assert headers.get("x-frame-options") == "DENY"
+    assert headers.get("x-content-type-options") == "nosniff"
+    assert "content-security-policy" in headers
