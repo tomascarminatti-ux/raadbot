@@ -6,7 +6,6 @@ from typing import TypedDict, Any, Optional
 from google import genai
 from rich.console import Console
 import httpx
-import asyncio
 
 import config
 
