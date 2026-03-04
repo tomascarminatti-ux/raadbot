@@ -1,0 +1,3 @@
+## 2025-03-05 - Dashboard Accessibility & Interaction Improvements
+**Learning:** Standard Tailwind utility classes (like `focus-visible:ring-2`) provide a consistent way to improve keyboard navigation without custom CSS. ARIA labels on dynamic sidebar elements generated via JS ensure screen reader support for key navigation. Adding a "Copy to Clipboard" feature with immediate visual feedback (changing text/icon/border) significantly improves the developer experience when managing prompt templates.
+**Action:** Always include `focus-visible` states for interactive elements. Ensure JS-rendered elements receive appropriate ARIA attributes during construction. Use temporary UI state changes to confirm successful asynchronous actions like clipboard copies.
