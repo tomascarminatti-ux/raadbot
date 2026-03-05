@@ -1,0 +1,44 @@
+{
+  "steps": [
+    {
+      "timestamp": "2026-03-05T07:15:25.050165",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-1",
+      "thought": "Done"
+    },
+    {
+      "timestamp": "2026-03-05T07:15:25.151343",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-2",
+      "thought": "Done"
+    },
+    {
+      "timestamp": "2026-03-05T07:15:25.196024",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-3",
+      "thought": "Done"
+    },
+    {
+      "timestamp": "2026-03-05T07:15:25.241986",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-4",
+      "thought": "Done"
+    },
+    {
+      "timestamp": "2026-03-05T07:15:25.288129",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-5",
+      "thought": "Done"
+    }
+  ]
+}

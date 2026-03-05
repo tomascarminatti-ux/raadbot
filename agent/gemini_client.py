@@ -33,13 +33,13 @@ class GeminiClient:
             self.client = genai.Client(api_key=api_key)
         self.model = model if self.provider == "gemini" else config.OLLAMA_MODEL
 
-    def run_gem(self, prompt: str, gem_name: Optional[str] = None, max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
+    async def run_gem(self, prompt: str, gem_name: Optional[str] = None, max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
         if self.provider == "ollama":
-            return self._run_ollama(prompt, gem_name, max_retries)
-        return self._run_gemini(prompt, gem_name, max_retries)
+            return await self._run_ollama(prompt, gem_name, max_retries)
+        return await self._run_gemini(prompt, gem_name, max_retries)
 
-    def _run_ollama(self, prompt: str, gem_name: Optional[str], max_retries: int) -> GeminiResult:
-        """Envía un prompt a Ollama."""
+    async def _run_ollama(self, prompt: str, gem_name: Optional[str], max_retries: int) -> GeminiResult:
+        """Envía un prompt a Ollama de forma asíncrona."""
         url = f"{config.OLLAMA_BASE_URL}/api/generate"
         cfg = config.GEM_CONFIGS.get(gem_name, {"temperature": 0.3, "top_p": 0.8, "max_tokens": 4096})
 
@@ -57,8 +57,8 @@ class GeminiClient:
 
         for attempt in range(max_retries + 1):
             try:
-                with httpx.Client(timeout=120.0) as client:
-                    response = client.post(url, json=payload)
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    response = await client.post(url, json=payload)
                     response.raise_for_status()
                     data = response.json()
 
@@ -81,14 +81,14 @@ class GeminiClient:
                     }
             except Exception as e:
                 if attempt < max_retries:
-                    time.sleep(2 ** (attempt + 1))
+                    await asyncio.sleep(2 ** (attempt + 1))
                 else:
                     raise RuntimeError(f"Ollama falló: {e}")
         raise RuntimeError("Unreachable")
 
-    def _run_gemini(self, prompt: str, gem_name: Optional[str] = None, max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
+    async def _run_gemini(self, prompt: str, gem_name: Optional[str] = None, max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
         """
-        Envía un prompt al modelo Gemini y parsea la respuesta.
+        Envía un prompt al modelo Gemini de forma asíncrona y parsea la respuesta.
 
         Args:
             prompt: Texto del prompt.
@@ -103,7 +103,7 @@ class GeminiClient:
         
         for attempt in range(max_retries + 1):
             try:
-                response = self.client.models.generate_content(
+                response = await self.client.aio.models.generate_content(
                     model=self.model,
                     contents=prompt,
                     config={
@@ -150,7 +150,7 @@ class GeminiClient:
                     wait = 2 ** (attempt + 1)
                     console.print(f"[yellow]  ⚠️  Error (intento {attempt + 1}/{max_retries + 1}): {e}[/yellow]")
                     console.print(f"[dim]  ⏳ Reintentando en {wait}s...[/dim]")
-                    time.sleep(wait)
+                    await asyncio.sleep(wait)
                 else:
                     raise RuntimeError(
                         f"Gemini API falló después de {max_retries + 1} intentos: {e}"

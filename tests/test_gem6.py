@@ -18,29 +18,31 @@ async def test_gem6_flow():
     output_dir = "runs/test_gem6"
     config = {"search_id": "TEST-SEARCH-001"}
     
-    orchestrator = GEM6Orchestrator(gemini, output_dir, config)
+    orchestrator = GEM6Orchestrator(gemini=gemini, output_dir=output_dir, config=config)
     
     # Inputs Mock
     search_inputs = {"perfil": "CTO para Startup Fintech", "empresa": "RaadAdvisory"}
-    candidates = [
-        {
+    # candidates must be a dict {id: data}
+    candidates = {
+        "CAND-001": {
             "candidato_id": "CAND-001",
             "cv_text": "Experiencia liderando equipos de ingeniería...",
             "interview_notes": "Muy técnico, buen fit cultural."
         }
-    ]
+    }
     
     try:
         # Nota: En un test real sin API Key de verdad, gemini.run_gem fallará o devolverá error.
         # Aquí probamos la estructura de la orquestación.
-        result = await orchestrator.execute_pipeline(search_inputs, candidates)
+        result = await orchestrator.run_pipeline(search_inputs, candidates)
         
         print("\n✅ Pipeline Ejecutado!")
-        print(f"Status: {result['status']}")
-        print(f"Metrics: {result['metrics']['counters']}")
+        print(f"Result keys: {result.keys()}")
         
     except Exception as e:
         print(f"\n❌ Error en el test: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
     if not os.getenv("GEMINI_API_KEY"):
