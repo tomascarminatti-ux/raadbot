@@ -58,7 +58,7 @@
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
                         <div class="flex items-center gap-3">
                             <button id="copy-btn" onclick="copyToClipboard()" class="hidden text-xs text-slate-400 hover:text-blue-400 transition-colors flex items-center gap-1 border border-white/10 px-2 py-1 rounded">
-                                <span>📋</span> <span id="copy-text">Copiar</span>
+                                📋 <span id="copy-text">Copiar</span>
                             </button>
                             <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
                         </div>
@@ -79,7 +79,7 @@
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" aria-label="Instrucciones de refinamiento" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                    <textarea id="refine-input" aria-label="Refinamiento" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
                     <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                         <span>🚀</span> Refinar Prompt
                     </button>
@@ -112,12 +112,10 @@
             const content = document.getElementById('prompt-content').innerText;
             const btn = document.getElementById('copy-btn');
             const text = document.getElementById('copy-text');
-
             navigator.clipboard.writeText(content).then(() => {
                 const originalText = text.innerText;
                 text.innerText = '¡Copiado!';
                 btn.classList.add('border-green-500', 'text-green-400');
-
                 setTimeout(() => {
                     text.innerText = originalText;
                     btn.classList.remove('border-green-500', 'text-green-400');
