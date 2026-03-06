@@ -3,7 +3,7 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -165,6 +165,7 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -185,7 +186,7 @@ async def setup_search(request: SetupSearchRequest):
     # Ejecutar GEM 5 directamente
     from agent.prompt_builder import build_gem5_prompt
     prompt = build_gem5_prompt(search_inputs)
-    result = gemini.run_gem(prompt, gem_name="gem5")
+    result = await gemini.run_gem(prompt, gem_name="gem5")
     
     # Guardar resultados
     with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
@@ -202,6 +203,7 @@ async def setup_search(request: SetupSearchRequest):
 
 # --- Dashboard Endpoints ---
 
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard():
     """Sirve la interfaz del Dashboard."""
@@ -210,6 +212,7 @@ async def get_dashboard():
             return f.read()
     except FileNotFoundError:
         return "Dashboard template not found. Please create templates/dashboard.html"
+
 
 @app.get("/api/v1/gems")
 async def list_gems():
@@ -230,12 +233,14 @@ async def list_gems():
             "prompt": prompt_content,
             "config": config.GEM_CONFIGS.get(g, {})
         })
-    
+
     return gems
+
 
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
@@ -264,7 +269,7 @@ async def refine_gem(request: RefineRequest):
     """
     
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
-    result = gemini.run_gem(refinement_prompt)
+    result = await gemini.run_gem(refinement_prompt)
     new_prompt = result.get("markdown", "") or result.get("raw", "")
     
     if new_prompt:
@@ -273,6 +278,7 @@ async def refine_gem(request: RefineRequest):
         return {"status": "success", "new_prompt": new_prompt}
     
     return {"status": "error", "message": "Failed to generate new prompt"}
+
 
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
@@ -285,6 +291,7 @@ async def websocket_logs(websocket: WebSocket):
     except WebSocketDisconnect:
         if websocket in active_connections:
             active_connections.remove(websocket)
+
 
 @app.get("/health")
 def health_check():
