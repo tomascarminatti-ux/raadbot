@@ -3,7 +3,12 @@ import subprocess
 import time
 import os
 import re
-from playwright.sync_api import Page, expect
+
+try:
+    from playwright.sync_api import Page, expect
+    HAS_PLAYWRIGHT = True
+except ImportError:
+    HAS_PLAYWRIGHT = False
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -29,7 +34,8 @@ def server():
     proc.terminate()
 
 
-def test_dashboard_copy_button(page: Page):
+@pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="playwright not installed")
+def test_dashboard_copy_button(page: "Page"):
     # Go to the dashboard
     page.goto("http://127.0.0.1:8000/dashboard")
 
@@ -68,7 +74,8 @@ def test_dashboard_copy_button(page: Page):
     expect(copy_btn).not_to_have_class(re.compile(r".*border-green-500.*"))
 
 
-def test_keyboard_navigation(page: Page):
+@pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="playwright not installed")
+def test_keyboard_navigation(page: "Page"):
     page.goto("http://127.0.0.1:8000/dashboard")
     page.wait_for_selector("#gem-nav button")
 
