@@ -1,6 +1,5 @@
 import json
 import re
-import time
 import os
 from typing import TypedDict, Any, Optional
 from google import genai
@@ -12,17 +11,20 @@ import config
 
 console = Console()
 
+
 class GeminiUsage(TypedDict):
     prompt_tokens: int
     candidates_tokens: int
     total_tokens: int
     finish_reason: str
 
+
 class GeminiResult(TypedDict):
     json: Optional[dict[str, Any]]
     markdown: str
     raw: str
     usage: GeminiUsage
+
 
 class GeminiClient:
     """Cliente para interactuar con Gemini API u Ollama."""
