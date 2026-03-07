@@ -14,6 +14,13 @@
         .active-gem { border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, 0.1); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        /* Interactive accessibility states */
+        .focus-visible\:ring-2:focus-visible {
+            --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+            --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+            box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+        }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden">
@@ -56,7 +63,13 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-3">
+                            <button id="copy-btn" onclick="copyToClipboard()" class="hidden flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium border border-slate-700 hover:border-blue-500 hover:text-blue-400 transition-all focus-visible:ring-2 focus-visible:ring-blue-500 outline-none" aria-label="Copiar System Prompt">
+                                <span id="copy-icon">📋</span>
+                                <span id="copy-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        </div>
                     </div>
                     <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
@@ -116,9 +129,11 @@
         function renderNav() {
             const nav = document.getElementById('gem-nav');
             nav.innerHTML = gems.map(gem => `
-                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
+                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}"
+                        class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group focus-visible:ring-2 focus-visible:ring-blue-500 outline-none"
+                        aria-label="Seleccionar ${gem.name}">
                     <span>${gem.name}</span>
-                    <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" aria-hidden="true">➔</span>
                 </button>
             `).join('');
         }
@@ -133,12 +148,52 @@
             document.getElementById('current-gem-title').innerText = `${activeGem.name} - ${id}`;
             document.getElementById('prompt-content').innerText = activeGem.prompt;
             document.getElementById('send-btn').disabled = false;
+            document.getElementById('copy-btn').classList.remove('hidden');
             
             document.getElementById('chat-history').innerHTML = `
                 <div class="bg-blue-600/10 border border-blue-500/30 p-3 rounded-lg text-xs leading-relaxed text-blue-200">
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?
                 </div>
             `;
+        }
+
+        async function copyToClipboard() {
+            const content = document.getElementById('prompt-content').innerText;
+            const btn = document.getElementById('copy-btn');
+            const icon = document.getElementById('copy-icon');
+            const text = document.getElementById('copy-text');
+
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(content);
+                } else {
+                    // Fallback for non-secure contexts or environments without clipboard API
+                    const textArea = document.createElement("textarea");
+                    textArea.value = content;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                }
+
+                // Visual feedback
+                const originalText = text.innerText;
+                const originalIcon = icon.innerText;
+
+                text.innerText = '¡Copiado!';
+                icon.innerText = '✅';
+                btn.classList.add('border-green-500', 'text-green-400');
+                btn.classList.remove('border-slate-700', 'hover:border-blue-500', 'hover:text-blue-400');
+
+                setTimeout(() => {
+                    text.innerText = originalText;
+                    icon.innerText = originalIcon;
+                    btn.classList.remove('border-green-500', 'text-green-400');
+                    btn.classList.add('border-slate-700', 'hover:border-blue-500', 'hover:text-blue-400');
+                }, 2000);
+            } catch (err) {
+                console.error('Error al copiar:', err);
+            }
         }
 
         async function refineGem() {
