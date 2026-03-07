@@ -1,7 +1,11 @@
 import pytest
 import re
 import httpx
-from playwright.sync_api import expect
+try:
+    from playwright.sync_api import expect
+    HAS_PLAYWRIGHT = True
+except ImportError:
+    HAS_PLAYWRIGHT = False
 import time
 
 
@@ -18,6 +22,7 @@ def wait_for_server(url, timeout=10):
     return False
 
 
+@pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="Playwright not installed")
 def test_dashboard_accessibility_and_copy(page):
     # Wait for server to be ready
     server_ready = wait_for_server("http://127.0.0.1:8000")
