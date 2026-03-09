@@ -1,0 +1,3 @@
+## 2025-01-30 - Parallelize candidate processing in GEM6
+**Learning:** Sequential processing of multiple candidates with LLM calls introduces significant latency that scales linearly with the number of candidates. Converting the core reasoning loop to use `asyncio.gather` and refactoring the `GeminiClient` to be fully asynchronous reduces this bottleneck to $O(1)$ relative to candidate count (limited by provider concurrency).
+**Action:** Always prefer asynchronous LLM clients and parallelize batch processing of independent entities using `asyncio.gather`. Re-use `httpx.AsyncClient` via connection pooling in long-lived agents to further reduce overhead.
