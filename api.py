@@ -1,14 +1,21 @@
 import os
 import json
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+import httpx
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    BackgroundTasks,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import httpx
-import asyncio
+from pydantic import BaseModel, Field, field_validator
 
 import config
 from agent.gemini_client import GeminiClient
@@ -16,6 +23,14 @@ from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
+
+
+# Configuración de logging para producción
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("raadbot-api")
 
 
 @asynccontextmanager
@@ -52,12 +67,28 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
-    drive_folder: Optional[str] = None
-    local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    search_id: str = Field(..., pattern="^[a-zA-Z0-9_-]+$", max_length=100)
+    drive_folder: Optional[str] = Field(None, max_length=200)
+    local_dir: Optional[str] = Field(None, max_length=255)
+    candidate_id: Optional[str] = Field(
+        None, pattern="^[a-zA-Z0-9_-]+$", max_length=100
+    )  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        # Prevent path traversal and absolute paths
+        if ".." in v:
+            raise ValueError("Path traversal ('..') is not allowed in local_dir.")
+        if v.startswith("/") or v.startswith("\\"):
+            raise ValueError("Absolute paths are not allowed in local_dir.")
+        if ":" in v:  # Prevent drive indicators on Windows
+            raise ValueError("Drive indicators are not allowed in local_dir.")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -96,7 +127,9 @@ async def run_pipeline(request: PipelineRequest) -> dict:
     os.makedirs(output_dir, exist_ok=True)
 
     gemini = GeminiClient(api_key=api_key, model=request.model)
-    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
+    orchestrator = GEM6Orchestrator(
+        gemini=gemini, search_id=request.search_id, output_dir=output_dir
+    )
 
     # Ejecución asíncrona no bloqueante
     await orchestrator.run_pipeline(search_inputs, candidates)
@@ -123,20 +156,25 @@ async def background_run_pipeline(request: PipelineRequest):
             async with httpx.AsyncClient() as client:
                 await client.post(request.webhook_url, json=resultado, timeout=60.0)
     except Exception as e:
+        logger.error(
+            f"Background pipeline error for {request.search_id}: {e}", exc_info=True
+        )
         if request.webhook_url:
             try:
                 async with httpx.AsyncClient() as client:
                     await client.post(
                         request.webhook_url,
                         json={
-                            "status": "error", 
-                            "search_id": request.search_id, 
-                            "message": str(e)
+                            "status": "error",
+                            "search_id": request.search_id,
+                            "message": "An internal error occurred during pipeline execution.",
                         },
                         timeout=30.0,
                     )
-            except Exception:
-                pass
+            except Exception as le:
+                logger.error(
+                    f"Failed to send error webhook for {request.search_id}: {le}"
+                )
 
 
 @app.post("/api/v1/run")
@@ -155,15 +193,24 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
     else:
         try:
             return await run_pipeline(request)
-        except Exception as e:
+        except ValueError as e:
+            # Errores de validación de negocio son seguros de exponer
             raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            logger.error(
+                f"Pipeline execution failed for {request.search_id}: {e}", exc_info=True
+            )
+            raise HTTPException(
+                status_code=500, detail="Internal server error during pipeline execution."
+            )
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(..., pattern="^[a-zA-Z0-9_-]+$", max_length=100)
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
+
 
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
@@ -171,36 +218,44 @@ async def setup_search(request: SetupSearchRequest):
     Inicializa una búsqueda ejecutando únicamente GEM 5 (Radiografía Estratégica).
     Crea la estructura de carpetas y guarda el mandato inicial.
     """
-    output_dir = os.path.join("runs", request.search_id, "outputs")
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Simular estructura de inputs para GEM 5
-    search_inputs = {
-        "kickoff_notes": request.brief_notes,
-        "brief_jd": request.jd_content,
-        "company_context": request.company_context or ""
-    }
-    
-    gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
-    # Ejecutar GEM 5 directamente
-    from agent.prompt_builder import build_gem5_prompt
-    prompt = build_gem5_prompt(search_inputs)
-    result = gemini.run_gem(prompt, gem_name="gem5")
-    
-    # Guardar resultados
-    with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
-        json.dump(result.get("data", {}), f, indent=4)
-    with open(os.path.join(output_dir, "gem5.md"), "w", encoding="utf-8") as f:
-        f.write(result.get("markdown", ""))
-        
-    return {
-        "status": "success",
-        "search_id": request.search_id,
-        "gem5_summary": result.get("data", {}).get("mandate_summary", "Mandato generado con éxito.")
-    }
+    try:
+        output_dir = os.path.join("runs", request.search_id, "outputs")
+        os.makedirs(output_dir, exist_ok=True)
+
+        # Simular estructura de inputs para GEM 5
+        search_inputs = {
+            "kickoff_notes": request.brief_notes,
+            "brief_jd": request.jd_content,
+            "company_context": request.company_context or "",
+        }
+
+        gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
+        # Ejecutar GEM 5 directamente
+        from agent.prompt_builder import build_gem5_prompt
+
+        prompt = build_gem5_prompt(search_inputs)
+        result = gemini.run_gem(prompt, gem_name="gem5")
+
+        # Guardar resultados
+        with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
+            json.dump(result.get("data", {}), f, indent=4)
+        with open(os.path.join(output_dir, "gem5.md"), "w", encoding="utf-8") as f:
+            f.write(result.get("markdown", ""))
+
+        return {
+            "status": "success",
+            "search_id": request.search_id,
+            "gem5_summary": result.get("data", {}).get(
+                "mandate_summary", "Mandato generado con éxito."
+            ),
+        }
+    except Exception as e:
+        logger.error(f"Search setup failed for {request.search_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to setup search. Internal error.")
 
 
 # --- Dashboard Endpoints ---
+
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard():
@@ -211,68 +266,82 @@ async def get_dashboard():
     except FileNotFoundError:
         return "Dashboard template not found. Please create templates/dashboard.html"
 
+
 @app.get("/api/v1/gems")
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
     gems = []
     gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
-    
+
     for g in gem_list:
         prompt_path = f"prompts/{g}.md"
         prompt_content = ""
         if os.path.exists(prompt_path):
             with open(prompt_path, "r", encoding="utf-8") as f:
                 prompt_content = f.read()
-        
-        gems.append({
-            "id": g,
-            "name": g.upper(),
-            "prompt": prompt_content,
-            "config": config.GEM_CONFIGS.get(g, {})
-        })
-    
+
+        gems.append(
+            {
+                "id": g,
+                "name": g.upper(),
+                "prompt": prompt_content,
+                "config": config.GEM_CONFIGS.get(g, {}),
+            }
+        )
+
     return gems
 
+
 class RefineRequest(BaseModel):
-    gem_id: str
-    instruction: str
+    gem_id: str = Field(..., pattern="^[a-zA-Z0-9_-]+$", max_length=50)
+    instruction: str = Field(..., max_length=1000)
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
-    prompt_path = f"prompts/{request.gem_id}.md"
-    if not os.path.exists(prompt_path):
-        raise HTTPException(status_code=404, detail="GEM prompt file not found")
-        
-    with open(prompt_path, "r", encoding="utf-8") as f:
-        current_prompt = f.read()
-        
-    refinement_prompt = f"""
-    Eres un experto en Prompt Engineering. Tu misión es REFINAR el siguiente System Prompt de RAADBOT v2.0.
-    
-    ESTRUCTURA ACTUAL:
-    {current_prompt}
-    
-    INSTRUCCIÓN DEL USUARIO:
-    {request.instruction}
-    
-    REGLAS:
-    1. Mantén la estructura de secciones (ROL, CONTEXTO, INSTRUCCIONES CORE, etc.).
-    2. Aplica la instrucción del usuario de forma profesional y precisa.
-    3. Devuelve el prompt REFINADO completo en formato Markdown.
-    4. NO agregues explicaciones, solo el contenido del nuevo prompt.
-    """
-    
-    gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
-    result = gemini.run_gem(refinement_prompt)
-    new_prompt = result.get("markdown", "") or result.get("raw", "")
-    
-    if new_prompt:
-        with open(prompt_path, "w", encoding="utf-8") as f:
-            f.write(new_prompt)
-        return {"status": "success", "new_prompt": new_prompt}
-    
-    return {"status": "error", "message": "Failed to generate new prompt"}
+    try:
+        prompt_path = f"prompts/{request.gem_id}.md"
+        if not os.path.exists(prompt_path):
+            raise HTTPException(status_code=404, detail="GEM prompt file not found")
+
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            current_prompt = f.read()
+
+        refinement_prompt = f"""
+        Eres un experto en Prompt Engineering. Tu misión es REFINAR el siguiente System Prompt de RAADBOT v2.0.
+
+        ESTRUCTURA ACTUAL:
+        {current_prompt}
+
+        INSTRUCCIÓN DEL USUARIO:
+        {request.instruction}
+
+        REGLAS:
+        1. Mantén la estructura de secciones (ROL, CONTEXTO, INSTRUCCIONES CORE, etc.).
+        2. Aplica la instrucción del usuario de forma profesional y precisa.
+        3. Devuelve el prompt REFINADO completo en formato Markdown.
+        4. NO agregues explicaciones, solo el contenido del nuevo prompt.
+        """
+
+        gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
+        result = gemini.run_gem(refinement_prompt)
+        new_prompt = result.get("markdown", "") or result.get("raw", "")
+
+        if new_prompt:
+            with open(prompt_path, "w", encoding="utf-8") as f:
+                f.write(new_prompt)
+            return {"status": "success", "new_prompt": new_prompt}
+
+        return {"status": "error", "message": "Failed to generate new prompt"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"GEM refinement failed for {request.gem_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail="An error occurred during GEM refinement."
+        )
+
 
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
@@ -286,12 +355,13 @@ async def websocket_logs(websocket: WebSocket):
         if websocket in active_connections:
             active_connections.remove(websocket)
 
+
 @app.get("/health")
 def health_check():
     return {
-        "status": "ok", 
-        "agent": "raadbot", 
+        "status": "ok",
+        "agent": "raadbot",
         "version": "3.0.0",
         "model": config.DEFAULT_MODEL,
-        "provider": config.LLM_PROVIDER
+        "provider": config.LLM_PROVIDER,
     }
