@@ -1,0 +1,4 @@
+## 2026-03-09 - Path Traversal and Information Leakage in API Endpoints
+**Vulnerability:** Several API endpoints in `api.py` (`/api/v1/run`, `/api/v1/gems/refine`) were vulnerable to path traversal through unvalidated `search_id`, `gem_id`, and `local_dir` parameters. Additionally, unhandled exceptions leaked internal implementation details (e.g., Gemini API error objects, stack traces) to clients.
+**Learning:** Fastly growing APIs often overlook strict validation of parameters used for file system paths. Pydantic's regex validation and custom validators provide a robust first line of defense.
+**Prevention:** Always use regex patterns for identifier-like fields (`^[a-zA-Z0-9_-]+$`) and implement custom validators for path fields to block `..` and absolute paths. Wrap execution logic in try-except blocks that log full details internally but return generic error messages to the client.
