@@ -1,6 +1,6 @@
-import pytest
-from bs4 import BeautifulSoup
 import os
+from bs4 import BeautifulSoup
+
 
 def test_copy_button_exists():
     path = "templates/dashboard.html"
@@ -13,9 +13,10 @@ def test_copy_button_exists():
     # Check if copy button exists
     copy_btn = soup.find("button", id="copy-btn")
     assert copy_btn is not None
-    assert "onclick=\"copyToClipboard()\"" in str(copy_btn)
+    assert 'onclick="copyToClipboard()"' in str(copy_btn)
     assert copy_btn.get("aria-label") == "Copiar prompt al portapapeles"
-    assert "hidden" in copy_btn.get("class") # Should be hidden by default
+    assert "hidden" in copy_btn.get("class")  # Should be hidden by default
+
 
 def test_javascript_functions_present():
     path = "templates/dashboard.html"
