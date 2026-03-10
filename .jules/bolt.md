@@ -1,0 +1,3 @@
+## 2024-05-22 - [JSON Validation & Prompt Building Optimization]
+**Learning:** Pre-compiling JSON schemas with `jsonschema.validators.validator_for` provides a significant speedup (~14x) compared to using the global `validate` function, which re-compiles the schema on every call. Additionally, using `functools.lru_cache` on prompt loading functions reduces redundant disk I/O and template processing, especially when the same GEM is executed multiple times or in retry loops.
+**Action:** Always pre-compile JSON schemas in the `__init__` method of orchestrator classes. Use `lru_cache` for static template loading and ensure expensive string operations like `build_prompt` are outside of retry loops if the input variables haven't changed.
