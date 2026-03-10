@@ -1,6 +1,5 @@
 import json
 import re
-import time
 import os
 from typing import TypedDict, Any, Optional
 from google import genai
@@ -12,17 +11,20 @@ import config
 
 console = Console()
 
+
 class GeminiUsage(TypedDict):
     prompt_tokens: int
     candidates_tokens: int
     total_tokens: int
     finish_reason: str
 
+
 class GeminiResult(TypedDict):
     json: Optional[dict[str, Any]]
     markdown: str
     raw: str
     usage: GeminiUsage
+
 
 class GeminiClient:
     """Cliente para interactuar con Gemini API u Ollama."""
@@ -33,7 +35,12 @@ class GeminiClient:
             self.client = genai.Client(api_key=api_key)
         self.model = model if self.provider == "gemini" else config.OLLAMA_MODEL
 
-    async def run_gem(self, prompt: str, gem_name: Optional[str] = None, max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
+    async def run_gem(
+        self,
+        prompt: str,
+        gem_name: Optional[str] = None,
+        max_retries: int = config.MAX_RETRIES_ON_BLOCK
+    ) -> GeminiResult:
         if self.provider == "ollama":
             return await self._run_ollama(prompt, gem_name, max_retries)
         return await self._run_gemini(prompt, gem_name, max_retries)
@@ -86,7 +93,12 @@ class GeminiClient:
                     raise RuntimeError(f"Ollama falló: {e}")
         raise RuntimeError("Unreachable")
 
-    async def _run_gemini(self, prompt: str, gem_name: Optional[str] = None, max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
+    async def _run_gemini(
+        self,
+        prompt: str,
+        gem_name: Optional[str] = None,
+        max_retries: int = config.MAX_RETRIES_ON_BLOCK
+    ) -> GeminiResult:
         """
         Envía un prompt al modelo Gemini y parsea la respuesta.
 
