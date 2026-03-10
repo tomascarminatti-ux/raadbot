@@ -1,8 +1,9 @@
-import pytest
 from fastapi.testclient import TestClient
 from api import app
 
+
 client = TestClient(app)
+
 
 def test_pipeline_run_path_traversal():
     """Verifica que el endpoint /api/v1/run valide search_id adecuadamente."""
@@ -16,6 +17,7 @@ def test_pipeline_run_path_traversal():
     # Debería devolver 422 por falla de validación de Pydantic
     assert response.status_code == 422
 
+
 def test_pipeline_run_local_dir_validation():
     """Verifica que local_dir no permita path traversal."""
     payload = {
@@ -25,6 +27,7 @@ def test_pipeline_run_local_dir_validation():
     }
     response = client.post("/api/v1/run", json=payload)
     assert response.status_code == 422
+
 
 def test_setup_search_path_traversal():
     """Verifica que /api/v1/search/setup valide search_id."""
@@ -36,6 +39,7 @@ def test_setup_search_path_traversal():
     response = client.post("/api/v1/search/setup", json=payload)
     assert response.status_code == 422
 
+
 def test_refine_gem_path_traversal():
     """Verifica que /api/v1/gems/refine valide gem_id."""
     payload = {
@@ -44,6 +48,7 @@ def test_refine_gem_path_traversal():
     }
     response = client.post("/api/v1/gems/refine", json=payload)
     assert response.status_code == 422
+
 
 if __name__ == "__main__":
     # Ejecución manual para verificar el fix
