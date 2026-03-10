@@ -1,0 +1,4 @@
+## 2026-02-20 - Identifier Path Traversal in FastAPI Endpoints
+**Vulnerability:** API endpoints (`/api/v1/run`, `/api/v1/search/setup`, `/api/v1/gems/refine`) accepted arbitrary strings for `search_id` and `gem_id`, which were used directly in `os.path.join` and `open()` calls, allowing path traversal (e.g., `../../etc/passwd`).
+**Learning:** Even if an app uses `os.path.join`, providing a full path or `..` segments in the joined parts can still lead to directory traversal or access to unintended files. Relying on business logic to fail (e.g., file not found) is not a substitute for early schema validation.
+**Prevention:** Use Pydantic's `Field(pattern=...)` to restrict identifiers to safe alphanumeric characters and `field_validator` to reject directory traversal sequences in path-like fields.
