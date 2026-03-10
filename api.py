@@ -3,10 +3,10 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 import httpx
 import asyncio
 
@@ -52,12 +52,20 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(..., pattern=r"^[a-zA-Z0-9_-]+$")
     drive_folder: Optional[str] = None
     local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    candidate_id: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_-]+$")  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        if v:
+            if ".." in v or v.startswith("/"):
+                raise ValueError("local_dir must be a relative path and cannot contain '..'")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -129,8 +137,8 @@ async def background_run_pipeline(request: PipelineRequest):
                     await client.post(
                         request.webhook_url,
                         json={
-                            "status": "error", 
-                            "search_id": request.search_id, 
+                            "status": "error",
+                            "search_id": request.search_id,
                             "message": str(e)
                         },
                         timeout=30.0,
@@ -160,10 +168,11 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(..., pattern=r"^[a-zA-Z0-9_-]+$")
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
+
 
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
@@ -180,13 +189,13 @@ async def setup_search(request: SetupSearchRequest):
         "brief_jd": request.jd_content,
         "company_context": request.company_context or ""
     }
-    
+
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     # Ejecutar GEM 5 directamente
     from agent.prompt_builder import build_gem5_prompt
     prompt = build_gem5_prompt(search_inputs)
     result = gemini.run_gem(prompt, gem_name="gem5")
-    
+
     # Guardar resultados
     with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
         json.dump(result.get("data", {}), f, indent=4)
@@ -216,25 +225,26 @@ async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
     gems = []
     gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
-    
+
     for g in gem_list:
         prompt_path = f"prompts/{g}.md"
         prompt_content = ""
         if os.path.exists(prompt_path):
             with open(prompt_path, "r", encoding="utf-8") as f:
                 prompt_content = f.read()
-        
+
         gems.append({
             "id": g,
             "name": g.upper(),
             "prompt": prompt_content,
             "config": config.GEM_CONFIGS.get(g, {})
         })
-    
+
     return gems
 
+
 class RefineRequest(BaseModel):
-    gem_id: str
+    gem_id: str = Field(..., pattern=r"^[a-zA-Z0-9_-]+$")
     instruction: str
 
 @app.post("/api/v1/gems/refine")
@@ -289,8 +299,8 @@ async def websocket_logs(websocket: WebSocket):
 @app.get("/health")
 def health_check():
     return {
-        "status": "ok", 
-        "agent": "raadbot", 
+        "status": "ok",
+        "agent": "raadbot",
         "version": "3.0.0",
         "model": config.DEFAULT_MODEL,
         "provider": config.LLM_PROVIDER
