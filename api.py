@@ -36,7 +36,6 @@ app = FastAPI(
 )
 
 # --- Configuración de CORS ---
-# Permite que la frontend de Netlify y el dashboard local se comuniquen con la API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -169,12 +168,10 @@ class SetupSearchRequest(BaseModel):
 async def setup_search(request: SetupSearchRequest):
     """
     Inicializa una búsqueda ejecutando únicamente GEM 5 (Radiografía Estratégica).
-    Crea la estructura de carpetas y guarda el mandato inicial.
     """
     output_dir = os.path.join("runs", request.search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
     
-    # Simular estructura de inputs para GEM 5
     search_inputs = {
         "kickoff_notes": request.brief_notes,
         "brief_jd": request.jd_content,
@@ -182,10 +179,9 @@ async def setup_search(request: SetupSearchRequest):
     }
     
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
-    # Ejecutar GEM 5 directamente
     from agent.prompt_builder import build_gem5_prompt
     prompt = build_gem5_prompt(search_inputs)
-    result = gemini.run_gem(prompt, gem_name="gem5")
+    result = await gemini.run_gem(prompt, gem_name="gem5")
     
     # Guardar resultados
     with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
@@ -257,14 +253,14 @@ async def refine_gem(request: RefineRequest):
     {request.instruction}
     
     REGLAS:
-    1. Mantén la estructura de secciones (ROL, CONTEXTO, INSTRUCCIONES CORE, etc.).
+    1. Mantén la estructura de secciones.
     2. Aplica la instrucción del usuario de forma profesional y precisa.
     3. Devuelve el prompt REFINADO completo en formato Markdown.
     4. NO agregues explicaciones, solo el contenido del nuevo prompt.
     """
     
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
-    result = gemini.run_gem(refinement_prompt)
+    result = await gemini.run_gem(refinement_prompt)
     new_prompt = result.get("markdown", "") or result.get("raw", "")
     
     if new_prompt:
@@ -280,7 +276,6 @@ async def websocket_logs(websocket: WebSocket):
     active_connections.append(websocket)
     try:
         while True:
-            # Keep connection alive
             await asyncio.sleep(60)
     except WebSocketDisconnect:
         if websocket in active_connections:
