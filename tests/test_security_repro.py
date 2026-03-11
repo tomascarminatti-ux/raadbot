@@ -63,7 +63,6 @@ if __name__ == "__main__":
         print("ALL SECURITY TESTS PASSED")
     except AssertionError as e:
         print(f"SECURITY TEST FAILED: {e}")
-        print(f"JSON response was: {json.dumps(response.json() if 'response' in locals() else {}, indent=2)}")
     except Exception as e:
         print(f"An error occurred: {e}")
         import traceback
