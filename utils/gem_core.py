@@ -1,7 +1,8 @@
 import httpx
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
+
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -15,6 +16,7 @@ class JsonFormatter(logging.Formatter):
             log_record.update(record.extra_fields)
         return json.dumps(log_record)
 
+
 handler = logging.StreamHandler()
 handler.setFormatter(JsonFormatter())
 logger = logging.getLogger("gem_v3")
@@ -23,6 +25,7 @@ logger.setLevel(logging.INFO)
 logger.propagate = False
 
 _contract_cache = {}
+
 
 class GEMClient:
     def __init__(self, db_url: str = "http://db-api:8000"):
@@ -62,6 +65,7 @@ class GEMClient:
             logger.error(f"Failed to log execution: {e}")
             return None
 
+
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
         if contract_path not in _contract_cache:
@@ -69,7 +73,7 @@ def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
                 _contract_cache[contract_path] = json.load(f)
 
         contract = _contract_cache[contract_path]
-        
+
         for key in contract:
             if not isinstance(key, str):
                 continue
@@ -79,12 +83,17 @@ def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
                 return False
             # Basic type checking
             val = data.get(key)
-            if expected_type == "array" and not isinstance(val, list): return False
-            if expected_type == "number" and not isinstance(val, (int, float)): return False
-            if expected_type == "string" and not isinstance(val, str): return False
-            if expected_type == "object" and not isinstance(val, dict): return False
-            if expected_type == "boolean" and not isinstance(val, bool): return False
-            
+            if expected_type == "array" and not isinstance(val, list):
+                return False
+            if expected_type == "number" and not isinstance(val, (int, float)):
+                return False
+            if expected_type == "string" and not isinstance(val, str):
+                return False
+            if expected_type == "object" and not isinstance(val, dict):
+                return False
+            if expected_type == "boolean" and not isinstance(val, bool):
+                return False
+
         return True
     except Exception as e:
         logger.error(f"Contract validation error: {e}")
