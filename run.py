@@ -81,7 +81,7 @@ Ejemplos:
         # Disable rich output for JSON mode
         import io
         from rich.console import Console as RichConsole
-        non_rich_console = RichConsole(file=io.StringIO())
+        RichConsole(file=io.StringIO())
         # Global console override would be better but this is a quick fix
     
     # --- API Key check ---
@@ -137,7 +137,7 @@ Ejemplos:
     # El orquestador maneja los eventos y el procesamiento asíncrono
     try:
         import asyncio
-        results = asyncio.run(orchestrator.run_pipeline(search_inputs, candidates))
+        asyncio.run(orchestrator.run_pipeline(search_inputs, candidates))
     except Exception as e:
         console.print(f"[bold red]❌ Error durante la ejecución del pipeline: {e}[/bold red]")
         import traceback
