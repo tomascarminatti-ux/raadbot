@@ -56,10 +56,16 @@ class GEMClient:
             logger.error(f"Failed to log execution: {e}")
             return None
 
+_contract_cache = {}
+
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
-        with open(contract_path, "r") as f:
-            contract = json.load(f)
+        if contract_path in _contract_cache:
+            contract = _contract_cache[contract_path]
+        else:
+            with open(contract_path, "r") as f:
+                contract = json.load(f)
+            _contract_cache[contract_path] = contract
         
         for key in contract:
             if not isinstance(key, str):
