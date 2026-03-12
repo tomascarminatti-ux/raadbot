@@ -1,0 +1,4 @@
+## 2025-03-12 - Path Traversal in File-Based Processing
+**Vulnerability:** User-controlled identifiers (`search_id`, `gem_id`, `entity_id`) and directory paths (`local_dir`) were used to construct filesystem paths without sufficient sanitization, allowing arbitrary directory creation or file access outside the intended scope.
+**Learning:** Using `os.path.join` with unsanitized user input is insufficient to prevent path traversal in Python; if a component of the path is an absolute path or contains '..' segments, it can lead to access outside the intended base directory.
+**Prevention:** Use Pydantic's `Field(pattern=...)` to restrict identifiers to safe alphanumeric characters and `@field_validator` to explicitly reject '..' and leading slashes in path-like inputs. Always validate at the entry point (API models).
