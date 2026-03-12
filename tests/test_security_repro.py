@@ -1,12 +1,13 @@
 
-import pytest
 import os
+import sys
 from fastapi.testclient import TestClient
 from api import app
 from infra.db.api import app as db_app
 
 client = TestClient(app)
 db_client = TestClient(db_app)
+
 
 def test_path_traversal_search_id():
     # search_id that tries to go out of 'runs'
@@ -16,8 +17,9 @@ def test_path_traversal_search_id():
         "jd_content": "test"
     }
     response = client.post("/api/v1/search/setup", json=payload)
-    assert response.status_code == 422 # Unprocessable Entity due to Field pattern
+    assert response.status_code == 422  # Unprocessable Entity due to Field pattern
     assert not os.path.exists("evil_run")
+
 
 def test_path_traversal_refine_gem():
     payload = {
@@ -27,6 +29,7 @@ def test_path_traversal_refine_gem():
     response = client.post("/api/v1/gems/refine", json=payload)
     assert response.status_code == 422
 
+
 def test_path_traversal_local_dir():
     payload = {
         "search_id": "valid_id",
@@ -35,6 +38,7 @@ def test_path_traversal_local_dir():
     response = client.post("/api/v1/run", json=payload)
     assert response.status_code == 422
 
+
 def test_absolute_path_local_dir():
     payload = {
         "search_id": "valid_id",
@@ -42,6 +46,7 @@ def test_absolute_path_local_dir():
     }
     response = client.post("/api/v1/run", json=payload)
     assert response.status_code == 422
+
 
 def test_db_entity_id_validation():
     payload = {
@@ -54,10 +59,9 @@ def test_db_entity_id_validation():
     response = db_client.post("/entity/upsert", json=payload)
     assert response.status_code == 422
 
+
 if __name__ == "__main__":
-    import sys
-    # Run tests using pytest via this script or just manually call them
-    # For simplicity in this environment, I'll just call them.
+    # Run tests manually
     try:
         test_path_traversal_search_id()
         test_path_traversal_refine_gem()
