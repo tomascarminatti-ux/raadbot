@@ -1,12 +1,14 @@
 import os
 import sqlite3
 import json
+import logging
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="GEM v3.0 DB API")
+logger = logging.getLogger("db-api")
 
 DB_PATH = os.getenv("DB_PATH", "infra/db/gem_v3.sqlite")
 
@@ -31,7 +33,7 @@ def startup_event():
 
 # Models
 class EntityUpdate(BaseModel):
-    entity_id: str
+    entity_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     current_stage: str
     state: str
     last_score: Optional[float] = None
@@ -41,7 +43,7 @@ class EntityUpdate(BaseModel):
     trace_id: str
 
 class DiscardEntity(BaseModel):
-    entity_id: str
+    entity_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     stage_at_discard: str
     reason: str
     score_at_discard: Optional[float] = None
@@ -79,9 +81,10 @@ async def upsert_entity(data: EntityUpdate):
         ))
         conn.commit()
         return {"status": "success"}
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Error en upsert_entity")
+        raise HTTPException(status_code=500, detail="Internal database error during upsert")
     finally:
         conn.close()
 
@@ -105,9 +108,10 @@ async def discard_entity(data: DiscardEntity):
         cursor.execute("DELETE FROM entity_state WHERE entity_id = ?", (data.entity_id,))
         conn.commit()
         return {"status": "discarded"}
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Error en discard_entity")
+        raise HTTPException(status_code=500, detail="Internal database error during discard")
     finally:
         conn.close()
 
