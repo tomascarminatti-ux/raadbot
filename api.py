@@ -95,11 +95,11 @@ async def run_pipeline(request: PipelineRequest) -> dict:
     output_dir = os.path.join("runs", request.search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
 
-    gemini = GeminiClient(api_key=api_key, model=request.model)
-    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
+    async with GeminiClient(api_key=api_key, model=request.model) as gemini:
+        orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
 
-    # Ejecución asíncrona no bloqueante
-    await orchestrator.run_pipeline(search_inputs, candidates)
+        # Ejecución asíncrona no bloqueante
+        await orchestrator.run_pipeline(search_inputs, candidates)
 
     summary_path = os.path.join(output_dir, "pipeline_summary.json")
     summary_data = {}
@@ -181,11 +181,11 @@ async def setup_search(request: SetupSearchRequest):
         "company_context": request.company_context or ""
     }
     
-    gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
-    # Ejecutar GEM 5 directamente
-    from agent.prompt_builder import build_gem5_prompt
-    prompt = build_gem5_prompt(search_inputs)
-    result = gemini.run_gem(prompt, gem_name="gem5")
+    async with GeminiClient(api_key=config.GEMINI_API_KEY) as gemini:
+        # Ejecutar GEM 5 directamente
+        from agent.prompt_builder import build_gem5_prompt
+        prompt = build_gem5_prompt(search_inputs)
+        result = await gemini.run_gem(prompt, gem_name="gem5")
     
     # Guardar resultados
     with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
@@ -263,9 +263,9 @@ async def refine_gem(request: RefineRequest):
     4. NO agregues explicaciones, solo el contenido del nuevo prompt.
     """
     
-    gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
-    result = gemini.run_gem(refinement_prompt)
-    new_prompt = result.get("markdown", "") or result.get("raw", "")
+    async with GeminiClient(api_key=config.GEMINI_API_KEY) as gemini:
+        result = await gemini.run_gem(refinement_prompt)
+        new_prompt = result.get("markdown", "") or result.get("raw", "")
     
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
