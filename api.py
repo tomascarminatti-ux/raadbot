@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 import httpx
 import asyncio
 
@@ -16,6 +16,9 @@ from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
+import logging
+
+logger = logging.getLogger("raadbot-api")
 
 
 @asynccontextmanager
@@ -52,12 +55,20 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     drive_folder: Optional[str] = None
     local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    candidate_id: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_-]+$")  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        if v:
+            if ".." in v or v.startswith("/"):
+                raise ValueError("Path traversal detected in local_dir")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -155,12 +166,15 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
     else:
         try:
             return await run_pipeline(request)
-        except Exception as e:
+        except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
+        except Exception:
+            logger.exception("Error en trigger_pipeline")
+            raise HTTPException(status_code=500, detail="Error interno al procesar el pipeline")
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
@@ -181,11 +195,20 @@ async def setup_search(request: SetupSearchRequest):
         "company_context": request.company_context or ""
     }
     
-    gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
+    try:
+        gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
+    except Exception:
+        logger.exception("Error initializing GeminiClient in setup_search")
+        raise HTTPException(status_code=500, detail="Error initializing intelligence client")
+
     # Ejecutar GEM 5 directamente
     from agent.prompt_builder import build_gem5_prompt
     prompt = build_gem5_prompt(search_inputs)
-    result = gemini.run_gem(prompt, gem_name="gem5")
+    try:
+        result = gemini.run_gem(prompt, gem_name="gem5")
+    except Exception:
+        logger.exception("Error running GEM 5 in setup_search")
+        raise HTTPException(status_code=500, detail="Error executing strategy module")
     
     # Guardar resultados
     with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
@@ -234,7 +257,7 @@ async def list_gems():
     return gems
 
 class RefineRequest(BaseModel):
-    gem_id: str
+    gem_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     instruction: str
 
 @app.post("/api/v1/gems/refine")
@@ -268,9 +291,13 @@ async def refine_gem(request: RefineRequest):
     new_prompt = result.get("markdown", "") or result.get("raw", "")
     
     if new_prompt:
-        with open(prompt_path, "w", encoding="utf-8") as f:
-            f.write(new_prompt)
-        return {"status": "success", "new_prompt": new_prompt}
+        try:
+            with open(prompt_path, "w", encoding="utf-8") as f:
+                f.write(new_prompt)
+            return {"status": "success", "new_prompt": new_prompt}
+        except Exception:
+            logger.exception(f"Error guardando prompt refinado para {request.gem_id}")
+            raise HTTPException(status_code=500, detail="Error al guardar el prompt refinado")
     
     return {"status": "error", "message": "Failed to generate new prompt"}
 
