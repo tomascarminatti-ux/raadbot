@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 import httpx
 import asyncio
 
@@ -52,12 +52,20 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     drive_folder: Optional[str] = None
     local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    candidate_id: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_-]+$")  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("local_dir")
+    @classmethod
+    def prevent_path_traversal(cls, v: Optional[str]) -> Optional[str]:
+        if v:
+            if ".." in v or v.startswith("/"):
+                raise ValueError("local_dir contains invalid path segments")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -156,11 +164,13 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
         try:
             return await run_pipeline(request)
         except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            # Log full error internally and return generic message
+            print(f"Error triggering pipeline: {e}")
+            raise HTTPException(status_code=400, detail="Error starting the pipeline.")
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
@@ -209,7 +219,7 @@ async def get_dashboard():
         with open("templates/dashboard.html", "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
-        return "Dashboard template not found. Please create templates/dashboard.html"
+        raise HTTPException(status_code=404, detail="Dashboard template not found.")
 
 @app.get("/api/v1/gems")
 async def list_gems():
@@ -234,7 +244,7 @@ async def list_gems():
     return gems
 
 class RefineRequest(BaseModel):
-    gem_id: str
+    gem_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     instruction: str
 
 @app.post("/api/v1/gems/refine")

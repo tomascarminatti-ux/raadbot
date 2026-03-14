@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="GEM v3.0 DB API")
 
@@ -31,7 +31,7 @@ def startup_event():
 
 # Models
 class EntityUpdate(BaseModel):
-    entity_id: str
+    entity_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     current_stage: str
     state: str
     last_score: Optional[float] = None
@@ -41,7 +41,7 @@ class EntityUpdate(BaseModel):
     trace_id: str
 
 class DiscardEntity(BaseModel):
-    entity_id: str
+    entity_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     stage_at_discard: str
     reason: str
     score_at_discard: Optional[float] = None
@@ -81,7 +81,8 @@ async def upsert_entity(data: EntityUpdate):
         return {"status": "success"}
     except Exception as e:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error in upsert_entity: {e}")
+        raise HTTPException(status_code=500, detail="Internal database error")
     finally:
         conn.close()
 
@@ -107,7 +108,8 @@ async def discard_entity(data: DiscardEntity):
         return {"status": "discarded"}
     except Exception as e:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error in discard_entity: {e}")
+        raise HTTPException(status_code=500, detail="Internal database error")
     finally:
         conn.close()
 
