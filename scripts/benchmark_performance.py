@@ -1,12 +1,13 @@
 import time
 import os
 import sys
-import functools
 
 # Add current dir to path to find agent/
 sys.path.append(os.getcwd())
 
+# flake8: noqa: E402
 from agent.prompt_builder import build_prompt, load_prompt, load_maestro
+
 
 def run_benchmark():
     """Quantifies the impact of lru_cache on prompt building."""
@@ -38,7 +39,11 @@ def run_benchmark():
     print(f"  - Without cache: {avg_no_cache:.4f} ms/call")
     print(f"  - With cache:    {avg_cache:.4f} ms/call")
     print(f"  - Speedup:       {avg_no_cache / avg_cache:.2f}x")
-    print(f"\n✅ Optimization verified: Reduced latency by {avg_no_cache - avg_cache:.4f} ms per prompt build.")
+    print(
+        f"\n✅ Optimization verified: Reduced latency by "
+        f"{avg_no_cache - avg_cache:.4f} ms per prompt build."
+    )
+
 
 if __name__ == "__main__":
     try:
