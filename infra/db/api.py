@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="GEM v3.0 DB API")
 
@@ -31,7 +31,7 @@ def startup_event():
 
 # Models
 class EntityUpdate(BaseModel):
-    entity_id: str
+    entity_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     current_stage: str
     state: str
     last_score: Optional[float] = None
@@ -41,7 +41,7 @@ class EntityUpdate(BaseModel):
     trace_id: str
 
 class DiscardEntity(BaseModel):
-    entity_id: str
+    entity_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     stage_at_discard: str
     reason: str
     score_at_discard: Optional[float] = None
@@ -79,9 +79,9 @@ async def upsert_entity(data: EntityUpdate):
         ))
         conn.commit()
         return {"status": "success"}
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal database error")
     finally:
         conn.close()
 
@@ -105,9 +105,9 @@ async def discard_entity(data: DiscardEntity):
         cursor.execute("DELETE FROM entity_state WHERE entity_id = ?", (data.entity_id,))
         conn.commit()
         return {"status": "discarded"}
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal database error")
     finally:
         conn.close()
 
@@ -115,13 +115,17 @@ async def discard_entity(data: DiscardEntity):
 async def get_entities(stage: Optional[str] = None):
     conn = get_db()
     cursor = conn.cursor()
-    if stage:
-        cursor.execute("SELECT * FROM entity_state WHERE current_stage = ?", (stage,))
-    else:
-        cursor.execute("SELECT * FROM entity_state")
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    try:
+        if stage:
+            cursor.execute("SELECT * FROM entity_state WHERE current_stage = ?", (stage,))
+        else:
+            cursor.execute("SELECT * FROM entity_state")
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal database error")
+    finally:
+        conn.close()
 
 @app.post("/log/discovery")
 async def log_discovery(data: Dict[str, Any]):
