@@ -1,0 +1,4 @@
+## 2025-05-15 - Path Traversal & Information Leakage Hardening
+**Vulnerability:** Path traversal via unsanitized identifier strings and local directory paths, along with detailed error message leakage.
+**Learning:** Using `os.path.join` with unsanitized user input is insufficient to prevent path traversal in Python; if a component of the path is an absolute path or contains '..' segments, it can lead to access outside the intended base directory. Additionally, exposing raw exception strings in API responses can leak sensitive internal state.
+**Prevention:** Implement strict regex validation for identifiers (`^[a-zA-Z0-9_-]+$`) and explicit path traversal checks for directory inputs using Pydantic validators. Always return generic error messages for unhandled internal exceptions in production APIs.
