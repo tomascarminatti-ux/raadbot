@@ -1,3 +1,3 @@
-## 2025-05-14 - Interactive Dashboard Feedback & Accessibility
-**Learning:** Adding visual feedback to clipboard actions (text change + color shift) significantly improves the perceived responsiveness of the UI. Combining this with ARIA labels for icon-only buttons ensures a delightful experience for all users, including those using assistive technologies.
-**Action:** Always include temporary visual state changes (e.g., checkmarks, color changes) for background actions like "Copy" and ensure all navigation/action buttons have explicit `aria-label` attributes.
+## 2025-05-14 - CI Collection Failure with Non-Test Scripts
+**Learning:** Pytest might attempt to collect and execute scripts outside of `tests/` if they don't have proper guards. Scripts like `test_gemini.py` that perform live API calls or connection-dependent logic must be protected with `if __name__ == "__main__":` to avoid CI failures during test discovery.
+**Action:** Always wrap execution logic in standalone scripts with `if __name__ == "__main__":` and ensure temporary log files are added to `.gitignore`.
