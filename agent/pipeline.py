@@ -4,7 +4,7 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Optional, Any
 
-from jsonschema import validate, ValidationError
+from jsonschema import ValidationError, validators
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -26,6 +26,8 @@ class Pipeline:
         self.search_id = search_id
         self.output_dir = output_dir
         self.schema = self._load_schema()
+        # Pre-compilar validador para mayor performance
+        self.validator = validators.validator_for(self.schema)(self.schema) if self.schema else None
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -133,10 +135,10 @@ class Pipeline:
         return json_path, md_path
 
     def _validate_output(self, json_data: dict, gem_name: str) -> bool:
-        if not self.schema or not json_data:
+        if not self.validator or not json_data:
             raise ValueError(f"Output nulo o sin JSON válido en {gem_name}")
         try:
-            validate(instance=json_data, schema=self.schema)
+            self.validator.validate(instance=json_data)
             return True
         except ValidationError as e:
             raise ValueError(f"Schema fallido en {gem_name}: {e.message}")
@@ -156,8 +158,9 @@ class Pipeline:
         return score >= threshold
 
     async def _run_gem_with_validation(self, gem_name: str, prompt_vars: dict) -> dict:
+        # El prompt no cambia entre reintentos, lo calculamos una vez
+        prompt = build_prompt(gem_name, prompt_vars)
         for attempt in range(MAX_RETRIES_ON_BLOCK + 1):
-            prompt = build_prompt(gem_name, prompt_vars)
             result = await self.gemini.run_gem_async(prompt)
 
             try:
