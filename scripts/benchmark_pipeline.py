@@ -7,16 +7,19 @@ from unittest.mock import MagicMock, AsyncMock
 # Add project root to sys.path
 sys.path.append(os.getcwd())
 
-from agent.gem6.orchestrator import GEM6Orchestrator
+# Import after sys.path.append to ensure the package is found
+from agent.gem6.orchestrator import GEM6Orchestrator  # noqa: E402
+
 
 async def benchmark():
     print("🚀 Starting Pipeline Benchmark...")
 
     # Mock GeminiClient
     mock_gemini = MagicMock()
+
     # Mock run_gem to simulate LLM latency (e.g., 0.5s)
     def mocked_run_gem(prompt, gem_name=None):
-        time.sleep(0.5) # Simulate LLM processing time
+        time.sleep(0.5)  # Simulate LLM processing time
         return {
             "json": {
                 "action": "finalize",
@@ -30,7 +33,10 @@ async def benchmark():
     search_inputs = {"job": "Engineer"}
     # 5 candidates
     num_candidates = 5
-    candidates = {f"CAND-{i:03d}": {"name": f"Candidate {i}"} for i in range(num_candidates)}
+    candidates = {
+        f"CAND-{i:03d}": {"name": f"Candidate {i}"}
+        for i in range(num_candidates)
+    }
 
     orchestrator = GEM6Orchestrator(gemini=mock_gemini)
     # Patch the db client to avoid real network calls
@@ -47,9 +53,10 @@ async def benchmark():
     print(f"✅ Processed {len(results)} candidates")
 
     # Expected sequential time: 5 * 0.5 = 2.5 seconds + overhead
-    # Expected parallel time: 0.5 seconds + overhead (if run_gem is not blocking)
+    # Expected parallel time: 0.5 seconds + overhead
 
     return duration
+
 
 if __name__ == "__main__":
     asyncio.run(benchmark())
