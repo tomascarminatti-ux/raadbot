@@ -155,7 +155,7 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
     else:
         try:
             return await run_pipeline(request)
-        except Exception as e:
+        except Exception:
             # Log the full error internally if needed, but return generic message
             raise HTTPException(status_code=400, detail="Error starting the pipeline")
 
