@@ -3,6 +3,9 @@ import json
 import logging
 from typing import Dict, Any, Optional
 
+# Module-level cache for contract JSON schemas to reduce disk I/O and parsing overhead
+_CONTRACT_CACHE: Dict[str, Any] = {}
+
 class JsonFormatter(logging.Formatter):
     def format(self, record):
         log_record = {
@@ -25,41 +28,52 @@ logger.propagate = False
 class GEMClient:
     def __init__(self, db_url: str = "http://db-api:8000"):
         self.db_url = db_url
+        # Use a persistent client to benefit from connection pooling
+        self.client = httpx.AsyncClient(timeout=30.0)
+
+    async def close(self):
+        """Closes the underlying HTTP client."""
+        await self.client.aclose()
 
     async def upsert_entity(self, data: Dict[str, Any]):
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(f"{self.db_url}/entity/upsert", json=data)
-                resp.raise_for_status()
-                return resp.json()
+            resp = await self.client.post(f"{self.db_url}/entity/upsert", json=data)
+            resp.raise_for_status()
+            return resp.json()
         except Exception as e:
             logger.error(f"Failed to upsert entity: {e}")
             return None
 
     async def discard_entity(self, data: Dict[str, Any]):
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(f"{self.db_url}/entity/discard", json=data)
-                resp.raise_for_status()
-                return resp.json()
+            resp = await self.client.post(f"{self.db_url}/entity/discard", json=data)
+            resp.raise_for_status()
+            return resp.json()
         except Exception as e:
             logger.error(f"Failed to discard entity: {e}")
             return None
 
     async def log_execution(self, log_data: Dict[str, Any]):
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(f"{self.db_url}/log/discovery", json=log_data)
-                resp.raise_for_status()
-                return resp.json()
+            resp = await self.client.post(f"{self.db_url}/log/discovery", json=log_data)
+            resp.raise_for_status()
+            return resp.json()
         except Exception as e:
             logger.error(f"Failed to log execution: {e}")
             return None
 
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
+    """
+    Validates data against a JSON contract.
+    Uses memoization to avoid repeated disk I/O and parsing.
+    """
     try:
-        with open(contract_path, "r") as f:
-            contract = json.load(f)
+        if contract_path in _CONTRACT_CACHE:
+            contract = _CONTRACT_CACHE[contract_path]
+        else:
+            with open(contract_path, "r") as f:
+                contract = json.load(f)
+            _CONTRACT_CACHE[contract_path] = contract
         
         for key in contract:
             if not isinstance(key, str):

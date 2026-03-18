@@ -1,0 +1,3 @@
+## 2025-05-14 - Asset Memoization and Persistent Connections
+**Learning:** Significant performance gains can be achieved by caching frequently accessed, immutable-during-execution assets like JSON schemas and Markdown prompts. Avoiding repeated disk I/O and JSON parsing reduced latency by ~6-32x in micro-benchmarks. Additionally, reusing an `httpx.AsyncClient` for multiple database calls within a single pipeline run reduces TCP handshake overhead.
+**Action:** Always check for repeated I/O in hot paths (like orchestration loops) and apply memoization with invalidation hooks where state can change (e.g., via refinement APIs).

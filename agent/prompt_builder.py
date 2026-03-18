@@ -4,13 +4,30 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import json
+from typing import Dict, Any, Optional
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
+# Module-level cache for prompts to avoid repeated disk reads
+_PROMPT_CACHE: Dict[str, str] = {}
+
+
+def clear_prompt_cache(gem_name: Optional[str] = None):
+    """Limpia el cache de prompts. Si se pasa gem_name, solo ese GEM."""
+    global _PROMPT_CACHE
+    if gem_name:
+        _PROMPT_CACHE.pop(gem_name, None)
+    else:
+        _PROMPT_CACHE.clear()
+
 
 def load_prompt(gem_name: str) -> str:
-    """Carga un prompt desde el directorio de prompts."""
+    """Carga un prompt desde el directorio de prompts (con memoización)."""
+    if gem_name in _PROMPT_CACHE:
+        return _PROMPT_CACHE[gem_name]
+
     filename = f"{gem_name}.md"
     filepath = os.path.join(PROMPTS_DIR, filename)
 
@@ -18,7 +35,9 @@ def load_prompt(gem_name: str) -> str:
         raise FileNotFoundError(f"Prompt no encontrado: {filepath}")
 
     with open(filepath, "r", encoding="utf-8") as f:
-        return f.read()
+        content = f.read()
+        _PROMPT_CACHE[gem_name] = content
+        return content
 
 
 def load_maestro() -> str:
@@ -53,8 +72,6 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     for key, value in variables.items():
         placeholder = "{{" + key + "}}"
         if isinstance(value, dict):
-            import json
-
             value = json.dumps(value, ensure_ascii=False, indent=2)
         prompt = prompt.replace(placeholder, str(value))
 
@@ -96,7 +113,6 @@ def build_agent_prompt(gem_id: str, payload: dict) -> str:
 
     # Si no se encontró ningún placeholder de datos en el prompt original, los anexamos al final
     if "{{input}}" not in base_prompt and "{{context}}" not in base_prompt:
-        import json
         prompt += f"\n\n### DATA INPUT:\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
 
     return prompt
