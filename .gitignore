@@ -38,6 +38,12 @@ env/
 .env_python/
 venv.bak/
 
+# Benchmarking & Testing artifacts
+benchmark_outputs/
+benchmark_*.txt
+test_results.txt
+wc_results.txt
+
 # macOS
 .DS_Store
 .AppleDouble

@@ -1,4 +1,5 @@
 import json
+import orjson
 import os
 import asyncio
 from datetime import datetime, timezone
@@ -61,26 +62,28 @@ class Pipeline:
     async def _save_state(self):
         """Guarda el estado actual en disco (con lock para concurrencia)."""
         async with self._lock:
-            with open(self.state_file, "w", encoding="utf-8") as f:
-                json.dump(self.state, f, ensure_ascii=False, indent=2)
+            with open(self.state_file, "wb") as f:
+                f.write(orjson.dumps(self.state, option=orjson.OPT_INDENT_2))
 
-    async def _track_usage(self, usage: dict):
-        """Suma tokens y calcula costo acumulado."""
+    def _update_usage_in_memory(self, usage: dict):
+        """Actualiza el estado de uso en memoria. Debe llamarse bajo un lock."""
         if not usage:
             return
 
         p_tokens = usage.get("prompt_tokens", 0)
         c_tokens = usage.get("candidates_tokens", 0)
 
+        self.state["usage"]["prompt_tokens"] += p_tokens
+        self.state["usage"]["candidates_tokens"] += c_tokens
+
+        cost_p = (p_tokens / 1_000_000) * PRICE_PROMPT_1M
+        cost_c = (c_tokens / 1_000_000) * PRICE_COMPLETION_1M
+        self.state["usage"]["total_cost_usd"] += cost_p + cost_c
+
+    async def _track_usage(self, usage: dict):
+        """Suma tokens y calcula costo acumulado (in-memory con lock)."""
         async with self._lock:
-            self.state["usage"]["prompt_tokens"] += p_tokens
-            self.state["usage"]["candidates_tokens"] += c_tokens
-
-            cost_p = (p_tokens / 1_000_000) * PRICE_PROMPT_1M
-            cost_c = (c_tokens / 1_000_000) * PRICE_COMPLETION_1M
-            self.state["usage"]["total_cost_usd"] += cost_p + cost_c
-
-        await self._save_state()
+            self._update_usage_in_memory(usage)
 
     async def _save_output(
         self, gem_name: str, result: dict, candidate_id: Optional[str] = None
@@ -96,12 +99,10 @@ class Pipeline:
             base = self.output_dir
             state_key = "search"
 
-        # Track usage
-        if "usage" in result:
-            await self._track_usage(result["usage"])
-
+        # Track usage and update state cache in a single locked operation
         async with self._lock:
-            # Update state cache
+            self._update_usage_in_memory(result.get("usage", {}))
+
             if state_key not in self.state["completed_gems"]:
                 self.state["completed_gems"][state_key] = []
             if gem_name not in self.state["completed_gems"][state_key]:
@@ -111,6 +112,7 @@ class Pipeline:
                 self.state["results_cache"][state_key] = {}
             self.state["results_cache"][state_key][gem_name] = result
 
+        # Perform a single disk save instead of multiple
         await self._save_state()
 
         # Files
@@ -244,6 +246,8 @@ class Pipeline:
         candidate_id: str,
         candidate_inputs: dict,
         gem5_result: dict,
+        gem5_summary: str = "",
+        gem5_key_challenge: str = "",
     ) -> dict:
         # console.print(
         #     Panel(
@@ -253,17 +257,22 @@ class Pipeline:
         # )
 
         results: dict[str, Any] = {"candidate_id": candidate_id, "gems": {}}
-        gem5_json = gem5_result.get("json", {})
-        gem5_content = gem5_json.get("content", {}) if gem5_json else {}
 
-        gem5_summary = (
-            json.dumps(gem5_content, ensure_ascii=False)
-            if gem5_content
-            else gem5_result.get("markdown", "")
-        )
-        gem5_key_challenge = gem5_content.get(
-            "problema_real_del_rol", gem5_result.get("markdown", "No disponible")
-        )
+        # Use pre-calculated gem5 values if provided, else calculate (fallback)
+        if not gem5_summary or not gem5_key_challenge:
+            gem5_json = gem5_result.get("json", {})
+            gem5_content = gem5_json.get("content", {}) if gem5_json else {}
+
+            if not gem5_summary:
+                gem5_summary = (
+                    json.dumps(gem5_content, ensure_ascii=False)
+                    if gem5_content
+                    else gem5_result.get("markdown", "")
+                )
+            if not gem5_key_challenge:
+                gem5_key_challenge = gem5_content.get(
+                    "problema_real_del_rol", gem5_result.get("markdown", "No disponible")
+                )
 
         # --- GEM1 ---
         gem1_vars = {
@@ -384,6 +393,19 @@ class Pipeline:
         # 1. GEM5
         gem5_result = await self.run_gem5(search_inputs)
 
+        # Pre-calculate GEM5 derived variables to avoid redundant processing
+        gem5_json = gem5_result.get("json", {})
+        gem5_content = gem5_json.get("content", {}) if gem5_json else {}
+
+        gem5_summary = (
+            json.dumps(gem5_content, ensure_ascii=False)
+            if gem5_content
+            else gem5_result.get("markdown", "")
+        )
+        gem5_key_challenge = gem5_content.get(
+            "problema_real_del_rol", gem5_result.get("markdown", "No disponible")
+        )
+
         all_results: dict[str, Any] = {
             "search_id": self.search_id,
             "timestamp": timestamp,
@@ -397,7 +419,9 @@ class Pipeline:
         async def process_candidate(cid, cinputs):
             try:
                 logger.info(f"👤 Iniciando pipeline para candidato: {cid}")
-                return cid, await self.run_candidate_pipeline(cid, cinputs, gem5_result)
+                return cid, await self.run_candidate_pipeline(
+                    cid, cinputs, gem5_result, gem5_summary, gem5_key_challenge
+                )
             except Exception as e:
                 logger.error(f"❌ Error crítico procesando candidato {cid}: {e}", exc_info=True)
                 return cid, {
@@ -426,8 +450,8 @@ class Pipeline:
             },
         }
         async with self._lock:
-            with open(summary_path, "w", encoding="utf-8") as f:
-                json.dump(summary, f, ensure_ascii=False, indent=2)
+            with open(summary_path, "wb") as f:
+                f.write(orjson.dumps(summary, option=orjson.OPT_INDENT_2))
 
         # 4. Imprimir Tabla Final Resumen Nivel Psicopata
         self._print_summary(all_results)
