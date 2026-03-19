@@ -1,6 +1,10 @@
 import asyncio
 import pytest
-from playwright.async_api import async_playwright, expect
+try:
+    from playwright.async_api import async_playwright, expect
+    HAS_PLAYWRIGHT = True
+except ImportError:
+    HAS_PLAYWRIGHT = False
 import uvicorn
 import multiprocessing
 import time
@@ -13,6 +17,7 @@ def run_server():
     uvicorn.run(app, host="127.0.0.1", port=8001, log_level="error")
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="Playwright not installed")
 async def test_copy_button_visibility_and_feedback():
     # Start the server in a separate process
     proc = multiprocessing.Process(target=run_server, daemon=True)
