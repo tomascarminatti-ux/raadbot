@@ -10,7 +10,8 @@ from utils.ws_logger import broadcast_log
 
 class GEM6Orchestrator:
     def __init__(self, *args, **kwargs):
-        self.client = GEMClient(os.getenv("DB_API_URL", "http://localhost:8000"))
+        # Allow passing an existing GEMClient to reuse its AsyncClient
+        self.client = kwargs.get("client") or GEMClient(os.getenv("DB_API_URL", "http://localhost:8000"))
         self.thresholds = {
             "scoring_cutoff": config.SCORING_CUTOFF,
             "qa_cutoff": config.QA_GATE_CUTOFF
