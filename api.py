@@ -16,6 +16,11 @@ from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
+from utils.gem_core import GEMClient
+
+
+# Global client instance for database operations
+gem_client = GEMClient(os.getenv("DB_API_URL", "http://localhost:8000"))
 
 
 @asynccontextmanager
@@ -26,6 +31,8 @@ async def lifespan(app: FastAPI):
             "⚠️  WARNING: GEMINI_API_KEY no detectada. La API fallará si no se configura al momento del request."
         )
     yield
+    # Cleanup: Close database client connection
+    await gem_client.close()
 
 
 app = FastAPI(
@@ -96,7 +103,7 @@ async def run_pipeline(request: PipelineRequest) -> dict:
     os.makedirs(output_dir, exist_ok=True)
 
     gemini = GeminiClient(api_key=api_key, model=request.model)
-    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
+    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir, client=gem_client)
 
     # Ejecución asíncrona no bloqueante
     await orchestrator.run_pipeline(search_inputs, candidates)
