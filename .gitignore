@@ -51,3 +51,5 @@ Icon
 .Trashes
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
+benchmark_outputs/
+benchmark_output.txt
