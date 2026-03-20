@@ -2,9 +2,9 @@ import os
 import sqlite3
 import json
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from typing import Optional, Dict, Any
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="GEM v3.0 DB API")
 
@@ -25,29 +25,32 @@ def init_db():
         conn.commit()
         conn.close()
 
+
 @app.on_event("startup")
 def startup_event():
     init_db()
 
+
 # Models
 class EntityUpdate(BaseModel):
-    entity_id: str
+    entity_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     current_stage: str
     state: str
     last_score: Optional[float] = None
     human_required: Optional[bool] = False
     metadata: Optional[Dict[str, Any]] = {}
-    agent_responsible: str
-    trace_id: str
+    agent_responsible: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
+    trace_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
 
 class DiscardEntity(BaseModel):
-    entity_id: str
+    entity_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     stage_at_discard: str
     reason: str
     score_at_discard: Optional[float] = None
     metadata: Optional[Dict[str, Any]] = {}
-    agent_responsible: str
-    trace_id: str
+    agent_responsible: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
+    trace_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
+
 
 # Endpoints
 @app.post("/entity/upsert")
@@ -79,9 +82,9 @@ async def upsert_entity(data: EntityUpdate):
         ))
         conn.commit()
         return {"status": "success"}
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal database error")
     finally:
         conn.close()
 
@@ -105,9 +108,9 @@ async def discard_entity(data: DiscardEntity):
         cursor.execute("DELETE FROM entity_state WHERE entity_id = ?", (data.entity_id,))
         conn.commit()
         return {"status": "discarded"}
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal database error")
     finally:
         conn.close()
 
