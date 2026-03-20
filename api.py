@@ -3,7 +3,7 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -197,7 +197,7 @@ async def setup_search(request: SetupSearchRequest):
         json.dump(result.get("data", {}), f, indent=4)
     with open(os.path.join(output_dir, "gem5.md"), "w", encoding="utf-8") as f:
         f.write(result.get("markdown", ""))
-        
+
     return {
         "status": "success",
         "search_id": request.search_id,

@@ -2,8 +2,8 @@ import os
 import sqlite3
 import json
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Request
+from typing import Optional, Dict, Any
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 app = FastAPI(title="GEM v3.0 DB API")
@@ -25,9 +25,11 @@ def init_db():
         conn.commit()
         conn.close()
 
+
 @app.on_event("startup")
 def startup_event():
     init_db()
+
 
 # Models
 class EntityUpdate(BaseModel):
@@ -48,6 +50,7 @@ class DiscardEntity(BaseModel):
     metadata: Optional[Dict[str, Any]] = {}
     agent_responsible: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     trace_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
+
 
 # Endpoints
 @app.post("/entity/upsert")
