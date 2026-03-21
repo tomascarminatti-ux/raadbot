@@ -56,7 +56,12 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center">
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Solo lectura</span>
+                            <button id="copy-btn" onclick="copyToClipboard()" aria-label="Copiar prompt al portapapeles" class="hidden ml-2 text-xs text-slate-400 hover:text-white transition-all flex items-center gap-1 px-2 py-1 rounded border border-white/10 hover:border-white/20">
+                                <span>📋</span> <span id="copy-btn-text">Copiar</span>
+                            </button>
+                        </div>
                     </div>
                     <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
@@ -103,6 +108,34 @@
         let gems = [];
         let activeGem = null;
 
+        let copyTimeout = null;
+        function copyToClipboard() {
+            const promptContent = document.getElementById('prompt-content').innerText;
+            const copyBtn = document.getElementById('copy-btn');
+            const copyBtnText = document.getElementById('copy-btn-text');
+
+            navigator.clipboard.writeText(promptContent).then(() => {
+                if (copyTimeout) clearTimeout(copyTimeout);
+
+                copyBtnText.innerText = '¡Copiado!';
+                copyBtn.classList.add('border-green-500/50', 'text-green-400');
+                copyBtn.setAttribute('aria-label', '¡Prompt copiado con éxito!');
+
+                copyTimeout = setTimeout(() => {
+                    copyBtnText.innerText = 'Copiar';
+                    copyBtn.classList.remove('border-green-500/50', 'text-green-400');
+                    copyBtn.setAttribute('aria-label', 'Copiar prompt al portapapeles');
+                    copyTimeout = null;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                copyBtnText.innerText = '❌ Error';
+                setTimeout(() => {
+                    copyBtnText.innerText = 'Copiar';
+                }, 2000);
+            });
+        }
+
         async function loadGems() {
             try {
                 const res = await fetch('/api/v1/gems');
@@ -133,6 +166,11 @@
             document.getElementById('current-gem-title').innerText = `${activeGem.name} - ${id}`;
             document.getElementById('prompt-content').innerText = activeGem.prompt;
             document.getElementById('send-btn').disabled = false;
+
+            const copyBtn = document.getElementById('copy-btn');
+            copyBtn.classList.remove('hidden');
+            document.getElementById('copy-btn-text').innerText = 'Copiar';
+            copyBtn.classList.remove('border-green-500/50', 'text-green-400');
             
             document.getElementById('chat-history').innerHTML = `
                 <div class="bg-blue-600/10 border border-blue-500/30 p-3 rounded-lg text-xs leading-relaxed text-blue-200">
