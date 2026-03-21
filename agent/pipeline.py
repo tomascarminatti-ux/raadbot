@@ -79,8 +79,9 @@ class Pipeline:
             cost_p = (p_tokens / 1_000_000) * PRICE_PROMPT_1M
             cost_c = (c_tokens / 1_000_000) * PRICE_COMPLETION_1M
             self.state["usage"]["total_cost_usd"] += cost_p + cost_c
-
-        await self._save_state()
+            # Optimization: Removed redundant _save_state() call from here.
+            # This is only called by _save_output, which calls _save_state itself
+            # immediately after, saving us an expensive disk write per GEM execution.
 
     async def _save_output(
         self, gem_name: str, result: dict, candidate_id: Optional[str] = None
