@@ -1,0 +1,3 @@
+## 2026-03-22 - Async Orchestration Bottleneck
+**Learning:** Sequential processing of candidates in a multi-agent pipeline is a major bottleneck, especially with I/O-bound LLM calls. Converting the orchestrator to use `asyncio.gather` and making the LLM client asynchronous significantly improves throughput. Reusing HTTP connections for database calls via a persistent `httpx.AsyncClient` further reduces overhead.
+**Action:** Always prefer asynchronous patterns for LLM-heavy orchestration. Ensure all client-side network calls use connection pooling to avoid the overhead of repeated TCP/TLS handshakes.

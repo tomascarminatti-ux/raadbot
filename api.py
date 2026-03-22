@@ -98,8 +98,12 @@ async def run_pipeline(request: PipelineRequest) -> dict:
     gemini = GeminiClient(api_key=api_key, model=request.model)
     orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
 
-    # Ejecución asíncrona no bloqueante
-    await orchestrator.run_pipeline(search_inputs, candidates)
+    try:
+        # Ejecución asíncrona no bloqueante
+        await orchestrator.run_pipeline(search_inputs, candidates)
+    finally:
+        # Clean up DB client
+        await orchestrator.client.close()
 
     summary_path = os.path.join(output_dir, "pipeline_summary.json")
     summary_data = {}
@@ -185,7 +189,7 @@ async def setup_search(request: SetupSearchRequest):
     # Ejecutar GEM 5 directamente
     from agent.prompt_builder import build_gem5_prompt
     prompt = build_gem5_prompt(search_inputs)
-    result = gemini.run_gem(prompt, gem_name="gem5")
+    result = await gemini.run_gem(prompt, gem_name="gem5")
     
     # Guardar resultados
     with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
@@ -264,7 +268,7 @@ async def refine_gem(request: RefineRequest):
     """
     
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
-    result = gemini.run_gem(refinement_prompt)
+    result = await gemini.run_gem(refinement_prompt)
     new_prompt = result.get("markdown", "") or result.get("raw", "")
     
     if new_prompt:
