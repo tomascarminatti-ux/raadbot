@@ -33,11 +33,20 @@ def test_run_pipeline_path_traversal():
 
 def test_valid_ids():
     # Mocking files/env might be needed for full success,
-    # but here we just test that valid IDs PASS validation (not necessarily 200 if other things fail)
+    # but here we just test that valid IDs PASS Pydantic validation (not necessarily 200 if other things fail)
     payload = {
         "gem_id": "gem1",
         "instruction": "test"
     }
-    response = client.post("/api/v1/gems/refine", json=payload)
-    # It should NOT be 422. Might be 404 or 500 depending on environment/API keys
-    assert response.status_code != 422
+    try:
+        response = client.post("/api/v1/gems/refine", json=payload)
+        # It should NOT be 422. Might be 404 if file doesn't exist.
+        # If it reached here, it passed Pydantic validation.
+        assert response.status_code != 422
+    except RuntimeError as e:
+        # If we get a RuntimeError from the backend (like Ollama connection refused),
+        # it means it passed Pydantic validation and reached the handler logic.
+        if "Ollama falló" in str(e) or "Connection refused" in str(e):
+            pass
+        else:
+            raise e

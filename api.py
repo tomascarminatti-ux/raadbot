@@ -54,7 +54,7 @@ app.add_middleware(
 class PipelineRequest(BaseModel):
     search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     drive_folder: Optional[str] = None
-    local_dir: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_/.-]+$")
+    local_dir: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_/-]+$")
     candidate_id: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_-]+$")  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
