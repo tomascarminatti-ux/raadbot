@@ -1,6 +1,5 @@
 import json
 import re
-import time
 import os
 from typing import TypedDict, Any, Optional
 from google import genai
@@ -12,17 +11,20 @@ import config
 
 console = Console()
 
+
 class GeminiUsage(TypedDict):
     prompt_tokens: int
     candidates_tokens: int
     total_tokens: int
     finish_reason: str
 
+
 class GeminiResult(TypedDict):
     json: Optional[dict[str, Any]]
     markdown: str
     raw: str
     usage: GeminiUsage
+
 
 class GeminiClient:
     """Cliente para interactuar con Gemini API u Ollama."""
@@ -32,13 +34,27 @@ class GeminiClient:
         if self.provider == "gemini":
             self.client = genai.Client(api_key=api_key)
         self.model = model if self.provider == "gemini" else config.OLLAMA_MODEL
+        self._httpx_client: Optional[httpx.AsyncClient] = None
 
-    def run_gem(self, prompt: str, gem_name: Optional[str] = None, max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
+    @property
+    def httpx_client(self) -> httpx.AsyncClient:
+        """Lazy initialization of a shared httpx client for Ollama."""
+        if self._httpx_client is None or self._httpx_client.is_closed:
+            self._httpx_client = httpx.AsyncClient(timeout=120.0)
+        return self._httpx_client
+
+    async def close(self):
+        """Clean up resources."""
+        if self._httpx_client and not self._httpx_client.is_closed:
+            await self._httpx_client.aclose()
+
+    async def run_gem(self, prompt: str, gem_name: Optional[str] = None,
+                      max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
         if self.provider == "ollama":
-            return self._run_ollama(prompt, gem_name, max_retries)
-        return self._run_gemini(prompt, gem_name, max_retries)
+            return await self._run_ollama(prompt, gem_name, max_retries)
+        return await self._run_gemini(prompt, gem_name, max_retries)
 
-    def _run_ollama(self, prompt: str, gem_name: Optional[str], max_retries: int) -> GeminiResult:
+    async def _run_ollama(self, prompt: str, gem_name: Optional[str], max_retries: int) -> GeminiResult:
         """Envía un prompt a Ollama."""
         url = f"{config.OLLAMA_BASE_URL}/api/generate"
         cfg = config.GEM_CONFIGS.get(gem_name, {"temperature": 0.3, "top_p": 0.8, "max_tokens": 4096})
@@ -57,38 +73,38 @@ class GeminiClient:
 
         for attempt in range(max_retries + 1):
             try:
-                with httpx.Client(timeout=120.0) as client:
-                    response = client.post(url, json=payload)
-                    response.raise_for_status()
-                    data = response.json()
+                response = await self.httpx_client.post(url, json=payload)
+                response.raise_for_status()
+                data = response.json()
 
-                    raw_text = data.get("response", "")
+                raw_text = data.get("response", "")
 
-                    usage: GeminiUsage = {
-                        "prompt_tokens": data.get("prompt_eval_count", 0),
-                        "candidates_tokens": data.get("eval_count", 0),
-                        "total_tokens": data.get("prompt_eval_count", 0) + data.get("eval_count", 0),
-                        "finish_reason": "STOP"
-                    }
+                usage: GeminiUsage = {
+                    "prompt_tokens": data.get("prompt_eval_count", 0),
+                    "candidates_tokens": data.get("eval_count", 0),
+                    "total_tokens": data.get("prompt_eval_count", 0) + data.get("eval_count", 0),
+                    "finish_reason": "STOP"
+                }
 
-                    result_content = self._parse_response(raw_text)
+                result_content = self._parse_response(raw_text)
 
-                    return {
-                        "json": result_content["json"],
-                        "markdown": result_content["markdown"],
-                        "raw": raw_text,
-                        "usage": usage
-                    }
+                return {
+                    "json": result_content["json"],
+                    "markdown": result_content["markdown"],
+                    "raw": raw_text,
+                    "usage": usage
+                }
             except Exception as e:
                 if attempt < max_retries:
-                    time.sleep(2 ** (attempt + 1))
+                    await asyncio.sleep(2 ** (attempt + 1))
                 else:
                     raise RuntimeError(f"Ollama falló: {e}")
         raise RuntimeError("Unreachable")
 
-    def _run_gemini(self, prompt: str, gem_name: Optional[str] = None, max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
+    async def _run_gemini(self, prompt: str, gem_name: Optional[str] = None,
+                          max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
         """
-        Envía un prompt al modelo Gemini y parsea la respuesta.
+        Envía un prompt al modelo Gemini y parsea la respuesta de forma asíncrona.
 
         Args:
             prompt: Texto del prompt.
@@ -100,10 +116,11 @@ class GeminiClient:
         """
         # Cargar configuración específica o usar default
         cfg = config.GEM_CONFIGS.get(gem_name, {"temperature": 0.3, "top_p": 0.8, "max_tokens": 4096})
-        
+
         for attempt in range(max_retries + 1):
             try:
-                response = self.client.models.generate_content(
+                # Usar la API asíncrona de GenAI
+                response = await self.client.aio.models.generate_content(
                     model=self.model,
                     contents=prompt,
                     config={
@@ -114,14 +131,14 @@ class GeminiClient:
                 )
 
                 raw_text = response.text
-                
+
                 usage_dict: GeminiUsage = {
                     "prompt_tokens": 0,
                     "candidates_tokens": 0,
                     "total_tokens": 0,
                     "finish_reason": "UNKNOWN"
                 }
-                
+
                 if hasattr(response, "usage_metadata") and response.usage_metadata:
                     usage_dict["prompt_tokens"] = getattr(
                         response.usage_metadata, "prompt_token_count", 0
@@ -132,12 +149,12 @@ class GeminiClient:
                     usage_dict["total_tokens"] = getattr(
                         response.usage_metadata, "total_token_count", 0
                     )
-                
+
                 if hasattr(response, "candidates") and response.candidates:
                     usage_dict["finish_reason"] = getattr(response.candidates[0], "finish_reason", "STOP")
-                
+
                 result_content = self._parse_response(raw_text)
-                
+
                 return {
                     "json": result_content["json"],
                     "markdown": result_content["markdown"],
@@ -150,7 +167,7 @@ class GeminiClient:
                     wait = 2 ** (attempt + 1)
                     console.print(f"[yellow]  ⚠️  Error (intento {attempt + 1}/{max_retries + 1}): {e}[/yellow]")
                     console.print(f"[dim]  ⏳ Reintentando en {wait}s...[/dim]")
-                    time.sleep(wait)
+                    await asyncio.sleep(wait)
                 else:
                     raise RuntimeError(
                         f"Gemini API falló después de {max_retries + 1} intentos: {e}"
@@ -164,17 +181,17 @@ class GeminiClient:
 
         # Intentar encontrar bloques de código JSON
         json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", raw_text, re.DOTALL)
-        
+
         if not json_match:
             # Intentar encontrar cualquier bloque que empiece con { y termine con }
             json_match = re.search(r"(\{.*\})", raw_text, re.DOTALL)
 
         if json_match:
             json_str = json_match.group(1).strip()
-            
+
             # Limpieza básica de JSON: eliminar comas finales antes de cerrar llaves/corchetes
             json_str = re.sub(r",\s*([\]}])", r"\1", json_str)
-            
+
             try:
                 json_data = json.loads(json_str)
                 # Separar markdown (lo que queda fuera del bloque JSON detectado)

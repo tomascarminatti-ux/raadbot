@@ -17,3 +17,9 @@ __pycache__/
 zeroclaw/target/
 runs/
 api.log
+server.log
+pipeline_state.json
+benchmark_outputs/
+benchmark_*.txt
+test_results.txt
+wc_results.txt
