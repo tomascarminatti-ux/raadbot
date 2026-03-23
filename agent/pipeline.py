@@ -80,7 +80,9 @@ class Pipeline:
             cost_c = (c_tokens / 1_000_000) * PRICE_COMPLETION_1M
             self.state["usage"]["total_cost_usd"] += cost_p + cost_c
 
-        await self._save_state()
+        # _save_output (the only caller) will trigger _save_state() immediately after.
+        # Removing this call avoids a redundant disk write per GEM execution.
+        # await self._save_state()
 
     async def _save_output(
         self, gem_name: str, result: dict, candidate_id: Optional[str] = None
@@ -243,7 +245,8 @@ class Pipeline:
         self,
         candidate_id: str,
         candidate_inputs: dict,
-        gem5_result: dict,
+        gem5_summary: str,
+        gem5_key_challenge: str,
     ) -> dict:
         # console.print(
         #     Panel(
@@ -253,17 +256,6 @@ class Pipeline:
         # )
 
         results: dict[str, Any] = {"candidate_id": candidate_id, "gems": {}}
-        gem5_json = gem5_result.get("json", {})
-        gem5_content = gem5_json.get("content", {}) if gem5_json else {}
-
-        gem5_summary = (
-            json.dumps(gem5_content, ensure_ascii=False)
-            if gem5_content
-            else gem5_result.get("markdown", "")
-        )
-        gem5_key_challenge = gem5_content.get(
-            "problema_real_del_rol", gem5_result.get("markdown", "No disponible")
-        )
 
         # --- GEM1 ---
         gem1_vars = {
@@ -384,6 +376,18 @@ class Pipeline:
         # 1. GEM5
         gem5_result = await self.run_gem5(search_inputs)
 
+        # Pre-calculate GEM5 context to avoid redundant processing in parallel loops
+        gem5_json = gem5_result.get("json", {})
+        gem5_content = gem5_json.get("content", {}) if gem5_json else {}
+        gem5_summary = (
+            json.dumps(gem5_content, ensure_ascii=False)
+            if gem5_content
+            else gem5_result.get("markdown", "")
+        )
+        gem5_key_challenge = gem5_content.get(
+            "problema_real_del_rol", gem5_result.get("markdown", "No disponible")
+        )
+
         all_results: dict[str, Any] = {
             "search_id": self.search_id,
             "timestamp": timestamp,
@@ -397,7 +401,9 @@ class Pipeline:
         async def process_candidate(cid, cinputs):
             try:
                 logger.info(f"👤 Iniciando pipeline para candidato: {cid}")
-                return cid, await self.run_candidate_pipeline(cid, cinputs, gem5_result)
+                return cid, await self.run_candidate_pipeline(
+                    cid, cinputs, gem5_summary, gem5_key_challenge
+                )
             except Exception as e:
                 logger.error(f"❌ Error crítico procesando candidato {cid}: {e}", exc_info=True)
                 return cid, {
