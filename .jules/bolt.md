@@ -1,0 +1,3 @@
+## 2026-03-23 - [Persistent Async Client Initialization]
+**Learning:** Instantiating an `httpx.AsyncClient` at the module level or during class initialization outside of an active event loop is an anti-pattern that can lead to initialization errors or issues when the client is later used within a running loop. Additionally, shared clients require clear ownership tracking to prevent resource leaks when fallback instances are created.
+**Action:** Use lazy initialization (properties) or explicit lifecycle management (FastAPI lifespan) to ensure async clients are created within the correct event loop. Implement ownership tracking in wrapper clients (`GEMClient`) to ensure only internally-created resources are closed by the instance.
