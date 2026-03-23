@@ -56,7 +56,12 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-2">
+                            <button id="copy-btn" onclick="copyToClipboard()" class="hidden px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-xs transition-all flex items-center gap-1 border border-white/10" aria-label="Copiar prompt al portapapeles">
+                                <span id="copy-icon">📋</span> <span id="copy-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Solo lectura</span>
+                        </div>
                     </div>
                     <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
@@ -102,6 +107,30 @@
 
         let gems = [];
         let activeGem = null;
+        let copyTimeout = null;
+
+        function copyToClipboard() {
+            const content = document.getElementById('prompt-content').innerText;
+            const btn = document.getElementById('copy-btn');
+            const icon = document.getElementById('copy-icon');
+            const text = document.getElementById('copy-text');
+
+            navigator.clipboard.writeText(content).then(() => {
+                // Visual Feedback
+                btn.classList.add('border-green-500/50', 'text-green-400');
+                text.innerText = '¡Copiado!';
+                icon.innerText = '✅';
+                btn.setAttribute('aria-label', '¡Prompt copiado con éxito!');
+
+                if (copyTimeout) clearTimeout(copyTimeout);
+                copyTimeout = setTimeout(() => {
+                    btn.classList.remove('border-green-500/50', 'text-green-400');
+                    text.innerText = 'Copiar';
+                    icon.innerText = '📋';
+                    btn.setAttribute('aria-label', 'Copiar prompt al portapapeles');
+                }, 2000);
+            });
+        }
 
         async function loadGems() {
             try {
@@ -134,6 +163,15 @@
             document.getElementById('prompt-content').innerText = activeGem.prompt;
             document.getElementById('send-btn').disabled = false;
             
+            // Show copy button and reset its state
+            const copyBtn = document.getElementById('copy-btn');
+            copyBtn.classList.remove('hidden');
+            document.getElementById('copy-text').innerText = 'Copiar';
+            document.getElementById('copy-icon').innerText = '📋';
+            copyBtn.classList.remove('border-green-500/50', 'text-green-400');
+            copyBtn.setAttribute('aria-label', 'Copiar prompt al portapapeles');
+            if (copyTimeout) clearTimeout(copyTimeout);
+
             document.getElementById('chat-history').innerHTML = `
                 <div class="bg-blue-600/10 border border-blue-500/30 p-3 rounded-lg text-xs leading-relaxed text-blue-200">
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?
