@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import httpx
 import asyncio
 
@@ -52,10 +52,10 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     drive_folder: Optional[str] = None
-    local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    local_dir: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_/-]+$")
+    candidate_id: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_-]+$")  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
 
@@ -76,6 +76,9 @@ async def run_pipeline(request: PipelineRequest) -> dict:
     if not request.drive_folder and not request.local_dir:
         raise ValueError("Se debe proveer 'drive_folder' o 'local_dir'.")
 
+    # Defense-in-depth: sanitize search_id
+    safe_search_id = os.path.basename(request.search_id)
+
     search_inputs = {}
     candidates = {}
 
@@ -85,6 +88,9 @@ async def run_pipeline(request: PipelineRequest) -> dict:
         search_inputs = structure["search_inputs"]
         candidates = structure["candidates"]
     else:
+        # Pydantic pattern already excludes ".." but we can be extra careful
+        if request.local_dir and ".." in request.local_dir:
+            raise ValueError("Invalid local_dir path.")
         search_inputs, candidates = load_local_inputs(request.local_dir)
 
     if request.candidate_id:
@@ -92,11 +98,11 @@ async def run_pipeline(request: PipelineRequest) -> dict:
             raise ValueError(f"Candidato {request.candidate_id} no encontrado.")
         candidates = {request.candidate_id: candidates[request.candidate_id]}
 
-    output_dir = os.path.join("runs", request.search_id, "outputs")
+    output_dir = os.path.join("runs", safe_search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
 
     gemini = GeminiClient(api_key=api_key, model=request.model)
-    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
+    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=safe_search_id, output_dir=output_dir)
 
     # Ejecución asíncrona no bloqueante
     await orchestrator.run_pipeline(search_inputs, candidates)
@@ -160,7 +166,7 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
@@ -171,7 +177,8 @@ async def setup_search(request: SetupSearchRequest):
     Inicializa una búsqueda ejecutando únicamente GEM 5 (Radiografía Estratégica).
     Crea la estructura de carpetas y guarda el mandato inicial.
     """
-    output_dir = os.path.join("runs", request.search_id, "outputs")
+    safe_search_id = os.path.basename(request.search_id)
+    output_dir = os.path.join("runs", safe_search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
     
     # Simular estructura de inputs para GEM 5
@@ -234,13 +241,14 @@ async def list_gems():
     return gems
 
 class RefineRequest(BaseModel):
-    gem_id: str
+    gem_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     instruction: str
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
-    prompt_path = f"prompts/{request.gem_id}.md"
+    safe_gem_id = os.path.basename(request.gem_id)
+    prompt_path = f"prompts/{safe_gem_id}.md"
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
         
