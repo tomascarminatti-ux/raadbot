@@ -1,0 +1,3 @@
+## 2025-05-15 - Redundant I/O and Context Processing in Pipeline
+**Learning:** Found that `agent/pipeline.py` was performing redundant disk writes by calling `_save_state()` in both `_track_usage` and its caller `_save_output`. Additionally, prompt building was a significant bottleneck due to repeated disk reads for static templates and redundant extraction of GEM5 context within parallel candidate loops.
+**Action:** Apply `lru_cache` to template loading, hoist search-level context extraction out of parallel loops, and ensure state persistence is only triggered once per logical unit of work to minimize I/O overhead.
