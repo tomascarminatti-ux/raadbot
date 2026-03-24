@@ -33,7 +33,9 @@ async def test_gem6_flow():
     try:
         # Nota: En un test real sin API Key de verdad, gemini.run_gem fallará o devolverá error.
         # Aquí probamos la estructura de la orquestación.
-        result = await orchestrator.execute_pipeline(search_inputs, candidates)
+        # Convert list to dict for compatibility with GEM6Orchestrator.run_pipeline
+        candidates_dict = {c["candidato_id"]: c for c in candidates}
+        result = await orchestrator.run_pipeline(search_inputs, candidates_dict)
         
         print("\n✅ Pipeline Ejecutado!")
         print(f"Status: {result['status']}")
