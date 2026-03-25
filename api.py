@@ -27,12 +27,14 @@ async def lifespan(app: FastAPI):
             "⚠️  WARNING: GEMINI_API_KEY no detectada. La API fallará si no se configura al momento del request."
         )
 
-    # Initialize persistent GEMClient
+    # Initialize persistent GEMClient for connection pooling
+    # Performance Optimization: Reusing the same GEMClient (and httpx.AsyncClient)
+    # across requests reduces TCP/TLS handshake overhead significantly.
     app.state.db_client = GEMClient(os.getenv("DB_API_URL", "http://localhost:8000"))
 
     yield
 
-    # Close persistent GEMClient
+    # Close persistent GEMClient and its underlying httpx session during shutdown
     if hasattr(app.state, "db_client"):
         await app.state.db_client.close()
 
