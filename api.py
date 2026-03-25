@@ -16,6 +16,7 @@ from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
+from utils.gem_core import GEMClient
 
 
 @asynccontextmanager
@@ -25,7 +26,17 @@ async def lifespan(app: FastAPI):
         print(
             "⚠️  WARNING: GEMINI_API_KEY no detectada. La API fallará si no se configura al momento del request."
         )
+
+    # Initialize persistent GEMClient for connection pooling
+    # Performance Optimization: Reusing the same GEMClient (and httpx.AsyncClient)
+    # across requests reduces TCP/TLS handshake overhead significantly.
+    app.state.db_client = GEMClient(os.getenv("DB_API_URL", "http://localhost:8000"))
+
     yield
+
+    # Close persistent GEMClient and its underlying httpx session during shutdown
+    if hasattr(app.state, "db_client"):
+        await app.state.db_client.close()
 
 
 app = FastAPI(
@@ -96,7 +107,13 @@ async def run_pipeline(request: PipelineRequest) -> dict:
     os.makedirs(output_dir, exist_ok=True)
 
     gemini = GeminiClient(api_key=api_key, model=request.model)
-    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
+    db_client = getattr(app.state, "db_client", None)
+    orchestrator = GEM6Orchestrator(
+        gemini=gemini,
+        search_id=request.search_id,
+        output_dir=output_dir,
+        db_client=db_client
+    )
 
     # Ejecución asíncrona no bloqueante
     await orchestrator.run_pipeline(search_inputs, candidates)
