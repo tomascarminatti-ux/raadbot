@@ -1,8 +1,7 @@
-import pytest
 import os
 import shutil
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 
 # Mock config before importing app
 import config
