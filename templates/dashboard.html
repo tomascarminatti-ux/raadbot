@@ -22,7 +22,7 @@
     <aside class="w-64 glass border-r flex flex-col">
         <div class="p-6 border-b border-white/10">
             <h1 class="text-xl font-bold flex items-center gap-2 text-blue-400">
-                <span>🤖</span> RAADBOT 2.0
+                <span aria-hidden="true">🤖</span> RAADBOT 2.0
             </h1>
             <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest font-semibold">Industrial Orchestrator</p>
         </div>
@@ -56,6 +56,9 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
+                        <button id="copy-btn" onclick="copyToClipboard()" aria-label="Copiar prompt al portapapeles" class="hidden text-xs text-slate-400 hover:text-blue-400 transition-colors flex items-center gap-1 ml-auto mr-2">
+                            <span aria-hidden="true">📋</span> <span id="copy-btn-text">Copiar</span>
+                        </button>
                         <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
                     </div>
                     <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
@@ -76,7 +79,7 @@
                 <div class="space-y-3">
                     <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
                     <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
-                        <span>🚀</span> Refinar Prompt
+                        <span aria-hidden="true">🚀</span> Refinar Prompt
                     </button>
                 </div>
             </section>
@@ -84,7 +87,7 @@
     </main>
 
     <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
+        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;"><span aria-hidden="true">🚀</span> Raadbot Live - GEMs en tiempo real</div>
         <div id="logs-container"></div>
     </div>
     <script>
@@ -102,6 +105,7 @@
 
         let gems = [];
         let activeGem = null;
+        let copyTimeout = null;
 
         async function loadGems() {
             try {
@@ -118,7 +122,7 @@
             nav.innerHTML = gems.map(gem => `
                 <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
                     <span>${gem.name}</span>
-                    <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
+                    <span aria-hidden="true" class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
                 </button>
             `).join('');
         }
@@ -126,6 +130,21 @@
         function selectGem(id) {
             activeGem = gems.find(g => g.id === id);
             
+            // Show copy button
+            document.getElementById('copy-btn').classList.remove('hidden');
+
+            // Reset copy button state
+            if (copyTimeout) {
+                clearTimeout(copyTimeout);
+                copyTimeout = null;
+            }
+            const copyBtn = document.getElementById('copy-btn');
+            const copyBtnText = document.getElementById('copy-btn-text');
+            if (copyBtn && copyBtnText) {
+                copyBtn.innerHTML = '<span aria-hidden="true">📋</span> <span id="copy-btn-text">Copiar</span>';
+                copyBtn.ariaLabel = "Copiar prompt al portapapeles";
+            }
+
             // UI Updates
             document.querySelectorAll('#gem-nav button').forEach(b => b.classList.remove('active-gem', 'text-blue-400'));
             document.getElementById(`btn-${id}`).classList.add('active-gem', 'text-blue-400');
@@ -139,6 +158,29 @@
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?
                 </div>
             `;
+        }
+
+        async function copyToClipboard() {
+            const content = document.getElementById('prompt-content').innerText;
+            const btn = document.getElementById('copy-btn');
+            const btnText = document.getElementById('copy-btn-text');
+
+            try {
+                await navigator.clipboard.writeText(content);
+
+                if (copyTimeout) clearTimeout(copyTimeout);
+
+                btn.innerHTML = '<span aria-hidden="true">✅</span> <span id="copy-btn-text">¡Copiado!</span>';
+                btn.ariaLabel = "¡Prompt copiado con éxito!";
+
+                copyTimeout = setTimeout(() => {
+                    btn.innerHTML = '<span aria-hidden="true">📋</span> <span id="copy-btn-text">Copiar</span>';
+                    btn.ariaLabel = "Copiar prompt al portapapeles";
+                    copyTimeout = null;
+                }, 2000);
+            } catch (err) {
+                console.error('Error al copiar:', err);
+            }
         }
 
         async function refineGem() {
@@ -158,7 +200,7 @@
             
             input.value = '';
             btn.disabled = true;
-            btn.innerHTML = '<span>⚡</span> Procesando...';
+            btn.innerHTML = '<span aria-hidden="true">⚡</span> Procesando...';
 
             try {
                 const res = await fetch('/api/v1/gems/refine', {
@@ -189,7 +231,7 @@
                 `;
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<span>🚀</span> Refinar Prompt';
+                btn.innerHTML = '<span aria-hidden="true">🚀</span> Refinar Prompt';
                 history.scrollTop = history.scrollHeight;
             }
         }
