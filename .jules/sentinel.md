@@ -1,0 +1,4 @@
+## 2025-05-15 - [HIGH] Path Traversal in API Endpoints
+**Vulnerability:** Several API endpoints (`/api/v1/run`, `/api/v1/search/setup`, `/api/v1/gems/refine`) allowed unvalidated user input to be used in file path construction via `os.path.join` and f-strings. This enabled directory traversal and arbitrary file read/write (e.g., using `../` in IDs).
+**Learning:** Even when using `os.path.join`, absolute paths in any component (on Linux) or `..` segments can lead to paths outside the intended root. Pydantic's regex validation is an effective first line of defense in FastAPI applications.
+**Prevention:** Always validate user-provided IDs against a strict regex (e.g., `r"^[a-zA-Z0-9_-]+$"`). Use `os.path.basename()` on untrusted input before using it in path construction to strip directory components.
