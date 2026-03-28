@@ -3,6 +3,7 @@ import os
 import asyncio
 from datetime import datetime, timezone
 from typing import Optional, Any
+from functools import lru_cache
 
 from jsonschema import validate, ValidationError
 from rich.console import Console
@@ -11,11 +12,27 @@ from rich.table import Table
 
 from agent.gemini_client import GeminiClient
 from agent.prompt_builder import build_prompt
-from agent.config import THRESHOLDS, MAX_RETRIES_ON_BLOCK, PRICE_PROMPT_1M, PRICE_COMPLETION_1M
+from agent.config import (
+    THRESHOLDS,
+    MAX_RETRIES_ON_BLOCK,
+    PRICE_PROMPT_1M,
+    PRICE_COMPLETION_1M,
+)
 from agent.logger import logger
 
 
 console = Console()
+
+
+@lru_cache  # Cache the JSON schema to avoid repeated disk I/O in every Pipeline run
+def _get_cached_schema() -> Optional[dict]:
+    schema_path = os.path.join(
+        os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
+    )
+    if os.path.exists(schema_path):
+        with open(schema_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return None
 
 
 class Pipeline:
@@ -25,7 +42,7 @@ class Pipeline:
         self.gemini = gemini
         self.search_id = search_id
         self.output_dir = output_dir
-        self.schema = self._load_schema()
+        self.schema = _get_cached_schema()
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -33,15 +50,6 @@ class Pipeline:
         self.state_file = os.path.join(output_dir, "pipeline_state.json")
         self.state = self._load_state()
         self._lock = asyncio.Lock()
-
-    def _load_schema(self) -> Optional[dict]:
-        schema_path = os.path.join(
-            os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
-        )
-        if os.path.exists(schema_path):
-            with open(schema_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return None
 
     def _load_state(self) -> dict:
         """Carga el estado anterior si existe para reanudar."""
@@ -397,9 +405,14 @@ class Pipeline:
         async def process_candidate(cid, cinputs):
             try:
                 logger.info(f"👤 Iniciando pipeline para candidato: {cid}")
-                return cid, await self.run_candidate_pipeline(cid, cinputs, gem5_result)
+                return cid, await self.run_candidate_pipeline(
+                    cid, cinputs, gem5_result
+                )
             except Exception as e:
-                logger.error(f"❌ Error crítico procesando candidato {cid}: {e}", exc_info=True)
+                logger.error(
+                    f"❌ Error crítico procesando candidato {cid}: {e}",
+                    exc_info=True,
+                )
                 return cid, {
                     "candidate_id": cid,
                     "decision": f"ERROR_EJECUCION: {e}",
