@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import httpx
 import asyncio
 
@@ -52,10 +52,10 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     drive_folder: Optional[str] = None
-    local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    local_dir: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_-][a-zA-Z0-9_/-]*$")
+    candidate_id: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_-]+$")  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
 
@@ -69,6 +69,11 @@ class PipelineResponse(BaseModel):
 
 async def run_pipeline(request: PipelineRequest) -> dict:
     """Wrapper asíncrono para ejecutar el pipeline completo usando GEM 6."""
+    # Defense in depth: sanitize paths
+    request.search_id = os.path.basename(request.search_id)
+    if request.candidate_id:
+        request.candidate_id = os.path.basename(request.candidate_id)
+
     api_key = config.GEMINI_API_KEY
     if not api_key:
         raise ValueError("GEMINI_API_KEY no configurada.")
@@ -160,7 +165,7 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
@@ -171,6 +176,9 @@ async def setup_search(request: SetupSearchRequest):
     Inicializa una búsqueda ejecutando únicamente GEM 5 (Radiografía Estratégica).
     Crea la estructura de carpetas y guarda el mandato inicial.
     """
+    # Defense in depth: sanitize paths
+    request.search_id = os.path.basename(request.search_id)
+
     output_dir = os.path.join("runs", request.search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
     
@@ -234,12 +242,15 @@ async def list_gems():
     return gems
 
 class RefineRequest(BaseModel):
-    gem_id: str
+    gem_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     instruction: str
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
+    # Defense in depth: sanitize paths
+    request.gem_id = os.path.basename(request.gem_id)
+
     prompt_path = f"prompts/{request.gem_id}.md"
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
