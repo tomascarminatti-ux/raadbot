@@ -3,6 +3,7 @@ import os
 import asyncio
 from datetime import datetime, timezone
 from typing import Optional, Any
+from functools import lru_cache
 
 from jsonschema import validate, ValidationError
 from rich.console import Console
@@ -34,6 +35,7 @@ class Pipeline:
         self.state = self._load_state()
         self._lock = asyncio.Lock()
 
+    @lru_cache(maxsize=1)
     def _load_schema(self) -> Optional[dict]:
         schema_path = os.path.join(
             os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
