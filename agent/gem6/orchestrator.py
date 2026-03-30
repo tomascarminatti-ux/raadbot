@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
@@ -10,7 +11,7 @@ from utils.ws_logger import broadcast_log
 
 class GEM6Orchestrator:
     def __init__(self, *args, **kwargs):
-        self.client = GEMClient(os.getenv("DB_API_URL", "http://localhost:8000"))
+        self.client = kwargs.get("db_client") or GEMClient(os.getenv("DB_API_URL", "http://localhost:8000"))
         self.thresholds = {
             "scoring_cutoff": config.SCORING_CUTOFF,
             "qa_cutoff": config.QA_GATE_CUTOFF
@@ -221,7 +222,6 @@ class GEM6Orchestrator:
         return is_ok
 
 if __name__ == "__main__":
-    import time
     orch = GEM6Orchestrator()
     # Mock trigger
     asyncio.run(orch.process_context({"entity_id": "TEST-001", "context": "Discovery request"}))

@@ -16,6 +16,7 @@ from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
+from utils.gem_core import GEMClient
 
 
 @asynccontextmanager
@@ -25,7 +26,15 @@ async def lifespan(app: FastAPI):
         print(
             "⚠️  WARNING: GEMINI_API_KEY no detectada. La API fallará si no se configura al momento del request."
         )
+
+    # Initialize shared DB client
+    db_url = os.getenv("DB_API_URL", "http://localhost:8000")
+    app.state.db_client = GEMClient(db_url=db_url)
+
     yield
+
+    # Clean up
+    await app.state.db_client.aclose()
 
 
 app = FastAPI(
@@ -67,7 +76,7 @@ class PipelineResponse(BaseModel):
     summary: dict
 
 
-async def run_pipeline(request: PipelineRequest) -> dict:
+async def run_pipeline(request: PipelineRequest, db_client: Optional[GEMClient] = None) -> dict:
     """Wrapper asíncrono para ejecutar el pipeline completo usando GEM 6."""
     api_key = config.GEMINI_API_KEY
     if not api_key:
@@ -96,7 +105,12 @@ async def run_pipeline(request: PipelineRequest) -> dict:
     os.makedirs(output_dir, exist_ok=True)
 
     gemini = GeminiClient(api_key=api_key, model=request.model)
-    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
+    orchestrator = GEM6Orchestrator(
+        gemini=gemini,
+        search_id=request.search_id,
+        output_dir=output_dir,
+        db_client=db_client
+    )
 
     # Ejecución asíncrona no bloqueante
     await orchestrator.run_pipeline(search_inputs, candidates)
@@ -115,10 +129,10 @@ async def run_pipeline(request: PipelineRequest) -> dict:
     }
 
 
-async def background_run_pipeline(request: PipelineRequest):
+async def background_run_pipeline(request: PipelineRequest, db_client: Optional[GEMClient] = None):
     """Ejecuta el pipeline de fondo y llama a un webhook si existe."""
     try:
-        resultado = await run_pipeline(request)
+        resultado = await run_pipeline(request, db_client=db_client)
         if request.webhook_url:
             async with httpx.AsyncClient() as client:
                 await client.post(request.webhook_url, json=resultado, timeout=60.0)
@@ -140,13 +154,15 @@ async def background_run_pipeline(request: PipelineRequest):
 
 
 @app.post("/api/v1/run")
-async def trigger_pipeline(request: PipelineRequest, background_tasks: BackgroundTasks):
+async def trigger_pipeline(request: PipelineRequest, background_tasks: BackgroundTasks, fastapi_request: Request):
     """
     Verbo POST para iniciar una corrida del pipeline.
     Soporta webhook_url para ejecuciones asíncronas no bloqueantes.
     """
+    db_client = getattr(fastapi_request.app.state, "db_client", None)
+
     if request.webhook_url:
-        background_tasks.add_task(background_run_pipeline, request)
+        background_tasks.add_task(background_run_pipeline, request, db_client=db_client)
         return {
             "status": "processing",
             "message": "Pipeline iniciado de fondo.",
@@ -154,7 +170,7 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
         }
     else:
         try:
-            return await run_pipeline(request)
+            return await run_pipeline(request, db_client=db_client)
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
