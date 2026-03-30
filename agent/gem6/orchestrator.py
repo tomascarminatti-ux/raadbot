@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
@@ -10,7 +11,7 @@ from utils.ws_logger import broadcast_log
 
 class GEM6Orchestrator:
     def __init__(self, *args, **kwargs):
-        self.client = GEMClient(os.getenv("DB_API_URL", "http://localhost:8000"))
+        self.client = kwargs.get("db_client") or GEMClient(os.getenv("DB_API_URL", "http://localhost:8000"))
         self.thresholds = {
             "scoring_cutoff": config.SCORING_CUTOFF,
             "qa_cutoff": config.QA_GATE_CUTOFF
@@ -19,6 +20,10 @@ class GEM6Orchestrator:
         self.output_dir = kwargs.get("output_dir") or (args[1] if len(args) > 1 else None)
         self.config = kwargs.get("config") or (args[2] if len(args) > 2 else {})
         self.search_id = kwargs.get("search_id", self.config.get("search_id"))
+
+    async def aclose(self):
+        """Closes the underlying database client if owned by this orchestrator."""
+        await self.client.aclose()
 
     async def run_pipeline(self, search_inputs: Dict[str, Any], candidates: Dict[str, Any]):
         """Entry point to process all candidates"""
@@ -221,7 +226,6 @@ class GEM6Orchestrator:
         return is_ok
 
 if __name__ == "__main__":
-    import time
     orch = GEM6Orchestrator()
     # Mock trigger
     asyncio.run(orch.process_context({"entity_id": "TEST-001", "context": "Discovery request"}))
