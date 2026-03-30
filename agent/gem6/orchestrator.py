@@ -21,6 +21,10 @@ class GEM6Orchestrator:
         self.config = kwargs.get("config") or (args[2] if len(args) > 2 else {})
         self.search_id = kwargs.get("search_id", self.config.get("search_id"))
 
+    async def aclose(self):
+        """Closes the underlying database client if owned by this orchestrator."""
+        await self.client.aclose()
+
     async def run_pipeline(self, search_inputs: Dict[str, Any], candidates: Dict[str, Any]):
         """Entry point to process all candidates"""
         results = {}
