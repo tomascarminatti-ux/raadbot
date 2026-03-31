@@ -31,6 +31,30 @@ def test_path_traversal_run_pipeline_search_id_blocked():
     assert response.status_code == 422
     assert "string_pattern_mismatch" in response.text
 
+def test_ssrf_protection_webhook_url():
+    # Localhost SSRF
+    payload = {
+        "search_id": "test_search",
+        "local_dir": "runs",
+        "webhook_url": "http://localhost:8000/api/v1/run"
+    }
+    response = client.post("/api/v1/run", json=payload)
+    assert response.status_code == 422
+    assert "Localhost or loopback addresses are not allowed" in response.text
+
+    # Loopback IP SSRF
+    payload["webhook_url"] = "http://127.0.0.1:8000"
+    response = client.post("/api/v1/run", json=payload)
+    assert response.status_code == 422
+    assert "Localhost or loopback addresses are not allowed" in response.text
+
+    # Valid external URL should pass validation (but might fail later)
+    payload["webhook_url"] = "https://n8n.example.com/webhook"
+    response = client.post("/api/v1/run", json=payload)
+    # Since we use background tasks, it should return 200 or 400 depending on run_pipeline
+    # But validation passed
+    assert response.status_code != 422
+
 def test_path_traversal_run_pipeline_local_dir_blocked():
     # Absolute path
     payload = {

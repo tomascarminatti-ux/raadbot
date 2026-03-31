@@ -3,10 +3,10 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 import httpx
 import asyncio
 
@@ -57,7 +57,14 @@ class PipelineRequest(BaseModel):
     local_dir: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_-][a-zA-Z0-9_/-]*$")
     candidate_id: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_-]+$")  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
-    webhook_url: Optional[str] = None  # Para n8n asíncrono
+    webhook_url: Optional[HttpUrl] = None  # Para n8n asíncrono
+
+    @field_validator("webhook_url")
+    @classmethod
+    def validate_webhook_url(cls, v: Optional[HttpUrl]) -> Optional[HttpUrl]:
+        if v and any(domain in str(v).lower() for domain in ["localhost", "127.0.0.1", "0.0.0.0"]):
+            raise ValueError("Localhost or loopback addresses are not allowed for webhooks.")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -124,13 +131,13 @@ async def background_run_pipeline(request: PipelineRequest):
         resultado = await run_pipeline(request)
         if request.webhook_url:
             async with httpx.AsyncClient() as client:
-                await client.post(request.webhook_url, json=resultado, timeout=60.0)
+                await client.post(str(request.webhook_url), json=resultado, timeout=60.0)
     except Exception as e:
         if request.webhook_url:
             try:
                 async with httpx.AsyncClient() as client:
                     await client.post(
-                        request.webhook_url,
+                        str(request.webhook_url),
                         json={
                             "status": "error", 
                             "search_id": request.search_id, 
