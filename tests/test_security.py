@@ -1,6 +1,9 @@
 import os
+
+# Set a dummy API key for startup check before importing app
+os.environ["GEMINI_API_KEY"] = "dummy"
+
 import pytest
-import shutil
 from fastapi.testclient import TestClient
 from api import app
 
