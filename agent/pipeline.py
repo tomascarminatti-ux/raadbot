@@ -4,7 +4,8 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Optional, Any
 
-from jsonschema import validate, ValidationError
+from jsonschema import ValidationError
+from jsonschema.validators import validator_for
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -17,6 +18,9 @@ from agent.logger import logger
 
 console = Console()
 
+# Cache de esquema a nivel de módulo
+_CACHED_SCHEMA: Optional[dict] = None
+
 
 class Pipeline:
     """Orquestador del pipeline GEM Nivel Psicópata (Stateful & Rich UI)."""
@@ -25,7 +29,13 @@ class Pipeline:
         self.gemini = gemini
         self.search_id = search_id
         self.output_dir = output_dir
+
+        # Cargar y pre-compilar validador de schema
         self.schema = self._load_schema()
+        self._validator = None
+        if self.schema:
+            validator_cls = validator_for(self.schema)
+            self._validator = validator_cls(self.schema)
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -35,12 +45,17 @@ class Pipeline:
         self._lock = asyncio.Lock()
 
     def _load_schema(self) -> Optional[dict]:
+        global _CACHED_SCHEMA
+        if _CACHED_SCHEMA is not None:
+            return _CACHED_SCHEMA
+
         schema_path = os.path.join(
             os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
         )
         if os.path.exists(schema_path):
             with open(schema_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                _CACHED_SCHEMA = json.load(f)
+                return _CACHED_SCHEMA
         return None
 
     def _load_state(self) -> dict:
@@ -133,10 +148,15 @@ class Pipeline:
         return json_path, md_path
 
     def _validate_output(self, json_data: dict, gem_name: str) -> bool:
-        if not self.schema or not json_data:
+        if not json_data:
             raise ValueError(f"Output nulo o sin JSON válido en {gem_name}")
+
+        if not self._validator:
+            # Fallback si no hay schema cargado
+            return True
+
         try:
-            validate(instance=json_data, schema=self.schema)
+            self._validator.validate(instance=json_data)
             return True
         except ValidationError as e:
             raise ValueError(f"Schema fallido en {gem_name}: {e.message}")
