@@ -24,13 +24,15 @@ class GEM6Orchestrator:
         """Entry point to process all candidates"""
         results = {}
         for candidate_id, candidate_data in candidates.items():
+            # Defensive sanitization
+            safe_candidate_id = os.path.basename(candidate_id)
             context = {
                 "search_inputs": search_inputs,
-                "candidate_id": candidate_id,
+                "candidate_id": safe_candidate_id,
                 "candidate_data": candidate_data,
-                "entity_id": candidate_id
+                "entity_id": safe_candidate_id
             }
-            results[candidate_id] = await self.process_context(context)
+            results[safe_candidate_id] = await self.process_context(context)
         
         # Save summary
         if self.output_dir:
