@@ -10,7 +10,7 @@ from utils.ws_logger import broadcast_log
 
 class GEM6Orchestrator:
     def __init__(self, *args, **kwargs):
-        self.client = GEMClient(os.getenv("DB_API_URL", "http://localhost:8000"))
+        self.db_client = GEMClient(os.getenv("DB_API_URL", "http://localhost:8000"))
         self.thresholds = {
             "scoring_cutoff": config.SCORING_CUTOFF,
             "qa_cutoff": config.QA_GATE_CUTOFF
@@ -84,7 +84,7 @@ class GEM6Orchestrator:
             if not gem6_decision:
                 logger.error(f"GEM 6 failed to return JSON at step {step}")
                 # Log error to DB
-                await self.client.log_execution({
+                await self.db_client.log_execution({
                     "entity_id": entity_id,
                     "agent_id": "GEM6",
                     "status": "ERROR",
@@ -111,7 +111,7 @@ class GEM6Orchestrator:
                 })
 
                 # Final State Update
-                await self.client.upsert_entity({
+                await self.db_client.upsert_entity({
                     "entity_id": entity_id,
                     "current_stage": "COMPLETED",
                     "state": status,
@@ -162,7 +162,7 @@ class GEM6Orchestrator:
                     logger.error(f"Error broadcasting log: {e}")
 
                 # Log transition to DB
-                await self.client.upsert_entity({
+                await self.db_client.upsert_entity({
                     "entity_id": entity_id,
                     "current_stage": agent_id,
                     "state": "PROCESSING",
@@ -209,7 +209,7 @@ class GEM6Orchestrator:
             return True
 
         is_ok = validate_contract(output, contract_path)
-        await self.client.log_execution({
+        await self.db_client.log_execution({
             "entity_id": entity_id,
             "agent_id": agent_id,
             "input_ok": True,
@@ -219,6 +219,11 @@ class GEM6Orchestrator:
             "trace_id": trace_id
         })
         return is_ok
+
+    async def aclose(self):
+        """Releases underlying resources (DB client)."""
+        if hasattr(self, "db_client"):
+            await self.db_client.aclose()
 
 if __name__ == "__main__":
     import time
