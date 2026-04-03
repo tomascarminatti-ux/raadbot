@@ -6,10 +6,9 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, field_validator
 import httpx
 import asyncio
-import ipaddress
 
 import config
 from agent.gemini_client import GeminiClient
@@ -55,35 +54,19 @@ app.add_middleware(
 class PipelineRequest(BaseModel):
     search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     drive_folder: Optional[str] = None
-    local_dir: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_-][a-zA-Z0-9_/-]*$")
+    local_dir: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9._-][a-zA-Z0-9_./-]*$")
     candidate_id: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_-]+$")  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
-    webhook_url: Optional[HttpUrl] = None  # Para n8n asíncrono
+    webhook_url: Optional[str] = None  # Para n8n asíncrono
 
-    @field_validator("webhook_url")
+    @field_validator("local_dir")
     @classmethod
-    def validate_webhook_url(cls, v: Optional[HttpUrl]) -> Optional[HttpUrl]:
+    def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
-
-        # Prevent SSRF by blocking private/local IPs
-        host = v.host
-        if not host:
-             return v
-
-        try:
-            ip = ipaddress.ip_address(host)
-            if ip.is_private or ip.is_loopback:
-                raise ValueError("Webhook URL cannot be a private or loopback IP address.")
-        except ValueError as e:
-            # Re-raise if it was our own ValueError
-            if "Webhook URL" in str(e):
-                raise e
-            # Not an IP address, could be a hostname
-            # For a more robust solution we might resolve it, but at least we block common ones
-            if host.lower() in ["localhost", "127.0.0.1", "::1"]:
-                raise ValueError("Webhook URL cannot be localhost.")
-
+        # Explicitly block parent directory traversal
+        if ".." in v:
+            raise ValueError("local_dir cannot contain parent directory references ('..').")
         return v
 
 
