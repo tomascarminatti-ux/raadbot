@@ -6,9 +6,10 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 import httpx
 import asyncio
+import ipaddress
 
 import config
 from agent.gemini_client import GeminiClient
@@ -52,12 +53,38 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     drive_folder: Optional[str] = None
-    local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    local_dir: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_-][a-zA-Z0-9_/-]*$")
+    candidate_id: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9_-]+$")  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
-    webhook_url: Optional[str] = None  # Para n8n asíncrono
+    webhook_url: Optional[HttpUrl] = None  # Para n8n asíncrono
+
+    @field_validator("webhook_url")
+    @classmethod
+    def validate_webhook_url(cls, v: Optional[HttpUrl]) -> Optional[HttpUrl]:
+        if v is None:
+            return v
+
+        # Prevent SSRF by blocking private/local IPs
+        host = v.host
+        if not host:
+             return v
+
+        try:
+            ip = ipaddress.ip_address(host)
+            if ip.is_private or ip.is_loopback:
+                raise ValueError("Webhook URL cannot be a private or loopback IP address.")
+        except ValueError as e:
+            # Re-raise if it was our own ValueError
+            if "Webhook URL" in str(e):
+                raise e
+            # Not an IP address, could be a hostname
+            # For a more robust solution we might resolve it, but at least we block common ones
+            if host.lower() in ["localhost", "127.0.0.1", "::1"]:
+                raise ValueError("Webhook URL cannot be localhost.")
+
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -88,15 +115,19 @@ async def run_pipeline(request: PipelineRequest) -> dict:
         search_inputs, candidates = load_local_inputs(request.local_dir)
 
     if request.candidate_id:
-        if request.candidate_id not in candidates:
-            raise ValueError(f"Candidato {request.candidate_id} no encontrado.")
-        candidates = {request.candidate_id: candidates[request.candidate_id]}
+        # Extra security: sanitize candidate_id
+        safe_candidate_id = os.path.basename(request.candidate_id)
+        if safe_candidate_id not in candidates:
+            raise ValueError(f"Candidato {safe_candidate_id} no encontrado.")
+        candidates = {safe_candidate_id: candidates[safe_candidate_id]}
 
-    output_dir = os.path.join("runs", request.search_id, "outputs")
+    # Extra security: sanitize search_id
+    safe_search_id = os.path.basename(request.search_id)
+    output_dir = os.path.join("runs", safe_search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
 
     gemini = GeminiClient(api_key=api_key, model=request.model)
-    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
+    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=safe_search_id, output_dir=output_dir)
 
     # Ejecución asíncrona no bloqueante
     await orchestrator.run_pipeline(search_inputs, candidates)
@@ -109,7 +140,7 @@ async def run_pipeline(request: PipelineRequest) -> dict:
 
     return {
         "status": "success",
-        "search_id": request.search_id,
+        "search_id": safe_search_id,
         "output_dir": output_dir,
         "summary": summary_data,
     }
@@ -160,7 +191,7 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
@@ -171,7 +202,8 @@ async def setup_search(request: SetupSearchRequest):
     Inicializa una búsqueda ejecutando únicamente GEM 5 (Radiografía Estratégica).
     Crea la estructura de carpetas y guarda el mandato inicial.
     """
-    output_dir = os.path.join("runs", request.search_id, "outputs")
+    safe_search_id = os.path.basename(request.search_id)
+    output_dir = os.path.join("runs", safe_search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
     
     # Simular estructura de inputs para GEM 5
@@ -195,7 +227,7 @@ async def setup_search(request: SetupSearchRequest):
         
     return {
         "status": "success",
-        "search_id": request.search_id,
+        "search_id": safe_search_id,
         "gem5_summary": result.get("data", {}).get("mandate_summary", "Mandato generado con éxito.")
     }
 
@@ -234,13 +266,14 @@ async def list_gems():
     return gems
 
 class RefineRequest(BaseModel):
-    gem_id: str
+    gem_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     instruction: str
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
-    prompt_path = f"prompts/{request.gem_id}.md"
+    safe_gem_id = os.path.basename(request.gem_id)
+    prompt_path = os.path.join("prompts", f"{safe_gem_id}.md")
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
         
