@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
@@ -202,6 +203,10 @@ class GEM6Orchestrator:
         if agent_id == "gem4":
             return {"qa_score": 0.98, "issues": [], "human_required": False}
         return {}
+
+    async def aclose(self):
+        """Releases orchestrator resources (e.g., DB client HTTP session)."""
+        await self.client.aclose()
 
     async def validate_step(self, entity_id, agent_id, output, contract_path, trace_id):
         if not os.path.exists(contract_path):
