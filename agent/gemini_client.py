@@ -33,6 +33,10 @@ class GeminiClient:
             self.client = genai.Client(api_key=api_key)
         self.model = model if self.provider == "gemini" else config.OLLAMA_MODEL
 
+    async def aclose(self):
+        """No-op for GeminiClient to maintain compatibility with Orchestrator cleanup."""
+        pass
+
     def run_gem(self, prompt: str, gem_name: Optional[str] = None, max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
         if self.provider == "ollama":
             return self._run_ollama(prompt, gem_name, max_retries)
