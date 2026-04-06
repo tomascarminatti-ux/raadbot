@@ -1,0 +1,1 @@
+GEM: {{PROMPT_MAESTRO}} {{var1}} {{var2}}

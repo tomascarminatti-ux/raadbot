@@ -4,11 +4,15 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import json
+from functools import lru_cache
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+VAR_PATTERN = re.compile(r"\{\{(\w+)\}\}")
 
 
+@lru_cache(maxsize=32)
 def load_prompt(gem_name: str) -> str:
     """Carga un prompt desde el directorio de prompts."""
     filename = f"{gem_name}.md"
@@ -42,24 +46,30 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     Returns:
         str con el prompt listo para enviar al modelo
     """
-    # Cargar prompt maestro y del GEM
+    # Cargar prompt maestro y del GEM (cached)
     maestro = load_maestro()
     prompt = load_prompt(gem_name)
 
-    # Inyectar prompt maestro
+    # 1. Inyectar prompt maestro primero para expandir sus posibles variables
     prompt = prompt.replace("{{PROMPT_MAESTRO}}", maestro)
 
-    # Inyectar variables
+    # 2. Preparar valores de reemplazo (JSON-serialize dicts una sola vez)
+    replacements = {}
     for key, value in variables.items():
-        placeholder = "{{" + key + "}}"
         if isinstance(value, dict):
-            import json
+            replacements[key] = json.dumps(value, ensure_ascii=False, indent=2)
+        else:
+            replacements[key] = str(value)
 
-            value = json.dumps(value, ensure_ascii=False, indent=2)
-        prompt = prompt.replace(placeholder, str(value))
+    # 3. Optimización: Reemplazo en una sola pasada usando regex para evitar múltiples copias de strings largos
+    def _replace_match(match):
+        var_name = match.group(1)
+        return replacements.get(var_name, match.group(0))
+
+    prompt = VAR_PATTERN.sub(_replace_match, prompt)
 
     # Validar que no queden variables sin reemplazar
-    remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
+    remaining = VAR_PATTERN.findall(prompt)
     if remaining:
         # Filtrar VERSION que es metadata, no un input
         remaining = [v for v in remaining if v != "VERSION"]
