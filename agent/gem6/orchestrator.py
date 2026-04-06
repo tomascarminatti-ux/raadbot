@@ -220,6 +220,17 @@ class GEM6Orchestrator:
         })
         return is_ok
 
+    async def aclose(self):
+        """Clean up resources, including the database client and Gemini client."""
+        tasks = []
+        if hasattr(self, 'client') and self.client:
+            tasks.append(self.client.aclose())
+        if hasattr(self, 'gemini') and self.gemini:
+            tasks.append(self.gemini.aclose())
+
+        if tasks:
+            await asyncio.gather(*tasks)
+
 if __name__ == "__main__":
     import time
     orch = GEM6Orchestrator()

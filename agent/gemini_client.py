@@ -200,3 +200,7 @@ class GeminiClient:
             "json": json_data,
             "markdown": markdown,
         }
+
+    async def aclose(self):
+        """No-op for GeminiClient to maintain interface compatibility."""
+        pass
