@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
@@ -19,6 +20,13 @@ class GEM6Orchestrator:
         self.output_dir = kwargs.get("output_dir") or (args[1] if len(args) > 1 else None)
         self.config = kwargs.get("config") or (args[2] if len(args) > 2 else {})
         self.search_id = kwargs.get("search_id", self.config.get("search_id"))
+
+    async def aclose(self):
+        """Cleanup internal clients."""
+        await asyncio.gather(
+            self.client.aclose(),
+            self.gemini.aclose() if hasattr(self.gemini, "aclose") else asyncio.sleep(0)
+        )
 
     async def run_pipeline(self, search_inputs: Dict[str, Any], candidates: Dict[str, Any]):
         """Entry point to process all candidates"""

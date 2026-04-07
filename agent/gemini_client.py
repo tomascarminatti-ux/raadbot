@@ -38,6 +38,10 @@ class GeminiClient:
             return self._run_ollama(prompt, gem_name, max_retries)
         return self._run_gemini(prompt, gem_name, max_retries)
 
+    async def aclose(self):
+        """No-op aclose to maintain compatibility with Orchestrator cleanup."""
+        pass
+
     def _run_ollama(self, prompt: str, gem_name: Optional[str], max_retries: int) -> GeminiResult:
         """Envía un prompt a Ollama."""
         url = f"{config.OLLAMA_BASE_URL}/api/generate"
