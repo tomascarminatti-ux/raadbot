@@ -1,7 +1,9 @@
 import os
 from rich.console import Console
 
+
 console = Console()
+
 
 def load_local_inputs(local_dir: str) -> tuple[dict, dict]:
     """

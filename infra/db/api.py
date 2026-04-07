@@ -2,18 +2,22 @@ import os
 import sqlite3
 import json
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Request
+from typing import Optional, Dict, Any
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
 
 app = FastAPI(title="GEM v3.0 DB API")
 
+
 DB_PATH = os.getenv("DB_PATH", "infra/db/gem_v3.sqlite")
+
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def init_db():
     schema_path = "infra/db/schema.sql"
@@ -25,9 +29,11 @@ def init_db():
         conn.commit()
         conn.close()
 
+
 @app.on_event("startup")
 def startup_event():
     init_db()
+
 
 # Models
 class EntityUpdate(BaseModel):
@@ -40,6 +46,7 @@ class EntityUpdate(BaseModel):
     agent_responsible: str
     trace_id: str
 
+
 class DiscardEntity(BaseModel):
     entity_id: str
     stage_at_discard: str
@@ -49,18 +56,19 @@ class DiscardEntity(BaseModel):
     agent_responsible: str
     trace_id: str
 
+
 # Endpoints
 @app.post("/entity/upsert")
 async def upsert_entity(data: EntityUpdate):
     conn = get_db()
     cursor = conn.cursor()
     now = datetime.now().isoformat()
-    
+
     try:
         cursor.execute("""
             INSERT INTO entity_state (
-                entity_id, current_stage, state, last_score, 
-                human_required, metadata, agent_responsible, trace_id, 
+                entity_id, current_stage, state, last_score,
+                human_required, metadata, agent_responsible, trace_id,
                 created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(entity_id) DO UPDATE SET
@@ -85,16 +93,17 @@ async def upsert_entity(data: EntityUpdate):
     finally:
         conn.close()
 
+
 @app.post("/entity/discard")
 async def discard_entity(data: DiscardEntity):
     conn = get_db()
     cursor = conn.cursor()
-    
+
     try:
         # Move to discarded table
         cursor.execute("""
             INSERT INTO discarded_entities (
-                entity_id, stage_at_discard, reason, score_at_discard, 
+                entity_id, stage_at_discard, reason, score_at_discard,
                 metadata, agent_responsible, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
@@ -111,6 +120,7 @@ async def discard_entity(data: DiscardEntity):
     finally:
         conn.close()
 
+
 @app.get("/entities")
 async def get_entities(stage: Optional[str] = None):
     conn = get_db()
@@ -123,6 +133,7 @@ async def get_entities(stage: Optional[str] = None):
     conn.close()
     return [dict(row) for row in rows]
 
+
 @app.post("/log/discovery")
 async def log_discovery(data: Dict[str, Any]):
     conn = get_db()
@@ -130,8 +141,8 @@ async def log_discovery(data: Dict[str, Any]):
     try:
         cursor.execute("""
             INSERT INTO discovery_logs (
-                entity_id, agent_id, input_contract_verified, 
-                output_contract_verified, execution_time_ms, status, 
+                entity_id, agent_id, input_contract_verified,
+                output_contract_verified, execution_time_ms, status,
                 error_message, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
@@ -144,9 +155,11 @@ async def log_discovery(data: Dict[str, Any]):
     finally:
         conn.close()
 
+
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "db-api"}
+
 
 if __name__ == "__main__":
     import uvicorn
