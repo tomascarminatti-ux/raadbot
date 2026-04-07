@@ -83,10 +83,19 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <!-- Live Telemetry -->
+    <div id="live-telemetry" class="fixed bottom-6 right-6 w-96 glass rounded-xl border border-blue-500/30 shadow-2xl z-50 flex flex-col transition-all duration-300" style="height: 40px;">
+        <button onclick="toggleLogs()" class="flex items-center justify-between px-4 py-2 w-full text-left focus:outline-none" aria-expanded="false" aria-controls="logs-content" id="telemetry-btn">
+            <span class="text-[10px] font-bold text-blue-400 flex items-center gap-2 tracking-widest">
+                <span class="animate-pulse">📡</span> LIVE TELEMETRY
+            </span>
+            <span id="telemetry-toggle-icon" class="text-slate-400 transition-transform duration-300 text-xs">▲</span>
+        </button>
+        <div id="logs-content" class="hidden flex-1 p-4 overflow-y-auto font-mono text-[10px] space-y-2 border-t border-white/5" aria-live="polite">
+            <div id="logs-container"></div>
+        </div>
     </div>
+
     <script>
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -94,11 +103,40 @@
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
             const logEntry = document.createElement('div');
-            logEntry.style.marginBottom = '5px';
+            logEntry.className = 'p-2 rounded bg-black/40 border border-white/5 mb-2';
             const time = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
-            logEntry.innerHTML = `[${time}] <span style="color:#3b82f6">${data.gem}</span>: ${data.action} - <span style="color:${data.status === 'OK' ? '#4ade80' : '#f87171'}">${data.status}</span> (Score: ${data.score || 'N/A'})`;
+
+            const statusColor = data.status === 'OK' ? 'text-green-400' : 'text-red-400';
+            logEntry.innerHTML = `
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-blue-400 font-bold">[${time}] ${data.gem}</span>
+                    <span class="${statusColor} font-bold">${data.status}</span>
+                </div>
+                <div class="text-slate-400">${data.action}</div>
+                ${data.score ? `<div class="text-slate-500 mt-1 italic">Score: ${data.score}</div>` : ''}
+            `;
             logsContainer.prepend(logEntry);
         };
+
+        function toggleLogs() {
+            const container = document.getElementById('live-telemetry');
+            const content = document.getElementById('logs-content');
+            const icon = document.getElementById('telemetry-toggle-icon');
+            const btn = document.getElementById('telemetry-btn');
+            const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+
+            if (isExpanded) {
+                container.style.height = '40px';
+                content.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+                btn.setAttribute('aria-expanded', 'false');
+            } else {
+                container.style.height = '400px';
+                content.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+                btn.setAttribute('aria-expanded', 'true');
+            }
+        }
 
         let gems = [];
         let activeGem = null;
