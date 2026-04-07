@@ -13,14 +13,14 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 def get_db_data():
     conn = sqlite3.connect(DB_PATH)
     query = """
-    SELECT 
-        entity_id, current_stage, state, last_score, 
-        human_required, updated_at, agent_responsible 
+    SELECT
+        entity_id, current_stage, state, last_score,
+        human_required, updated_at, agent_responsible
     FROM entity_state
     UNION ALL
-    SELECT 
-        entity_id, stage_at_discard as current_stage, 'DISCARDED' as state, 
-        score_at_discard as last_score, 0 as human_required, 
+    SELECT
+        entity_id, stage_at_discard as current_stage, 'DISCARDED' as state,
+        score_at_discard as last_score, 0 as human_required,
         created_at as updated_at, agent_responsible
     FROM discarded_entities
     """
@@ -43,16 +43,16 @@ def sync_to_sheets():
     body = {
         'values': values
     }
-    
+
     # Clear and update (Production mode: Overwrite whole sheet as dashboard)
     range_name = 'Dashboard!A1'
     service.spreadsheets().values().clear(
         spreadsheetId=SPREADSHEET_ID, range='Dashboard!A:Z').execute()
-    
+
     result = service.spreadsheets().values().update(
         spreadsheetId=SPREADSHEET_ID, range=range_name,
         valueInputOption='RAW', body=body).execute()
-    
+
     print(f"{result.get('updatedCells')} cells updated in Google Sheets.")
 
 if __name__ == "__main__":

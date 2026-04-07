@@ -1,14 +1,16 @@
-from typing import Dict, List, Tuple, Callable, Any, Optional
+from typing import List, Tuple, Callable, Optional
 import logging
 
+
 logger = logging.getLogger(__name__)
+
 
 class GEM6StateMachine:
     """
     Controla las transiciones entre estados del pipeline GEM 6.
     Inspirado en la especificación técnica industrial.
     """
-    
+
     STATES = {
         'INITIALIZED': 'Pipeline creado, validando inputs',
         'GEM5_VALIDATED': 'GEM 5 completado y aprobado',
@@ -27,7 +29,7 @@ class GEM6StateMachine:
         'FAILED': 'Pipeline falló (error no recuperable)',
         'TIMEOUT': 'Pipeline excedió SLA'
     }
-    
+
     def __init__(self, initial_state: str = 'INITIALIZED'):
         if initial_state not in self.STATES:
             raise ValueError(f"Estado inicial inválido: {initial_state}")
@@ -48,7 +50,7 @@ class GEM6StateMachine:
         self.add_transition('GEM4_RUNNING', 'gem4_score_lt_7_retry', 'QA_FAILED_RETRY')
         self.add_transition('GEM4_RUNNING', 'gem4_score_lt_7_escalate', 'QA_FAILED_ESCALATE')
         self.add_transition('QA_PASSED', 'all_candidates_done', 'COMPLETED')
-        
+
         # Transiciones globales
         # Usamos '*' para denotar que puede venir de cualquier estado
         self.add_transition('*', 'timeout_exceeded', 'TIMEOUT')
@@ -69,12 +71,12 @@ class GEM6StateMachine:
             if (from_state == self._current_state or from_state == '*') and evt == event:
                 old_state = self._current_state
                 self._current_state = to_state
-                
+
                 logger.info(f"State Transition: {old_state} --({event})--> {to_state}")
-                
+
                 if action:
                     action(*args, **kwargs)
                 return True
-        
+
         logger.warning(f"Invalid Transition: No transition for event '{event}' from state '{self._current_state}'")
         return False

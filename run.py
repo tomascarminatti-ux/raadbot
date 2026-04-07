@@ -17,7 +17,11 @@ import argparse
 import json
 import os
 import sys
+import asyncio
+import traceback
+import io
 from rich.console import Console
+from rich.console import Console as RichConsole
 
 import config
 from utils.input_loader import load_local_inputs
@@ -26,6 +30,7 @@ from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
 
 console = Console()
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -79,11 +84,9 @@ Ejemplos:
     # --- CLI Support ---
     if args.json:
         # Disable rich output for JSON mode
-        import io
-        from rich.console import Console as RichConsole
-        non_rich_console = RichConsole(file=io.StringIO())
+        RichConsole(file=io.StringIO())
         # Global console override would be better but this is a quick fix
-    
+
     # --- API Key check ---
     api_key = config.GEMINI_API_KEY
     if not api_key:
@@ -96,7 +99,7 @@ Ejemplos:
     candidates = {}
 
     if args.drive_folder:
-        console.print(f"📁 [cyan]Leyendo inputs desde Google Drive...[/cyan]")
+        console.print("📁 [cyan]Leyendo inputs desde Google Drive...[/cyan]")
         try:
             drive = DriveClient(credentials_path=config.DRIVE_CREDENTIALS_PATH)
             structure = drive.discover_search_structure(args.drive_folder)
@@ -136,11 +139,9 @@ Ejemplos:
 
     # El orquestador maneja los eventos y el procesamiento asíncrono
     try:
-        import asyncio
-        results = asyncio.run(orchestrator.run_pipeline(search_inputs, candidates))
+        asyncio.run(orchestrator.run_pipeline(search_inputs, candidates))
     except Exception as e:
         console.print(f"[bold red]❌ Error durante la ejecución del pipeline: {e}[/bold red]")
-        import traceback
         console.print(traceback.format_exc())
         sys.exit(1)
 
