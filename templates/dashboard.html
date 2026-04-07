@@ -104,17 +104,39 @@
             const data = JSON.parse(event.data);
             const logEntry = document.createElement('div');
             logEntry.className = 'p-2 rounded bg-black/40 border border-white/5 mb-2';
-            const time = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
+            const time = (data.timestamp || '').split('T')[1]?.split('.')[0] || '--:--:--';
 
             const statusColor = data.status === 'OK' ? 'text-green-400' : 'text-red-400';
-            logEntry.innerHTML = `
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-blue-400 font-bold">[${time}] ${data.gem}</span>
-                    <span class="${statusColor} font-bold">${data.status}</span>
-                </div>
-                <div class="text-slate-400">${data.action}</div>
-                ${data.score ? `<div class="text-slate-500 mt-1 italic">Score: ${data.score}</div>` : ''}
-            `;
+
+            // Create a safe structure without innerHTML for dynamic content
+            const header = document.createElement('div');
+            header.className = 'flex justify-between items-center mb-1 font-bold';
+
+            const timeGem = document.createElement('span');
+            timeGem.className = 'text-blue-400';
+            timeGem.textContent = `[${time}] ${data.gem}`;
+
+            const status = document.createElement('span');
+            status.className = statusColor;
+            status.textContent = data.status;
+
+            header.appendChild(timeGem);
+            header.appendChild(status);
+
+            const action = document.createElement('div');
+            action.className = 'text-slate-400';
+            action.textContent = data.action;
+
+            logEntry.appendChild(header);
+            logEntry.appendChild(action);
+
+            if (data.score) {
+                const score = document.createElement('div');
+                score.className = 'text-slate-500 mt-1 italic text-[9px]';
+                score.textContent = `Score: ${data.score}`;
+                logEntry.appendChild(score);
+            }
+
             logsContainer.prepend(logEntry);
         };
 
