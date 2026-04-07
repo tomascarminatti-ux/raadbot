@@ -1,0 +1,4 @@
+## 2025-05-15 - [Path Traversal Mitigation in API Request Models]
+**Vulnerability:** API endpoints `/api/v1/run`, `/api/v1/search/setup`, and `/api/v1/gems/refine` were vulnerable to Path Traversal. Attackers could use `..` sequences or absolute paths in `search_id`, `gem_id`, and `local_dir` to read or write files outside the intended directories (e.g., escaping the `runs/` or `prompts/` folders).
+**Learning:** Pydantic models in FastAPI provide a first line of defense for input validation. Without explicit constraints like `pattern` or `field_validator`, string fields accept any content, which is dangerous when these strings are later used in filesystem operations (`os.path.join`, `open`).
+**Prevention:** Always use strict whitelisting for identifier-like fields (e.g., `Field(pattern=r"^[a-zA-Z0-9_-]+$")`). For path-like fields that must be relative, use a validator to explicitly block absolute paths (`os.path.isabs`) and directory traversal sequences (`..`).
