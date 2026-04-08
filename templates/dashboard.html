@@ -57,8 +57,8 @@
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
                         <div class="flex items-center gap-2">
-                            <button id="copy-btn" onclick="copyPrompt()" class="hidden text-xs text-slate-400 hover:text-white px-2 py-1 bg-white/5 hover:bg-white/10 rounded border border-white/10 transition-all flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none" aria-label="Copiar prompt al portapapeles">
-                                <span id="copy-icon">📋</span> <span id="copy-text">Copiar</span>
+                            <button id="copy-btn" onclick="copyPrompt()" class="hidden text-xs text-slate-400 hover:text-white px-2 py-1 bg-white/5 hover:bg-white/10 rounded border border-white/10 transition-all flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none" aria-label="Copy prompt to clipboard">
+                                <span id="copy-icon">📋</span> <span id="copy-text">Copy</span>
                             </button>
                             <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
                         </div>
@@ -156,16 +156,16 @@
                 const originalText = text.innerText;
                 const originalIcon = icon.innerText;
 
-                text.innerText = '¡Copiado!';
+                text.innerText = 'Copied!';
                 icon.innerText = '✅';
                 btn.classList.add('text-green-400', 'border-green-500/50');
-                btn.setAttribute('aria-label', 'Prompt copiado con éxito');
+                btn.setAttribute('aria-label', 'Prompt copied successfully');
 
                 setTimeout(() => {
                     text.innerText = originalText;
                     icon.innerText = originalIcon;
                     btn.classList.remove('text-green-400', 'border-green-500/50');
-                    btn.setAttribute('aria-label', 'Copiar prompt al portapapeles');
+                    btn.setAttribute('aria-label', 'Copy prompt to clipboard');
                 }, 2000);
             });
         }
