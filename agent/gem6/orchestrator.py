@@ -2,11 +2,13 @@ import os
 import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
 import config
 from utils.ws_logger import broadcast_log
+
 
 class GEM6Orchestrator:
     def __init__(self, *args, **kwargs):
@@ -203,6 +205,14 @@ class GEM6Orchestrator:
             return {"qa_score": 0.98, "issues": [], "human_required": False}
         return {}
 
+    async def aclose(self):
+        """Closes internal clients."""
+        # Use asyncio.gather for concurrent closing
+        tasks = [self.client.aclose()]
+        if hasattr(self.gemini, "aclose"):
+            tasks.append(self.gemini.aclose())
+        await asyncio.gather(*tasks)
+
     async def validate_step(self, entity_id, agent_id, output, contract_path, trace_id):
         if not os.path.exists(contract_path):
             logger.warning(f"No contract found for {agent_id} at {contract_path}. Skipping strict validation.")
@@ -221,7 +231,6 @@ class GEM6Orchestrator:
         return is_ok
 
 if __name__ == "__main__":
-    import time
     orch = GEM6Orchestrator()
     # Mock trigger
     asyncio.run(orch.process_context({"entity_id": "TEST-001", "context": "Discovery request"}))

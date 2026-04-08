@@ -12,17 +12,20 @@ import config
 
 console = Console()
 
+
 class GeminiUsage(TypedDict):
     prompt_tokens: int
     candidates_tokens: int
     total_tokens: int
     finish_reason: str
 
+
 class GeminiResult(TypedDict):
     json: Optional[dict[str, Any]]
     markdown: str
     raw: str
     usage: GeminiUsage
+
 
 class GeminiClient:
     """Cliente para interactuar con Gemini API u Ollama."""
@@ -32,6 +35,10 @@ class GeminiClient:
         if self.provider == "gemini":
             self.client = genai.Client(api_key=api_key)
         self.model = model if self.provider == "gemini" else config.OLLAMA_MODEL
+
+    async def aclose(self):
+        """No-op for interface compatibility."""
+        pass
 
     def run_gem(self, prompt: str, gem_name: Optional[str] = None, max_retries: int = config.MAX_RETRIES_ON_BLOCK) -> GeminiResult:
         if self.provider == "ollama":
