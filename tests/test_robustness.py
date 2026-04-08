@@ -6,6 +6,26 @@ import json
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agent.gemini_client import GeminiClient
+from fastapi.testclient import TestClient
+from api import app
+
+client = TestClient(app)
+
+
+def test_path_traversal_api():
+    """Sentinel: Verify Path Traversal protection in API endpoints."""
+    # Test search_id
+    resp = client.post("/api/v1/run", json={"search_id": "../etc/passwd", "local_dir": "runs"})
+    assert resp.status_code == 422
+
+    # Test local_dir
+    resp = client.post("/api/v1/run", json={"search_id": "valid", "local_dir": "/etc"})
+    assert resp.status_code == 422
+
+    # Test gem_id
+    resp = client.post("/api/v1/gems/refine", json={"gem_id": "../secret", "instruction": "test"})
+    assert resp.status_code == 422
+
 
 def test_json_cleaning():
     """Verifica que GeminiClient pueda limpiar JSONs malformados comunes."""
