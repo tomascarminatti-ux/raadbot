@@ -9,6 +9,7 @@ from agent.prompt_builder import build_prompt, build_agent_prompt
 import config
 from utils.ws_logger import broadcast_log
 
+
 class GEM6Orchestrator:
     def __init__(self, *args, **kwargs):
         self.client = GEMClient(os.getenv("DB_API_URL", "http://localhost:8000"))
