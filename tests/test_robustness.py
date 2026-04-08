@@ -6,21 +6,41 @@ import json
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agent.gemini_client import GeminiClient
+from fastapi.testclient import TestClient
+from api import app
+
+client = TestClient(app)
+
+
+def test_path_traversal_api():
+    """Sentinel: Verify Path Traversal protection in API endpoints."""
+    # Test search_id
+    resp = client.post("/api/v1/run", json={"search_id": "../etc/passwd", "local_dir": "runs"})
+    assert resp.status_code == 422
+
+    # Test local_dir
+    resp = client.post("/api/v1/run", json={"search_id": "valid", "local_dir": "/etc"})
+    assert resp.status_code == 422
+
+    # Test gem_id
+    resp = client.post("/api/v1/gems/refine", json={"gem_id": "../secret", "instruction": "test"})
+    assert resp.status_code == 422
+
 
 def test_json_cleaning():
     """Verifica que GeminiClient pueda limpiar JSONs malformados comunes."""
     client = GeminiClient(api_key="dummy")
-    
+
     # Caso 1: JSON con coma final (un error común de LLMs)
     malformed_json = '{"name": "test", "score": 10,}'
     cleaned = client._parse_response(f"```json\n{malformed_json}\n```")
     assert cleaned["json"]["score"] == 10
-    
+
     # Caso 2: JSON sin backticks (fallback)
     raw_json = '{"status": "ok"}'
     parsed = client._parse_response(raw_json)
     assert parsed["json"]["status"] == "ok"
-    
+
     # Caso 3: JSON rodeado de texto
     mixed = "Aquí está el resultado:\n```json\n{\"val\": 1}\n```\nEspero que sirva."
     parsed_mixed = client._parse_response(mixed)
