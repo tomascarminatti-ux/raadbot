@@ -4,11 +4,13 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+from functools import lru_cache
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
 
+@lru_cache(maxsize=32)
 def load_prompt(gem_name: str) -> str:
     """Carga un prompt desde el directorio de prompts."""
     filename = f"{gem_name}.md"
@@ -21,6 +23,7 @@ def load_prompt(gem_name: str) -> str:
         return f.read()
 
 
+@lru_cache(maxsize=1)
 def load_maestro() -> str:
     """Carga el prompt maestro."""
     return load_prompt("00_prompt_maestro")
@@ -49,14 +52,25 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     # Inyectar prompt maestro
     prompt = prompt.replace("{{PROMPT_MAESTRO}}", maestro)
 
-    # Inyectar variables
-    for key, value in variables.items():
-        placeholder = "{{" + key + "}}"
-        if isinstance(value, dict):
-            import json
+    # Inyectar variables utilizando re.sub para mayor eficiencia
+    if variables:
+        # Pre-procesar variables: convertir dicts a JSON y asegurar strings
+        processed_vars = {}
+        for k, v in variables.items():
+            if isinstance(v, dict):
+                import json
+                processed_vars[k] = json.dumps(v, ensure_ascii=False, indent=2)
+            else:
+                processed_vars[k] = str(v)
 
-            value = json.dumps(value, ensure_ascii=False, indent=2)
-        prompt = prompt.replace(placeholder, str(value))
+        # Regex para encontrar todas las {{variables}}
+        pattern = re.compile(r"\{\{(\w+)\}\}")
+
+        def replace_func(match):
+            key = match.group(1)
+            return processed_vars.get(key, match.group(0))
+
+        prompt = pattern.sub(replace_func, prompt)
 
     # Validar que no queden variables sin reemplazar
     remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
