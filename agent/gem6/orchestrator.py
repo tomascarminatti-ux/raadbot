@@ -3,11 +3,13 @@ import json
 import uuid
 import asyncio
 import time
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
+
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
 import config
 from utils.ws_logger import broadcast_log
+
 
 class GEM6Orchestrator:
     def __init__(self, *args, **kwargs):
@@ -234,6 +236,7 @@ class GEM6Orchestrator:
             "trace_id": trace_id
         })
         return is_ok
+
 
 if __name__ == "__main__":
     orch = GEM6Orchestrator()
