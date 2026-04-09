@@ -57,11 +57,11 @@ def test_refine_gem_path_traversal_gem_id():
     )
     assert response.status_code == 422
 
-def test_refine_gem_invalid_gem_id_pattern():
+def test_refine_gem_invalid_gem_id():
     response = client.post(
         "/api/v1/gems/refine",
         json={
-            "gem_id": "gem/hacked",
+            "gem_id": "gem99",
             "instruction": "refine"
         }
     )
