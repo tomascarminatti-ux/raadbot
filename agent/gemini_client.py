@@ -200,3 +200,7 @@ class GeminiClient:
             "json": json_data,
             "markdown": markdown,
         }
+
+    async def aclose(self):
+        """No-op for compatibility with GEM6Orchestrator cleanup"""
+        pass
