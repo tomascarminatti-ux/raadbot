@@ -64,7 +64,7 @@ class PipelineRequest(BaseModel):
     def prevent_path_traversal(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
-        if ".." in v or v.startswith("/"):
+        if ".." in v or os.path.isabs(v):
             raise ValueError("Path traversal or absolute path detected")
         return v
 
@@ -243,7 +243,7 @@ async def list_gems():
     return gems
 
 class RefineRequest(BaseModel):
-    gem_id: str = Field(pattern=r"^gem[1-5]$")
+    gem_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     instruction: str
 
 @app.post("/api/v1/gems/refine")
