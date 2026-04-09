@@ -2,11 +2,14 @@ import os
 import json
 import uuid
 import asyncio
-from typing import Dict, Any, List, Optional
+import time
+from typing import Dict, Any
+
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
 import config
 from utils.ws_logger import broadcast_log
+
 
 class GEM6Orchestrator:
     def __init__(self, *args, **kwargs):
@@ -19,6 +22,20 @@ class GEM6Orchestrator:
         self.output_dir = kwargs.get("output_dir") or (args[1] if len(args) > 1 else None)
         self.config = kwargs.get("config") or (args[2] if len(args) > 2 else {})
         self.search_id = kwargs.get("search_id", self.config.get("search_id"))
+
+    async def aclose(self):
+        """
+        Closes internal clients to prevent resource leaks.
+        """
+        # Close Gemini and DB clients concurrently
+        tasks = []
+        if self.client:
+            tasks.append(self.client.aclose())
+        if self.gemini and hasattr(self.gemini, "aclose"):
+            tasks.append(self.gemini.aclose())
+
+        if tasks:
+            await asyncio.gather(*tasks)
 
     async def run_pipeline(self, search_inputs: Dict[str, Any], candidates: Dict[str, Any]):
         """Entry point to process all candidates"""
@@ -220,8 +237,9 @@ class GEM6Orchestrator:
         })
         return is_ok
 
+
 if __name__ == "__main__":
-    import time
     orch = GEM6Orchestrator()
     # Mock trigger
     asyncio.run(orch.process_context({"entity_id": "TEST-001", "context": "Discovery request"}))
+    asyncio.run(orch.aclose())
