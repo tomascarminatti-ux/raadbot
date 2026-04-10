@@ -8,7 +8,13 @@ from agent.gemini_client import GeminiClient
 from dotenv import load_dotenv
 
 load_dotenv()
-client = GeminiClient(api_key=os.getenv("GEMINI_API_KEY"), model="gemini-2.5-flash")
-prompt = "Escribe un saludo corto de 5 palabras."
-res = client.run_gem(prompt)
-print(f"Respuesta length: {len(res['raw'])}")
+
+if __name__ == "__main__":
+    if not os.getenv("GEMINI_API_KEY"):
+        print("⚠️ GEMINI_API_KEY not set, skipping manual test.")
+        sys.exit(0)
+
+    client = GeminiClient(api_key=os.getenv("GEMINI_API_KEY"), model="gemini-2.5-flash")
+    prompt = "Escribe un saludo corto de 5 palabras."
+    res = client.run_gem(prompt)
+    print(f"Respuesta length: {len(res['raw'])}")

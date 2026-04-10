@@ -1,0 +1,504 @@
+{
+  "steps": [
+    {
+      "timestamp": "2026-04-10T08:27:55.975567",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:55.978403",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:55.982546",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:55.984972",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:55.988692",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:55.993114",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:55.996089",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:55.999826",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.002868",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.006081",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.008761",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.012870",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.015580",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.019294",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.022146",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.025949",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.028852",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.032000",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.034984",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.038084",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.041437",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.045073",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.048470",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.052886",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.056592",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.060198",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.064492",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.068644",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.071356",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.074867",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.078459",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.082638",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.087742",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.092229",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.096690",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.100924",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.105301",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.109249",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.113633",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.118874",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.124385",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.132529",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.141535",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.150125",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.158991",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.167431",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.175576",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.184350",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.191273",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-04-10T08:27:56.197889",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "OK",
+      "output_preview": "test output...",
+      "entity_id": "CAND1",
+      "step": 1
+    }
+  ]
+}
