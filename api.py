@@ -8,7 +8,6 @@ from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator, Field
 import httpx
-import re
 import asyncio
 
 import config
