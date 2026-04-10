@@ -1,13 +1,17 @@
+import os
+
+# Set dummy key before importing config/app to satisfy startup check
+os.environ["GEMINI_API_KEY"] = "dummy_key"
+
 import unittest
 from fastapi.testclient import TestClient
-import os
 import config
 
-# Set dummy key before importing app to satisfy startup check
-os.environ["GEMINI_API_KEY"] = "dummy_key"
+# Also set it in the config module directly in case it was already loaded
 config.GEMINI_API_KEY = "dummy_key"
 
 from api import app
+
 
 class TestSecurity(unittest.TestCase):
     def setUp(self):

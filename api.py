@@ -18,6 +18,7 @@ from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
 
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Check for API Key on startup
@@ -26,7 +27,6 @@ async def lifespan(app: FastAPI):
             "⚠️  WARNING: GEMINI_API_KEY no detectada. La API fallará si no se configura al momento del request."
         )
     yield
-
 
 app = FastAPI(
     title="Raadbot API",
@@ -148,6 +148,8 @@ async def background_run_pipeline(request: PipelineRequest):
 
 
 @app.post("/api/v1/run")
+
+
 async def trigger_pipeline(request: PipelineRequest, background_tasks: BackgroundTasks):
     """
     Verbo POST para iniciar una corrida del pipeline.
@@ -173,7 +175,10 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+
 @app.post("/api/v1/search/setup")
+
+
 async def setup_search(request: SetupSearchRequest):
     """
     Inicializa una búsqueda ejecutando únicamente GEM 5 (Radiografía Estratégica).
@@ -181,36 +186,38 @@ async def setup_search(request: SetupSearchRequest):
     """
     output_dir = os.path.join("runs", request.search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Simular estructura de inputs para GEM 5
     search_inputs = {
         "kickoff_notes": request.brief_notes,
         "brief_jd": request.jd_content,
         "company_context": request.company_context or ""
     }
-    
+
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     # Ejecutar GEM 5 directamente
     from agent.prompt_builder import build_gem5_prompt
     prompt = build_gem5_prompt(search_inputs)
     result = gemini.run_gem(prompt, gem_name="gem5")
-    
+
     # Guardar resultados
     with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
         json.dump(result.get("data", {}), f, indent=4)
     with open(os.path.join(output_dir, "gem5.md"), "w", encoding="utf-8") as f:
         f.write(result.get("markdown", ""))
-        
+
     return {
         "status": "success",
         "search_id": request.search_id,
         "gem5_summary": result.get("data", {}).get("mandate_summary", "Mandato generado con éxito.")
     }
 
-
 # --- Dashboard Endpoints ---
 
+
 @app.get("/dashboard", response_class=HTMLResponse)
+
+
 async def get_dashboard():
     """Sirve la interfaz del Dashboard."""
     try:
@@ -219,70 +226,80 @@ async def get_dashboard():
     except FileNotFoundError:
         return "Dashboard template not found. Please create templates/dashboard.html"
 
+
 @app.get("/api/v1/gems")
+
+
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
     gems = []
     gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
-    
+
     for g in gem_list:
         prompt_path = f"prompts/{g}.md"
         prompt_content = ""
         if os.path.exists(prompt_path):
             with open(prompt_path, "r", encoding="utf-8") as f:
                 prompt_content = f.read()
-        
+
         gems.append({
             "id": g,
             "name": g.upper(),
             "prompt": prompt_content,
             "config": config.GEM_CONFIGS.get(g, {})
         })
-    
+
     return gems
+
 
 class RefineRequest(BaseModel):
     gem_id: str = Field(..., pattern=r'^[a-zA-Z0-9_-]+$')
     instruction: str
 
+
 @app.post("/api/v1/gems/refine")
+
+
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
     prompt_path = f"prompts/{request.gem_id}.md"
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
-        
+
     with open(prompt_path, "r", encoding="utf-8") as f:
         current_prompt = f.read()
-        
+
     refinement_prompt = f"""
     Eres un experto en Prompt Engineering. Tu misión es REFINAR el siguiente System Prompt de RAADBOT v2.0.
-    
+
     ESTRUCTURA ACTUAL:
     {current_prompt}
-    
+
     INSTRUCCIÓN DEL USUARIO:
     {request.instruction}
-    
+
     REGLAS:
     1. Mantén la estructura de secciones (ROL, CONTEXTO, INSTRUCCIONES CORE, etc.).
     2. Aplica la instrucción del usuario de forma profesional y precisa.
     3. Devuelve el prompt REFINADO completo en formato Markdown.
     4. NO agregues explicaciones, solo el contenido del nuevo prompt.
     """
-    
+
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     result = gemini.run_gem(refinement_prompt)
     new_prompt = result.get("markdown", "") or result.get("raw", "")
-    
+
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write(new_prompt)
         return {"status": "success", "new_prompt": new_prompt}
-    
+
     return {"status": "error", "message": "Failed to generate new prompt"}
 
+
 @app.websocket("/ws/logs")
+
+
 async def websocket_logs(websocket: WebSocket):
     await websocket.accept()
     active_connections.append(websocket)
@@ -294,7 +311,10 @@ async def websocket_logs(websocket: WebSocket):
         if websocket in active_connections:
             active_connections.remove(websocket)
 
+
 @app.get("/health")
+
+
 def health_check():
     return {
         "status": "ok", 
