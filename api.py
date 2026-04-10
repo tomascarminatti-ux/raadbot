@@ -98,11 +98,8 @@ async def run_pipeline(request: PipelineRequest) -> dict:
     gemini = GeminiClient(api_key=api_key, model=request.model)
     orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
 
-    try:
-        # Ejecución asíncrona no bloqueante
-        await orchestrator.run_pipeline(search_inputs, candidates)
-    finally:
-        await orchestrator.aclose()
+    # Ejecución asíncrona no bloqueante
+    await orchestrator.run_pipeline(search_inputs, candidates)
 
     summary_path = os.path.join(output_dir, "pipeline_summary.json")
     summary_data = {}
