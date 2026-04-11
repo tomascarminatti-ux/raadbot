@@ -1,12 +1,11 @@
-
-import pytest
-from pydantic import ValidationError
 import os
-
-# Set dummy environment variable for config.py
+# Set dummy environment variable for config.py before other imports
 os.environ["GEMINI_API_KEY"] = "dummy_key"
 
-from api import PipelineRequest, SetupSearchRequest, RefineRequest
+import pytest  # noqa: E402
+from pydantic import ValidationError  # noqa: E402
+from api import PipelineRequest, SetupSearchRequest, RefineRequest  # noqa: E402
+
 
 def test_pipeline_request_path_traversal():
     # search_id traversal
@@ -21,10 +20,12 @@ def test_pipeline_request_path_traversal():
     with pytest.raises(ValidationError):
         PipelineRequest(search_id="valid_id", local_dir="tests/../../")
 
+
 def test_setup_search_request_path_traversal():
     # search_id traversal
     with pytest.raises(ValidationError):
         SetupSearchRequest(search_id="../../root", brief_notes="test", jd_content="test")
+
 
 def test_refine_request_path_traversal():
     # gem_id traversal
@@ -34,6 +35,7 @@ def test_refine_request_path_traversal():
     # gem_id absolute path
     with pytest.raises(ValidationError):
         RefineRequest(gem_id="/etc/passwd", instruction="test")
+
 
 def test_candidate_id_path_traversal():
     # candidate_id traversal in PipelineRequest
