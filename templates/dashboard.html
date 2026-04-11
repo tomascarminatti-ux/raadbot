@@ -57,13 +57,10 @@
             <section class="flex-1 p-8 overflow-y-auto space-y-6">
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider" id="prompt-header">System Prompt</h3>
-                        <div class="flex items-center gap-2">
-                            <button id="copy-btn" onclick="copyPrompt()" class="hidden text-[10px] bg-white/5 hover:bg-white/10 text-slate-400 px-2 py-1 rounded border border-white/10 transition-all focus-visible:ring-2 focus-visible:ring-blue-500 outline-none" aria-label="Copy prompt to clipboard">Copy</button>
-                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
-                        </div>
+                        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
+                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
                     </div>
-                    <pre id="prompt-content" aria-labelledby="prompt-header" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
+                    <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
             </section>
 
@@ -142,25 +139,6 @@
         let gems = [];
         let activeGem = null;
 
-        async function copyPrompt() {
-            const content = document.getElementById('prompt-content').innerText;
-            const btn = document.getElementById('copy-btn');
-            try {
-                await navigator.clipboard.writeText(content);
-                const originalText = btn.innerText;
-                btn.innerText = '¡Copiado!';
-                btn.classList.add('text-green-400', 'border-green-500/30');
-                btn.setAttribute('aria-label', 'Prompt copied to clipboard');
-                setTimeout(() => {
-                    btn.innerText = originalText;
-                    btn.classList.remove('text-green-400', 'border-green-500/30');
-                    btn.setAttribute('aria-label', 'Copy prompt to clipboard');
-                }, 2000);
-            } catch (err) {
-                console.error('Failed to copy: ', err);
-            }
-        }
-
         async function loadGems() {
             try {
                 const res = await fetch('/api/v1/gems');
@@ -191,7 +169,6 @@
             document.getElementById('current-gem-title').innerText = `${activeGem.name} - ${id}`;
             document.getElementById('prompt-content').innerText = activeGem.prompt;
             document.getElementById('send-btn').disabled = false;
-            document.getElementById('copy-btn').classList.remove('hidden');
             
             document.getElementById('chat-history').innerHTML = `
                 <div class="bg-blue-600/10 border border-blue-500/30 p-3 rounded-lg text-xs leading-relaxed text-blue-200">
