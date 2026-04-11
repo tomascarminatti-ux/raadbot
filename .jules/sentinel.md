@@ -1,0 +1,4 @@
+## 2025-04-11 - Path Traversal Protection in API Models
+**Vulnerability:** API endpoints accepting identifiers (`search_id`, `gem_id`, `candidate_id`) were vulnerable to path traversal because these IDs were used to construct file paths (e.g., `os.path.join("runs", search_id, "outputs")` or `f"prompts/{gem_id}.md"`) without sanitization. An attacker could use `../` to access or overwrite arbitrary files.
+**Learning:** Pydantic models provide a robust first line of defense. Using `Field(pattern=r"^[a-zA-Z0-9_-]+$")` for identifier fields implements a strict allow-list that naturally blocks path traversal characters like `.` and `/`.
+**Prevention:** Always use strict regex patterns for string fields that will be used in filesystem operations. For directory path fields (like `local_dir`), use `field_validator` to explicitly block absolute paths and `..` sequences.
