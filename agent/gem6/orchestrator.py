@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
@@ -22,29 +23,33 @@ class GEM6Orchestrator:
 
     async def run_pipeline(self, search_inputs: Dict[str, Any], candidates: Dict[str, Any]):
         """Entry point to process all candidates"""
-        results = {}
-        for candidate_id, candidate_data in candidates.items():
-            context = {
-                "search_inputs": search_inputs,
-                "candidate_id": candidate_id,
-                "candidate_data": candidate_data,
-                "entity_id": candidate_id
-            }
-            results[candidate_id] = await self.process_context(context)
-        
-        # Save summary
-        if self.output_dir:
-            os.makedirs(self.output_dir, exist_ok=True)
-            summary_path = os.path.join(self.output_dir, "pipeline_summary.json")
-            summary = {
-                "search_id": self.search_id,
-                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "candidates": results
-            }
-            with open(summary_path, "w") as f:
-                json.dump(summary, f, indent=2)
-        
-        return results
+        try:
+            results = {}
+            for candidate_id, candidate_data in candidates.items():
+                context = {
+                    "search_inputs": search_inputs,
+                    "candidate_id": candidate_id,
+                    "candidate_data": candidate_data,
+                    "entity_id": candidate_id
+                }
+                results[candidate_id] = await self.process_context(context)
+
+            # Save summary
+            if self.output_dir:
+                os.makedirs(self.output_dir, exist_ok=True)
+                summary_path = os.path.join(self.output_dir, "pipeline_summary.json")
+                summary = {
+                    "search_id": self.search_id,
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "candidates": results
+                }
+                with open(summary_path, "w") as f:
+                    json.dump(summary, f, indent=2)
+
+            return results
+        finally:
+            # Ensure DB client is closed after the pipeline run
+            await self.client.aclose()
 
     async def process_context(self, context_data: Dict[str, Any]):
         trace_id = str(uuid.uuid4())
