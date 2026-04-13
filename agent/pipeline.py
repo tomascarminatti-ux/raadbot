@@ -64,21 +64,30 @@ class Pipeline:
             with open(self.state_file, "w", encoding="utf-8") as f:
                 json.dump(self.state, f, ensure_ascii=False, indent=2)
 
-    async def _track_usage(self, usage: dict):
-        """Suma tokens y calcula costo acumulado."""
-        if not usage:
-            return
-
+    async def _update_state_with_result(self, gem_name: str, result: dict, state_key: str):
+        """Actualiza el estado interno con el resultado y el uso de tokens."""
+        usage = result.get("usage", {})
         p_tokens = usage.get("prompt_tokens", 0)
         c_tokens = usage.get("candidates_tokens", 0)
 
         async with self._lock:
+            # Track usage
             self.state["usage"]["prompt_tokens"] += p_tokens
             self.state["usage"]["candidates_tokens"] += c_tokens
 
             cost_p = (p_tokens / 1_000_000) * PRICE_PROMPT_1M
             cost_c = (c_tokens / 1_000_000) * PRICE_COMPLETION_1M
             self.state["usage"]["total_cost_usd"] += cost_p + cost_c
+
+            # Update state cache
+            if state_key not in self.state["completed_gems"]:
+                self.state["completed_gems"][state_key] = []
+            if gem_name not in self.state["completed_gems"][state_key]:
+                self.state["completed_gems"][state_key].append(gem_name)
+
+            if state_key not in self.state["results_cache"]:
+                self.state["results_cache"][state_key] = {}
+            self.state["results_cache"][state_key][gem_name] = result
 
         await self._save_state()
 
@@ -96,22 +105,8 @@ class Pipeline:
             base = self.output_dir
             state_key = "search"
 
-        # Track usage
-        if "usage" in result:
-            await self._track_usage(result["usage"])
-
-        async with self._lock:
-            # Update state cache
-            if state_key not in self.state["completed_gems"]:
-                self.state["completed_gems"][state_key] = []
-            if gem_name not in self.state["completed_gems"][state_key]:
-                self.state["completed_gems"][state_key].append(gem_name)
-
-            if state_key not in self.state["results_cache"]:
-                self.state["results_cache"][state_key] = {}
-            self.state["results_cache"][state_key][gem_name] = result
-
-        await self._save_state()
+        # Actualizar estado y persistir (una sola escritura a disco)
+        await self._update_state_with_result(gem_name, result, state_key)
 
         # Files
         json_path = os.path.join(base, f"{prefix}.json")
