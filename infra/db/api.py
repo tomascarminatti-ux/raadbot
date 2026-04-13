@@ -2,8 +2,8 @@ import os
 import sqlite3
 import json
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Request
+from typing import Optional, Dict, Any
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 app = FastAPI(title="GEM v3.0 DB API")
@@ -55,12 +55,12 @@ async def upsert_entity(data: EntityUpdate):
     conn = get_db()
     cursor = conn.cursor()
     now = datetime.now().isoformat()
-    
+
     try:
         cursor.execute("""
             INSERT INTO entity_state (
-                entity_id, current_stage, state, last_score, 
-                human_required, metadata, agent_responsible, trace_id, 
+                entity_id, current_stage, state, last_score,
+                human_required, metadata, agent_responsible, trace_id,
                 created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(entity_id) DO UPDATE SET
@@ -89,12 +89,12 @@ async def upsert_entity(data: EntityUpdate):
 async def discard_entity(data: DiscardEntity):
     conn = get_db()
     cursor = conn.cursor()
-    
+
     try:
         # Move to discarded table
         cursor.execute("""
             INSERT INTO discarded_entities (
-                entity_id, stage_at_discard, reason, score_at_discard, 
+                entity_id, stage_at_discard, reason, score_at_discard,
                 metadata, agent_responsible, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
@@ -130,8 +130,8 @@ async def log_discovery(data: Dict[str, Any]):
     try:
         cursor.execute("""
             INSERT INTO discovery_logs (
-                entity_id, agent_id, input_contract_verified, 
-                output_contract_verified, execution_time_ms, status, 
+                entity_id, agent_id, input_contract_verified,
+                output_contract_verified, execution_time_ms, status,
                 error_message, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
