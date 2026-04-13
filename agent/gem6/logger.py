@@ -13,12 +13,12 @@ class AuditLogger:
     Logging inmutable para auditoría y cumplimiento normativo (Compliance).
     Calcula checksums para garantizar la integridad de los logs.
     """
-    
+
     def __init__(self, log_dir: str):
         self.log_dir = log_dir
         os.makedirs(log_dir, exist_ok=True)
         self.log_file = os.path.join(log_dir, "audit_trail.jsonl")
-        
+
     def log_event(self, level: str, pipeline_id: str, message: str, metadata: Optional[Dict[str, Any]] = None):
         """Registra un evento de auditoría con integridad verificable."""
         entry = {
@@ -29,10 +29,10 @@ class AuditLogger:
             'message': message,
             'metadata': metadata or {},
         }
-        
+
         # Inyectar checksum antes de persistir
         entry['checksum'] = self._calculate_checksum(entry)
-        
+
         try:
             with open(self.log_file, "a", encoding="utf-8") as f:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
@@ -56,7 +56,7 @@ class AuditLogger:
         """Verifica que ningún log haya sido alterado manualmente."""
         if not os.path.exists(self.log_file):
             return True
-            
+
         try:
             with open(self.log_file, "r", encoding="utf-8") as f:
                 for line in f:
