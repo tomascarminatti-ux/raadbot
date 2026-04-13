@@ -22,7 +22,7 @@
     <aside class="w-64 glass border-r flex flex-col">
         <div class="p-6 border-b border-white/10">
             <h1 class="text-xl font-bold flex items-center gap-2 text-blue-400">
-                <span>🤖</span> RAADBOT 2.0
+                <span aria-hidden="true">🤖</span> RAADBOT 2.0
             </h1>
             <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest font-semibold">Industrial Orchestrator</p>
         </div>
@@ -76,27 +76,66 @@
                 <div class="space-y-3">
                     <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
                     <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
-                        <span>🚀</span> Refinar Prompt
+                        <span aria-hidden="true">🚀</span> Refinar Prompt
                     </button>
                 </div>
             </section>
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <!-- Live Telemetry Drawer -->
+    <div id="telemetry-drawer" class="fixed bottom-6 right-6 w-96 glass rounded-2xl shadow-2xl border border-white/10 transition-all duration-300 z-50 overflow-hidden flex flex-col max-h-[40px] hover:border-blue-500/50" aria-expanded="false" aria-labelledby="telemetry-header">
+        <button onclick="toggleTelemetry()" id="telemetry-header" class="w-full px-4 py-2 flex items-center justify-between bg-white/5 hover:bg-white/10 transition-colors">
+            <div class="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-widest">
+                <span aria-hidden="true" class="animate-pulse">📡</span> Live Telemetry
+            </div>
+            <span id="telemetry-arrow" class="text-slate-400 transition-transform duration-300">▲</span>
+        </button>
+        <div id="logs-container" class="flex-1 p-4 overflow-y-auto font-mono text-[10px] space-y-2 bg-black/40 h-80" aria-live="polite">
+            <div class="text-slate-500 italic">Esperando actividad del pipeline...</div>
+        </div>
     </div>
+
     <script>
+        function toggleTelemetry() {
+            const drawer = document.getElementById('telemetry-drawer');
+            const arrow = document.getElementById('telemetry-arrow');
+            const isExpanded = drawer.getAttribute('aria-expanded') === 'true';
+
+            if (isExpanded) {
+                drawer.style.maxHeight = '40px';
+                drawer.setAttribute('aria-expanded', 'false');
+                arrow.style.transform = 'rotate(0deg)';
+            } else {
+                drawer.style.maxHeight = '400px';
+                drawer.setAttribute('aria-expanded', 'true');
+                arrow.style.transform = 'rotate(180deg)';
+            }
+        }
+
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws/logs`);
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
+            if (logsContainer.querySelector('.italic')) logsContainer.innerHTML = '';
+
             const logEntry = document.createElement('div');
-            logEntry.style.marginBottom = '5px';
+            logEntry.className = 'border-l-2 border-slate-700 pl-2 py-1 hover:bg-white/5 transition-colors';
             const time = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
-            logEntry.innerHTML = `[${time}] <span style="color:#3b82f6">${data.gem}</span>: ${data.action} - <span style="color:${data.status === 'OK' ? '#4ade80' : '#f87171'}">${data.status}</span> (Score: ${data.score || 'N/A'})`;
+            const statusColor = data.status === 'OK' ? 'text-green-400' : 'text-red-400';
+
+            logEntry.innerHTML = `
+                <div class="flex justify-between items-center opacity-50 text-[8px] mb-1">
+                    <span>[${time}]</span>
+                    <span class="font-bold">${data.gem.toUpperCase()}</span>
+                </div>
+                <div class="text-slate-300">${data.action}</div>
+                <div class="flex justify-between mt-1">
+                    <span class="${statusColor} font-bold">${data.status}</span>
+                    <span class="text-blue-400">Score: ${data.score || 'N/A'}</span>
+                </div>
+            `;
             logsContainer.prepend(logEntry);
         };
 
@@ -158,7 +197,7 @@
             
             input.value = '';
             btn.disabled = true;
-            btn.innerHTML = '<span>⚡</span> Procesando...';
+            btn.innerHTML = '<span aria-hidden="true">⚡</span> Procesando...';
 
             try {
                 const res = await fetch('/api/v1/gems/refine', {
@@ -189,7 +228,7 @@
                 `;
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<span>🚀</span> Refinar Prompt';
+                btn.innerHTML = '<span aria-hidden="true">🚀</span> Refinar Prompt';
                 history.scrollTop = history.scrollHeight;
             }
         }
