@@ -227,21 +227,21 @@ async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
     gems = []
     gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
-    
+
     for g in gem_list:
         prompt_path = f"prompts/{g}.md"
         prompt_content = ""
         if os.path.exists(prompt_path):
             with open(prompt_path, "r", encoding="utf-8") as f:
                 prompt_content = f.read()
-        
+
         gems.append({
             "id": g,
             "name": g.upper(),
             "prompt": prompt_content,
             "config": config.GEM_CONFIGS.get(g, {})
         })
-    
+
     return gems
 
 
