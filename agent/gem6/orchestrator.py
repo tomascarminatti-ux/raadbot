@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
@@ -206,7 +207,11 @@ class GEM6Orchestrator:
 
     async def aclose(self):
         """Close the orchestrator resources."""
-        await self.client.aclose()
+        # Use asyncio.gather for concurrent cleanup
+        tasks = [self.client.aclose()]
+        if self.gemini and hasattr(self.gemini, "aclose"):
+            tasks.append(self.gemini.aclose())
+        await asyncio.gather(*tasks)
 
     async def validate_step(self, entity_id, agent_id, output, contract_path, trace_id):
         if not os.path.exists(contract_path):
@@ -225,8 +230,8 @@ class GEM6Orchestrator:
         })
         return is_ok
 
+
 if __name__ == "__main__":
-    import time
     orch = GEM6Orchestrator()
     # Mock trigger
     asyncio.run(orch.process_context({"entity_id": "TEST-001", "context": "Discovery request"}))

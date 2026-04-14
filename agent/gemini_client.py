@@ -12,17 +12,20 @@ import config
 
 console = Console()
 
+
 class GeminiUsage(TypedDict):
     prompt_tokens: int
     candidates_tokens: int
     total_tokens: int
     finish_reason: str
 
+
 class GeminiResult(TypedDict):
     json: Optional[dict[str, Any]]
     markdown: str
     raw: str
     usage: GeminiUsage
+
 
 class GeminiClient:
     """Cliente para interactuar con Gemini API u Ollama."""
@@ -37,6 +40,10 @@ class GeminiClient:
         if self.provider == "ollama":
             return self._run_ollama(prompt, gem_name, max_retries)
         return self._run_gemini(prompt, gem_name, max_retries)
+
+    async def aclose(self):
+        """Interface compatibility for resource cleanup."""
+        pass
 
     def _run_ollama(self, prompt: str, gem_name: Optional[str], max_retries: int) -> GeminiResult:
         """Envía un prompt a Ollama."""
