@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Dict, Any, Optional
 
+
 class JsonFormatter(logging.Formatter):
     def format(self, record):
         log_record = {
@@ -21,6 +22,7 @@ logger = logging.getLogger("gem_v3")
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 logger.propagate = False
+
 
 class GEMClient:
     def __init__(self, db_url: str = "http://db-api:8000"):
@@ -55,6 +57,7 @@ class GEMClient:
         except Exception as e:
             logger.error(f"Failed to log execution: {e}")
             return None
+
 
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
