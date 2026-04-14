@@ -98,8 +98,11 @@ async def run_pipeline(request: PipelineRequest) -> dict:
     gemini = GeminiClient(api_key=api_key, model=request.model)
     orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
 
-    # Ejecución asíncrona no bloqueante
-    await orchestrator.run_pipeline(search_inputs, candidates)
+    try:
+        # Ejecución asíncrona no bloqueante
+        await orchestrator.run_pipeline(search_inputs, candidates)
+    finally:
+        await orchestrator.aclose()
 
     summary_path = os.path.join(output_dir, "pipeline_summary.json")
     summary_data = {}
@@ -165,6 +168,7 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -211,6 +215,7 @@ async def get_dashboard():
     except FileNotFoundError:
         return "Dashboard template not found. Please create templates/dashboard.html"
 
+
 @app.get("/api/v1/gems")
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
@@ -233,9 +238,11 @@ async def list_gems():
     
     return gems
 
+
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
@@ -274,6 +281,7 @@ async def refine_gem(request: RefineRequest):
     
     return {"status": "error", "message": "Failed to generate new prompt"}
 
+
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
     await websocket.accept()
@@ -285,6 +293,7 @@ async def websocket_logs(websocket: WebSocket):
     except WebSocketDisconnect:
         if websocket in active_connections:
             active_connections.remove(websocket)
+
 
 @app.get("/health")
 def health_check():
