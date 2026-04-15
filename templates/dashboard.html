@@ -14,6 +14,9 @@
         .active-gem { border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, 0.1); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .telemetry-transition { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .rotate-icon { transition: transform 0.3s ease; }
+        .collapsed-telemetry { height: 44px !important; overflow: hidden; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden">
@@ -83,8 +86,13 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
+    <div id="live-logs" class="telemetry-transition" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
+        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
+            <span style="flex-grow:1;">🚀 Raadbot Live - GEMs en tiempo real</span>
+            <button onclick="toggleTelemetry()" id="telemetry-toggle" aria-expanded="true" aria-label="Colapsar telemetría" style="background:transparent; border:none; color:#0f0; cursor:pointer; font-size:16px; padding:0 5px;" class="rotate-icon">
+                <span id="toggle-icon">▼</span>
+            </button>
+        </div>
         <div id="logs-container"></div>
     </div>
     <script>
@@ -102,6 +110,25 @@
 
         let gems = [];
         let activeGem = null;
+
+        function toggleTelemetry() {
+            const container = document.getElementById('live-logs');
+            const toggle = document.getElementById('telemetry-toggle');
+            const icon = document.getElementById('toggle-icon');
+            const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+
+            if (isExpanded) {
+                container.classList.add('collapsed-telemetry');
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.setAttribute('aria-label', 'Expandir telemetría');
+                toggle.style.transform = 'rotate(-180deg)';
+            } else {
+                container.classList.remove('collapsed-telemetry');
+                toggle.setAttribute('aria-expanded', 'true');
+                toggle.setAttribute('aria-label', 'Colapsar telemetría');
+                toggle.style.transform = 'rotate(0deg)';
+            }
+        }
 
         async function loadGems() {
             try {
