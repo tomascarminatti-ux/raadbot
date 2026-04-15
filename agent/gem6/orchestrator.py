@@ -8,6 +8,7 @@ from agent.prompt_builder import build_prompt, build_agent_prompt
 import config
 from utils.ws_logger import broadcast_log
 
+
 class GEM6Orchestrator:
     def __init__(self, *args, **kwargs):
         self.client = GEMClient(os.getenv("DB_API_URL", "http://localhost:8000"))
@@ -203,6 +204,10 @@ class GEM6Orchestrator:
             return {"qa_score": 0.98, "issues": [], "human_required": False}
         return {}
 
+    async def aclose(self):
+        """Clean up resources, including the DB client."""
+        await self.client.aclose()
+
     async def validate_step(self, entity_id, agent_id, output, contract_path, trace_id):
         if not os.path.exists(contract_path):
             logger.warning(f"No contract found for {agent_id} at {contract_path}. Skipping strict validation.")
@@ -219,6 +224,7 @@ class GEM6Orchestrator:
             "trace_id": trace_id
         })
         return is_ok
+
 
 if __name__ == "__main__":
     import time
