@@ -12,8 +12,6 @@
         .gem-card { transition: all 0.3s ease; }
         .gem-card:hover { transform: translateY(-2px); border-color: #3b82f6; }
         .active-gem { border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, 0.1); }
-        .telemetry-transition { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        .collapsed-telemetry { height: 48px !important; overflow: hidden; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
@@ -85,20 +83,18 @@
         </div>
     </main>
 
-    <div id="live-telemetry" class="fixed bottom-6 right-6 w-96 h-80 glass rounded-xl shadow-2xl z-50 flex flex-col telemetry-transition border border-white/10" aria-labelledby="telemetry-header">
-        <header id="telemetry-header" class="px-4 py-3 border-b border-white/10 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors rounded-t-xl" onclick="toggleTelemetry()">
+    <div id="live-telemetry" class="fixed bottom-6 right-6 w-96 h-80 glass rounded-xl shadow-2xl z-50 flex flex-col transition-all duration-500 border border-white/10 overflow-hidden" aria-labelledby="telemetry-header">
+        <header id="telemetry-header" class="px-4 py-3 border-b border-white/10 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors" onclick="toggleTelemetry()">
             <div class="flex items-center gap-2">
                 <span class="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Live Telemetry</h3>
             </div>
             <button id="telemetry-toggle" class="text-slate-400 hover:text-white transition-transform duration-300" aria-expanded="true" aria-label="Toggle telemetry drawer">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7" />
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7" /></svg>
             </button>
         </header>
         <div id="logs-container" class="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-[10px]" aria-live="polite">
-            <div class="text-slate-500 italic">Esperando señal del orquestador...</div>
+            <div class="text-slate-500 italic">Esperando señal...</div>
         </div>
     </div>
     <script>
@@ -109,54 +105,31 @@
         function toggleTelemetry() {
             const container = document.getElementById('live-telemetry');
             const toggle = document.getElementById('telemetry-toggle');
-            const isCollapsed = container.classList.toggle('collapsed-telemetry');
-
+            const isCollapsed = container.classList.toggle('h-12');
+            container.classList.toggle('h-80');
             toggle.style.transform = isCollapsed ? 'rotate(-180deg)' : 'rotate(0deg)';
             toggle.setAttribute('aria-expanded', !isCollapsed);
         }
-
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
             if (logsContainer.querySelector('.italic')) logsContainer.textContent = '';
-
-            const logEntry = document.createElement('div');
-            logEntry.className = 'border-l-2 border-blue-500/30 pl-2 py-1';
-            const time = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
-
-            const headerDiv = document.createElement('div');
-            headerDiv.className = 'flex justify-between items-center opacity-50';
-
-            const timeSpan = document.createElement('span');
-            timeSpan.className = 'text-[9px] font-bold text-slate-400';
-            timeSpan.textContent = time;
-
-            const gemSpan = document.createElement('span');
-            gemSpan.className = 'text-[9px] font-bold text-blue-400 uppercase';
-            gemSpan.textContent = data.gem;
-
-            headerDiv.appendChild(timeSpan);
-            headerDiv.appendChild(gemSpan);
-
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'text-slate-200';
-            contentDiv.textContent = `${data.action} - `;
-
-            const statusSpan = document.createElement('span');
-            statusSpan.className = (data.status === 'OK' ? 'text-green-400' : 'text-red-400') + ' font-bold';
-            statusSpan.textContent = data.status;
-
-            contentDiv.appendChild(statusSpan);
-
+            const entry = document.createElement('div');
+            entry.className = 'border-l-2 border-blue-500/30 pl-2 py-1';
+            entry.innerHTML = `<div class="flex justify-between items-center opacity-50"><span class="text-[9px] font-bold text-slate-400"></span><span class="text-[9px] font-bold text-blue-400 uppercase"></span></div><div class="text-slate-200"> - <span class="font-bold"></span></div>`;
+            const spans = entry.querySelectorAll('span');
+            spans[0].textContent = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
+            spans[1].textContent = data.gem;
+            const content = entry.lastElementChild;
+            content.prepend(document.createTextNode(data.action));
+            spans[2].textContent = data.status;
+            spans[2].className += data.status === 'OK' ? ' text-green-400' : ' text-red-400';
             if (data.score) {
-                const scoreSpan = document.createElement('span');
-                scoreSpan.className = 'text-slate-500 ml-1';
-                scoreSpan.textContent = `(Score: ${data.score})`;
-                contentDiv.appendChild(scoreSpan);
+                const s = document.createElement('span');
+                s.className = 'text-slate-500 ml-1';
+                s.textContent = `(Score: ${data.score})`;
+                content.appendChild(s);
             }
-
-            logEntry.appendChild(headerDiv);
-            logEntry.appendChild(contentDiv);
-            logsContainer.prepend(logEntry);
+            logsContainer.prepend(entry);
         };
 
         let gems = [];
