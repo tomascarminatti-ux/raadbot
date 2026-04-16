@@ -3,6 +3,7 @@ import os
 import asyncio
 from datetime import datetime, timezone
 from typing import Optional, Any
+from functools import lru_cache
 
 from jsonschema import validate, ValidationError
 from rich.console import Console
@@ -18,6 +19,19 @@ from agent.logger import logger
 console = Console()
 
 
+@lru_cache(maxsize=1)
+def _load_schema_global() -> Optional[dict]:
+    """Carga el schema JSON a nivel de módulo para que todas las instancias lo compartan."""
+    schema_path = os.path.join(
+        os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
+    )
+    if os.path.exists(schema_path):
+        import json
+        with open(schema_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return None
+
+
 class Pipeline:
     """Orquestador del pipeline GEM Nivel Psicópata (Stateful & Rich UI)."""
 
@@ -25,7 +39,7 @@ class Pipeline:
         self.gemini = gemini
         self.search_id = search_id
         self.output_dir = output_dir
-        self.schema = self._load_schema()
+        self.schema = _load_schema_global()
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -33,15 +47,6 @@ class Pipeline:
         self.state_file = os.path.join(output_dir, "pipeline_state.json")
         self.state = self._load_state()
         self._lock = asyncio.Lock()
-
-    def _load_schema(self) -> Optional[dict]:
-        schema_path = os.path.join(
-            os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
-        )
-        if os.path.exists(schema_path):
-            with open(schema_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return None
 
     def _load_state(self) -> dict:
         """Carga el estado anterior si existe para reanudar."""
@@ -64,21 +69,33 @@ class Pipeline:
             with open(self.state_file, "w", encoding="utf-8") as f:
                 json.dump(self.state, f, ensure_ascii=False, indent=2)
 
-    async def _track_usage(self, usage: dict):
-        """Suma tokens y calcula costo acumulado."""
-        if not usage:
-            return
-
-        p_tokens = usage.get("prompt_tokens", 0)
-        c_tokens = usage.get("candidates_tokens", 0)
+    async def _update_state_with_result(
+        self, gem_name: str, result: dict, state_key: str
+    ):
+        """Actualiza el estado y los tokens en una sola operación atómica (un solo disk write)."""
+        usage = result.get("usage")
+        p_tokens = usage.get("prompt_tokens", 0) if usage else 0
+        c_tokens = usage.get("candidates_tokens", 0) if usage else 0
 
         async with self._lock:
+            # 1. Update Usage
             self.state["usage"]["prompt_tokens"] += p_tokens
             self.state["usage"]["candidates_tokens"] += c_tokens
 
             cost_p = (p_tokens / 1_000_000) * PRICE_PROMPT_1M
             cost_c = (c_tokens / 1_000_000) * PRICE_COMPLETION_1M
             self.state["usage"]["total_cost_usd"] += cost_p + cost_c
+
+            # 2. Update Completed GEMs
+            if state_key not in self.state["completed_gems"]:
+                self.state["completed_gems"][state_key] = []
+            if gem_name not in self.state["completed_gems"][state_key]:
+                self.state["completed_gems"][state_key].append(gem_name)
+
+            # 3. Update Results Cache
+            if state_key not in self.state["results_cache"]:
+                self.state["results_cache"][state_key] = {}
+            self.state["results_cache"][state_key][gem_name] = result
 
         await self._save_state()
 
@@ -96,22 +113,8 @@ class Pipeline:
             base = self.output_dir
             state_key = "search"
 
-        # Track usage
-        if "usage" in result:
-            await self._track_usage(result["usage"])
-
-        async with self._lock:
-            # Update state cache
-            if state_key not in self.state["completed_gems"]:
-                self.state["completed_gems"][state_key] = []
-            if gem_name not in self.state["completed_gems"][state_key]:
-                self.state["completed_gems"][state_key].append(gem_name)
-
-            if state_key not in self.state["results_cache"]:
-                self.state["results_cache"][state_key] = {}
-            self.state["results_cache"][state_key][gem_name] = result
-
-        await self._save_state()
+        # Update state and usage in ONE atomic operation (optimized disk write)
+        await self._update_state_with_result(gem_name, result, state_key)
 
         # Files
         json_path = os.path.join(base, f"{prefix}.json")
@@ -156,8 +159,9 @@ class Pipeline:
         return score >= threshold
 
     async def _run_gem_with_validation(self, gem_name: str, prompt_vars: dict) -> dict:
+        # Build prompt only once
+        prompt = build_prompt(gem_name, prompt_vars)
         for attempt in range(MAX_RETRIES_ON_BLOCK + 1):
-            prompt = build_prompt(gem_name, prompt_vars)
             result = await self.gemini.run_gem_async(prompt)
 
             try:
