@@ -220,8 +220,17 @@ class GEM6Orchestrator:
         })
         return is_ok
 
-if __name__ == "__main__":
-    import time
+    async def aclose(self):
+        """Cleanup resources"""
+        await self.client.aclose()
+
+async def _main_mock():
     orch = GEM6Orchestrator()
-    # Mock trigger
-    asyncio.run(orch.process_context({"entity_id": "TEST-001", "context": "Discovery request"}))
+    try:
+        # Mock trigger
+        await orch.process_context({"entity_id": "TEST-001", "context": "Discovery request"})
+    finally:
+        await orch.aclose()
+
+if __name__ == "__main__":
+    asyncio.run(_main_mock())
