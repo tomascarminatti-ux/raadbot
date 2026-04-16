@@ -83,21 +83,53 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <div id="live-telemetry" class="fixed bottom-6 right-6 w-96 h-80 glass rounded-xl shadow-2xl z-50 flex flex-col transition-all duration-500 border border-white/10 overflow-hidden" aria-labelledby="telemetry-header">
+        <header id="telemetry-header" class="px-4 py-3 border-b border-white/10 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors" onclick="toggleTelemetry()">
+            <div class="flex items-center gap-2">
+                <span class="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Live Telemetry</h3>
+            </div>
+            <button id="telemetry-toggle" class="text-slate-400 hover:text-white transition-transform duration-300" aria-expanded="true" aria-label="Toggle telemetry drawer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7" /></svg>
+            </button>
+        </header>
+        <div id="logs-container" class="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-[10px]" aria-live="polite">
+            <div class="text-slate-500 italic">Esperando señal...</div>
+        </div>
     </div>
     <script>
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws/logs`);
+
+        function toggleTelemetry() {
+            const container = document.getElementById('live-telemetry');
+            const toggle = document.getElementById('telemetry-toggle');
+            const isCollapsed = container.classList.toggle('h-12');
+            container.classList.toggle('h-80');
+            toggle.style.transform = isCollapsed ? 'rotate(-180deg)' : 'rotate(0deg)';
+            toggle.setAttribute('aria-expanded', !isCollapsed);
+        }
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            const logEntry = document.createElement('div');
-            logEntry.style.marginBottom = '5px';
-            const time = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
-            logEntry.innerHTML = `[${time}] <span style="color:#3b82f6">${data.gem}</span>: ${data.action} - <span style="color:${data.status === 'OK' ? '#4ade80' : '#f87171'}">${data.status}</span> (Score: ${data.score || 'N/A'})`;
-            logsContainer.prepend(logEntry);
+            if (logsContainer.querySelector('.italic')) logsContainer.textContent = '';
+            const entry = document.createElement('div');
+            entry.className = 'border-l-2 border-blue-500/30 pl-2 py-1';
+            entry.innerHTML = `<div class="flex justify-between items-center opacity-50"><span class="text-[9px] font-bold text-slate-400"></span><span class="text-[9px] font-bold text-blue-400 uppercase"></span></div><div class="text-slate-200"> - <span class="font-bold"></span></div>`;
+            const spans = entry.querySelectorAll('span');
+            spans[0].textContent = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
+            spans[1].textContent = data.gem;
+            const content = entry.lastElementChild;
+            content.prepend(document.createTextNode(data.action));
+            spans[2].textContent = data.status;
+            spans[2].className += data.status === 'OK' ? ' text-green-400' : ' text-red-400';
+            if (data.score) {
+                const s = document.createElement('span');
+                s.className = 'text-slate-500 ml-1';
+                s.textContent = `(Score: ${data.score})`;
+                content.appendChild(s);
+            }
+            logsContainer.prepend(entry);
         };
 
         let gems = [];
