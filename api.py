@@ -159,8 +159,6 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
             raise HTTPException(status_code=400, detail=str(e))
 
 
-
-
 class SetupSearchRequest(BaseModel):
     search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     brief_notes: str
@@ -238,7 +236,6 @@ async def list_gems():
     return gems
 
 
-
 class RefineRequest(BaseModel):
     gem_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     instruction: str
@@ -295,7 +292,6 @@ async def websocket_logs(websocket: WebSocket):
     except WebSocketDisconnect:
         if websocket in active_connections:
             active_connections.remove(websocket)
-
 
 
 @app.get("/health")
