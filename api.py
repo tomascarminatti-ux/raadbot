@@ -3,7 +3,7 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -65,6 +65,8 @@ class PipelineResponse(BaseModel):
     search_id: str
     output_dir: str
     summary: dict
+
+
 
 
 async def run_pipeline(request: PipelineRequest) -> dict:
@@ -173,7 +175,7 @@ async def setup_search(request: SetupSearchRequest):
     """
     output_dir = os.path.join("runs", request.search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Simular estructura de inputs para GEM 5
     search_inputs = {
         "kickoff_notes": request.brief_notes,
