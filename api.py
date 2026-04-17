@@ -3,7 +3,7 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -14,6 +14,7 @@ import config
 from agent.gemini_client import GeminiClient
 from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
+from agent.prompt_builder import build_gem5_prompt
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
 
@@ -98,8 +99,11 @@ async def run_pipeline(request: PipelineRequest) -> dict:
     gemini = GeminiClient(api_key=api_key, model=request.model)
     orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
 
-    # Ejecución asíncrona no bloqueante
-    await orchestrator.run_pipeline(search_inputs, candidates)
+    try:
+        # Ejecución asíncrona no bloqueante
+        await orchestrator.run_pipeline(search_inputs, candidates)
+    finally:
+        await orchestrator.aclose()
 
     summary_path = os.path.join(output_dir, "pipeline_summary.json")
     summary_data = {}
@@ -183,7 +187,6 @@ async def setup_search(request: SetupSearchRequest):
     
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     # Ejecutar GEM 5 directamente
-    from agent.prompt_builder import build_gem5_prompt
     prompt = build_gem5_prompt(search_inputs)
     result = gemini.run_gem(prompt, gem_name="gem5")
     
