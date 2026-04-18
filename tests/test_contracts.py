@@ -3,7 +3,6 @@ import json
 import os
 from utils.gem_core import validate_contract
 
-
 def test_validate_contract_types():
     # Create temp contract
     contract = {
@@ -41,7 +40,6 @@ def test_validate_contract_types():
     # Cleanup
     if os.path.exists(contract_path):
         os.remove(contract_path)
-
 
 def test_real_contracts():
     """Verify that current contracts are valid JSON and can be loaded"""

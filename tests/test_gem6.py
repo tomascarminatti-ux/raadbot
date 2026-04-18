@@ -1,5 +1,3 @@
-from agent.gem6.orchestrator import GEM6Orchestrator
-from agent.gemini_client import GeminiClient
 import asyncio
 import os
 import sys
@@ -8,6 +6,8 @@ from datetime import datetime, timezone
 # Asegurar que el path incluya la raíz del proyecto
 sys.path.append(os.getcwd())
 
+from agent.gemini_client import GeminiClient
+from agent.gem6.orchestrator import GEM6Orchestrator
 
 async def test_gem6_flow():
     print("🚀 Iniciando Test GEM 6 - Master Orchestrator...")
@@ -21,8 +21,7 @@ async def test_gem6_flow():
     orchestrator = GEM6Orchestrator(gemini, output_dir, config)
 
     # Inputs Mock
-    search_inputs = {"perfil": "CTO para Startup Fintech",
-                     "empresa": "RaadAdvisory"}
+    search_inputs = {"perfil": "CTO para Startup Fintech", "empresa": "RaadAdvisory"}
     candidates = [
         {
             "candidato_id": "CAND-001",

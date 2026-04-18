@@ -89,16 +89,14 @@ async def run_pipeline(request: PipelineRequest) -> dict:
 
     if request.candidate_id:
         if request.candidate_id not in candidates:
-            raise ValueError(
-                f"Candidato {request.candidate_id} no encontrado.")
+            raise ValueError(f"Candidato {request.candidate_id} no encontrado.")
         candidates = {request.candidate_id: candidates[request.candidate_id]}
 
     output_dir = os.path.join("runs", request.search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
 
     gemini = GeminiClient(api_key=api_key, model=request.model)
-    orchestrator = GEM6Orchestrator(
-        gemini=gemini, search_id=request.search_id, output_dir=output_dir)
+    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
 
     # Ejecución asíncrona no bloqueante
     await orchestrator.run_pipeline(search_inputs, candidates)
@@ -167,7 +165,6 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
-
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -214,7 +211,6 @@ async def get_dashboard():
     except FileNotFoundError:
         return "Dashboard template not found. Please create templates/dashboard.html"
 
-
 @app.get("/api/v1/gems")
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
@@ -237,19 +233,16 @@ async def list_gems():
 
     return gems
 
-
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
-
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
     prompt_path = f"prompts/{request.gem_id}.md"
     if not os.path.exists(prompt_path):
-        raise HTTPException(
-            status_code=404, detail="GEM prompt file not found")
+        raise HTTPException(status_code=404, detail="GEM prompt file not found")
 
     with open(prompt_path, "r", encoding="utf-8") as f:
         current_prompt = f.read()
@@ -281,7 +274,6 @@ async def refine_gem(request: RefineRequest):
 
     return {"status": "error", "message": "Failed to generate new prompt"}
 
-
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
     await websocket.accept()
@@ -293,7 +285,6 @@ async def websocket_logs(websocket: WebSocket):
     except WebSocketDisconnect:
         if websocket in active_connections:
             active_connections.remove(websocket)
-
 
 @app.get("/health")
 def health_check():
