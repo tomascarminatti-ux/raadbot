@@ -14,6 +14,7 @@
         .active-gem { border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, 0.1); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
     </style>
 </head>
 <body class="h-screen flex overflow-hidden">
@@ -83,20 +84,56 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <div id="live-logs" class="glass fixed bottom-6 right-6 w-96 h-80 flex flex-col rounded-xl z-50 shadow-2xl transition-[height] duration-300 ease-in-out overflow-hidden" role="complementary" aria-label="Live Telemetry">
+        <div class="flex items-center justify-between p-3 border-b border-white/10 cursor-pointer hover:bg-white/5 transition-colors" onclick="toggleTelemetry()">
+            <div class="flex items-center gap-2">
+                <span class="text-blue-400 animate-pulse">●</span>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Live Telemetry</h3>
+            </div>
+            <button id="telemetry-toggle" class="text-slate-500 hover:text-white transition-transform duration-300" aria-label="Toggle Telemetry" aria-expanded="true">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+        </div>
+        <div id="logs-container" class="flex-1 p-4 font-mono text-[10px] overflow-y-auto space-y-2 bg-black/40">
+            <div class="text-slate-600 italic">Waiting for telemetry data...</div>
+        </div>
     </div>
     <script>
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws/logs`);
+
+        function toggleTelemetry() {
+            const container = document.getElementById('live-logs');
+            const toggleBtn = document.getElementById('telemetry-toggle');
+
+            if (container.classList.contains('h-80')) {
+                container.classList.replace('h-80', 'h-11');
+                toggleBtn.style.transform = 'rotate(180deg)';
+                toggleBtn.setAttribute('aria-expanded', 'false');
+            } else {
+                container.classList.replace('h-11', 'h-80');
+                toggleBtn.style.transform = 'rotate(0deg)';
+                toggleBtn.setAttribute('aria-expanded', 'true');
+            }
+        }
+
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
+            // Remove empty state message on first log
+            if (logsContainer.querySelector('.italic')) {
+                logsContainer.innerHTML = '';
+            }
             const logEntry = document.createElement('div');
-            logEntry.style.marginBottom = '5px';
+            logEntry.className = 'border-b border-white/5 pb-1 last:border-0';
             const time = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
-            logEntry.innerHTML = `[${time}] <span style="color:#3b82f6">${data.gem}</span>: ${data.action} - <span style="color:${data.status === 'OK' ? '#4ade80' : '#f87171'}">${data.status}</span> (Score: ${data.score || 'N/A'})`;
+            logEntry.innerHTML = `
+                <span class="text-slate-500">[${time}]</span>
+                <span class="text-blue-400 font-bold">${data.gem}</span>:
+                <span class="text-slate-300">${data.action}</span> -
+                <span class="${data.status === 'OK' ? 'text-green-400' : 'text-red-400'}">${data.status}</span>
+                <span class="text-slate-500">(Score: ${data.score || 'N/A'})</span>
+            `;
             logsContainer.prepend(logEntry);
         };
 
@@ -193,6 +230,14 @@
                 history.scrollTop = history.scrollHeight;
             }
         }
+
+        // Keyboard Shortcuts
+        document.getElementById('refine-input').addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                refineGem();
+            }
+        });
 
         // Init
         loadGems();
