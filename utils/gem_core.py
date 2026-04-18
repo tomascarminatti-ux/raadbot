@@ -66,12 +66,17 @@ def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
                 return False
             # Basic type checking
             val = data.get(key)
-            if expected_type == "array" and not isinstance(val, list): return False
-            if expected_type == "number" and not isinstance(val, (int, float)): return False
-            if expected_type == "string" and not isinstance(val, str): return False
-            if expected_type == "object" and not isinstance(val, dict): return False
-            if expected_type == "boolean" and not isinstance(val, bool): return False
-            
+            if expected_type == "array" and not isinstance(val, list):
+                return False
+            if expected_type == "number" and not isinstance(val, (int, float)):
+                return False
+            if expected_type == "string" and not isinstance(val, str):
+                return False
+            if expected_type == "object" and not isinstance(val, dict):
+                return False
+            if expected_type == "boolean" and not isinstance(val, bool):
+                return False
+
         return True
     except Exception as e:
         logger.error(f"Contract validation error: {e}")
