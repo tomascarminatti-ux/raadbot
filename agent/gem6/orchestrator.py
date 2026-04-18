@@ -2,23 +2,33 @@ import os
 import json
 import uuid
 import asyncio
-from typing import Dict, Any, List, Optional
+import time
+from typing import Dict, Any
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
 import config
 from utils.ws_logger import broadcast_log
 
+
 class GEM6Orchestrator:
     def __init__(self, *args, **kwargs):
-        self.client = GEMClient(os.getenv("DB_API_URL", "http://localhost:8000"))
+        self.client = GEMClient(
+            os.getenv("DB_API_URL", "http://localhost:8000"))
         self.thresholds = {
             "scoring_cutoff": config.SCORING_CUTOFF,
             "qa_cutoff": config.QA_GATE_CUTOFF
         }
-        self.gemini = kwargs.get("gemini") or (args[0] if len(args) > 0 else None)
-        self.output_dir = kwargs.get("output_dir") or (args[1] if len(args) > 1 else None)
-        self.config = kwargs.get("config") or (args[2] if len(args) > 2 else {})
+        self.gemini = kwargs.get("gemini") or (
+            args[0] if len(args) > 0 else None)
+        self.output_dir = kwargs.get("output_dir") or (
+            args[1] if len(args) > 1 else None)
+        self.config = kwargs.get("config") or (
+            args[2] if len(args) > 2 else {})
         self.search_id = kwargs.get("search_id", self.config.get("search_id"))
+
+    async def aclose(self):
+        """Resource cleanup."""
+        await self.client.aclose()
 
     async def run_pipeline(self, search_inputs: Dict[str, Any], candidates: Dict[str, Any]):
         """Entry point to process all candidates"""
@@ -31,11 +41,12 @@ class GEM6Orchestrator:
                 "entity_id": candidate_id
             }
             results[candidate_id] = await self.process_context(context)
-        
+
         # Save summary
         if self.output_dir:
             os.makedirs(self.output_dir, exist_ok=True)
-            summary_path = os.path.join(self.output_dir, "pipeline_summary.json")
+            summary_path = os.path.join(
+                self.output_dir, "pipeline_summary.json")
             summary = {
                 "search_id": self.search_id,
                 "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -43,19 +54,20 @@ class GEM6Orchestrator:
             }
             with open(summary_path, "w") as f:
                 json.dump(summary, f, indent=2)
-        
+
         return results
 
     async def process_context(self, context_data: Dict[str, Any]):
         trace_id = str(uuid.uuid4())
         entity_id = context_data.get("entity_id", "unknown")
-        
-        logger.info(f"Starting AUTONOMOUS orchestration for {entity_id} | Trace: {trace_id}")
-        
+
+        logger.info(
+            f"Starting AUTONOMOUS orchestration for {entity_id} | Trace: {trace_id}")
+
         working_memory = []
         max_steps = 10
         step = 0
-        
+
         initial_context = {
             "search_inputs": context_data.get("search_inputs", {}),
             "candidate_data": context_data.get("candidate_data", {}),
@@ -146,8 +158,10 @@ class GEM6Orchestrator:
 
                 # Broadcast log for real-time dashboard
                 try:
-                    score = agent_output.get("score") or agent_output.get("qa_score") or 0
-                    passed = is_valid and (score >= self.thresholds.get("scoring_cutoff", 0.4))
+                    score = agent_output.get(
+                        "score") or agent_output.get("qa_score") or 0
+                    passed = is_valid and (
+                        score >= self.thresholds.get("scoring_cutoff", 0.4))
 
                     await broadcast_log({
                         "gem": agent_id.upper(),
@@ -179,7 +193,7 @@ class GEM6Orchestrator:
     async def call_agent(self, agent_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Calls the agent using GeminiClient or fallback to mock if client missing"""
         logger.info(f"Calling agent {agent_id}")
-        
+
         if self.gemini:
             try:
                 # Use prompt_builder for consistent templating
@@ -190,7 +204,7 @@ class GEM6Orchestrator:
             except Exception as e:
                 logger.error(f"Error calling Gemini for {agent_id}: {e}")
                 return {"error": str(e)}
-        
+
         # Fallback to mock for local testing/demo if no Gemini client
         await asyncio.sleep(0.1)
         if agent_id == "gem1":
@@ -205,7 +219,8 @@ class GEM6Orchestrator:
 
     async def validate_step(self, entity_id, agent_id, output, contract_path, trace_id):
         if not os.path.exists(contract_path):
-            logger.warning(f"No contract found for {agent_id} at {contract_path}. Skipping strict validation.")
+            logger.warning(
+                f"No contract found for {agent_id} at {contract_path}. Skipping strict validation.")
             return True
 
         is_ok = validate_contract(output, contract_path)
@@ -220,8 +235,9 @@ class GEM6Orchestrator:
         })
         return is_ok
 
+
 if __name__ == "__main__":
-    import time
     orch = GEM6Orchestrator()
     # Mock trigger
-    asyncio.run(orch.process_context({"entity_id": "TEST-001", "context": "Discovery request"}))
+    asyncio.run(orch.process_context(
+        {"entity_id": "TEST-001", "context": "Discovery request"}))
