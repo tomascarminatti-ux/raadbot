@@ -55,10 +55,11 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
+    # Field pattern prevents path traversal by restricting to alphanumeric characters
     search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     drive_folder: Optional[str] = None
     local_dir: Optional[str] = None
-    # Si se quiere procesar solo uno
+    # Si se quiere procesar solo uno (validated to prevent path traversal)
     candidate_id: Optional[str] = Field(
         default=None, pattern=r"^[a-zA-Z0-9_-]+$"
     )
@@ -171,6 +172,7 @@ async def trigger_pipeline(
 
 
 class SetupSearchRequest(BaseModel):
+    # Field pattern prevents path traversal by restricting to alphanumeric characters
     search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     brief_notes: str
     jd_content: str
@@ -248,6 +250,7 @@ async def list_gems():
 
 
 class RefineRequest(BaseModel):
+    # Field pattern prevents path traversal by restricting to alphanumeric characters
     gem_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     instruction: str
 
