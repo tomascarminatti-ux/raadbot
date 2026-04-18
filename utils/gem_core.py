@@ -1,7 +1,8 @@
 import httpx
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
+
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -15,6 +16,7 @@ class JsonFormatter(logging.Formatter):
             log_record.update(record.extra_fields)
         return json.dumps(log_record)
 
+
 handler = logging.StreamHandler()
 handler.setFormatter(JsonFormatter())
 logger = logging.getLogger("gem_v3")
@@ -22,8 +24,10 @@ logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 logger.propagate = False
 
+
 class GEMClient:
     """Client for DB interactions with connection pooling."""
+
     def __init__(self, db_url: str = "http://db-api:8000"):
         self.db_url = db_url
         # Optimization: use a persistent client for connection pooling
@@ -52,11 +56,12 @@ class GEMClient:
     async def log_execution(self, log_data: Dict[str, Any]):
         return await self._post("/log/discovery", log_data)
 
+
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
         with open(contract_path, "r") as f:
             contract = json.load(f)
-        
+
         for key in contract:
             if not isinstance(key, str):
                 continue
