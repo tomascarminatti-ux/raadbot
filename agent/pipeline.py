@@ -80,7 +80,8 @@ class Pipeline:
             cost_c = (c_tokens / 1_000_000) * PRICE_COMPLETION_1M
             self.state["usage"]["total_cost_usd"] += cost_p + cost_c
 
-        await self._save_state()
+        # _save_state() se llama en _save_output después de trackear uso,
+        # evitamos doble escritura a disco redundante.
 
     async def _save_output(
         self, gem_name: str, result: dict, candidate_id: Optional[str] = None
@@ -156,8 +157,9 @@ class Pipeline:
         return score >= threshold
 
     async def _run_gem_with_validation(self, gem_name: str, prompt_vars: dict) -> dict:
+        # El prompt es estático entre reintentos, lo construimos una sola vez.
+        prompt = build_prompt(gem_name, prompt_vars)
         for attempt in range(MAX_RETRIES_ON_BLOCK + 1):
-            prompt = build_prompt(gem_name, prompt_vars)
             result = await self.gemini.run_gem_async(prompt)
 
             try:
