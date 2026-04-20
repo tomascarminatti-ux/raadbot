@@ -25,7 +25,7 @@ class Pipeline:
         self.gemini = gemini
         self.search_id = search_id
         self.output_dir = output_dir
-        self.schema = self._load_schema()
+        self._schema_cache = None
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -35,12 +35,16 @@ class Pipeline:
         self._lock = asyncio.Lock()
 
     def _load_schema(self) -> Optional[dict]:
+        if self._schema_cache is not None:
+            return self._schema_cache
+
         schema_path = os.path.join(
             os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
         )
         if os.path.exists(schema_path):
             with open(schema_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                self._schema_cache = json.load(f)
+                return self._schema_cache
         return None
 
     def _load_state(self) -> dict:
@@ -65,7 +69,7 @@ class Pipeline:
                 json.dump(self.state, f, ensure_ascii=False, indent=2)
 
     async def _track_usage(self, usage: dict):
-        """Suma tokens y calcula costo acumulado."""
+        """Suma tokens y calcula costo acumulado (Sin guardado a disco inmediato)."""
         if not usage:
             return
 
@@ -79,8 +83,6 @@ class Pipeline:
             cost_p = (p_tokens / 1_000_000) * PRICE_PROMPT_1M
             cost_c = (c_tokens / 1_000_000) * PRICE_COMPLETION_1M
             self.state["usage"]["total_cost_usd"] += cost_p + cost_c
-
-        await self._save_state()
 
     async def _save_output(
         self, gem_name: str, result: dict, candidate_id: Optional[str] = None
@@ -133,10 +135,11 @@ class Pipeline:
         return json_path, md_path
 
     def _validate_output(self, json_data: dict, gem_name: str) -> bool:
-        if not self.schema or not json_data:
+        schema = self._load_schema()
+        if not schema or not json_data:
             raise ValueError(f"Output nulo o sin JSON válido en {gem_name}")
         try:
-            validate(instance=json_data, schema=self.schema)
+            validate(instance=json_data, schema=schema)
             return True
         except ValidationError as e:
             raise ValueError(f"Schema fallido en {gem_name}: {e.message}")
@@ -156,8 +159,9 @@ class Pipeline:
         return score >= threshold
 
     async def _run_gem_with_validation(self, gem_name: str, prompt_vars: dict) -> dict:
+        # Prompt building is outside the retry loop if variables are static
+        prompt = build_prompt(gem_name, prompt_vars)
         for attempt in range(MAX_RETRIES_ON_BLOCK + 1):
-            prompt = build_prompt(gem_name, prompt_vars)
             result = await self.gemini.run_gem_async(prompt)
 
             try:
