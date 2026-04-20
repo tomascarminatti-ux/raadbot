@@ -12,6 +12,7 @@
         .gem-card { transition: all 0.3s ease; }
         .gem-card:hover { transform: translateY(-2px); border-color: #3b82f6; }
         .active-gem { border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, 0.1); }
+        #live-logs.collapsed { height: 45px; overflow: hidden; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
@@ -83,11 +84,30 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <div id="live-logs" class="glass fixed bottom-5 right-5 w-[400px] h-[300px] rounded-xl z-50 transition-all duration-300 flex flex-col overflow-hidden">
+        <div class="flex justify-between items-center p-3 border-b border-white/10 bg-black/20">
+            <span class="text-xs font-bold text-blue-400 flex items-center gap-2">
+                <span class="animate-pulse">●</span> 🚀 Raadbot Live
+            </span>
+            <button onclick="toggleLogs()" id="toggle-logs-btn" aria-label="Toggle logs" aria-expanded="true" class="text-slate-400 hover:text-white transition-colors">
+                <svg id="chevron-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+        </div>
+        <div id="logs-container" class="flex-1 overflow-y-auto p-4 font-mono text-[10px] space-y-1 bg-black/40"></div>
     </div>
     <script>
+        function toggleLogs() {
+            const container = document.getElementById('live-logs');
+            const btn = document.getElementById('toggle-logs-btn');
+            const icon = document.getElementById('chevron-icon');
+            const isCollapsed = container.classList.toggle('collapsed');
+
+            btn.setAttribute('aria-expanded', !isCollapsed);
+            icon.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws/logs`);
