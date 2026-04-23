@@ -80,7 +80,8 @@ class Pipeline:
             cost_c = (c_tokens / 1_000_000) * PRICE_COMPLETION_1M
             self.state["usage"]["total_cost_usd"] += cost_p + cost_c
 
-        await self._save_state()
+        # Se elimina el guardado de estado redundante aquí porque _save_output (su único llamador)
+        # ya guarda el estado inmediatamente después de actualizar los otros metadatos.
 
     async def _save_output(
         self, gem_name: str, result: dict, candidate_id: Optional[str] = None
