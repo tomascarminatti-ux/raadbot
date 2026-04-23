@@ -27,6 +27,7 @@ from agent.drive_client import DriveClient
 
 console = Console()
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="RAAD GEM Pipeline – Evaluación de candidatos ejecutivos",
@@ -83,12 +84,14 @@ Ejemplos:
         from rich.console import Console as RichConsole
         non_rich_console = RichConsole(file=io.StringIO())
         # Global console override would be better but this is a quick fix
-    
+
     # --- API Key check ---
     api_key = config.GEMINI_API_KEY
     if not api_key:
-        console.print("[bold red]❌ Error: GEMINI_API_KEY no configurada.[/bold red]")
-        console.print("  Por favor configura tu API key en el archivo [bold].env[/bold]")
+        console.print(
+            "[bold red]❌ Error: GEMINI_API_KEY no configurada.[/bold red]")
+        console.print(
+            "  Por favor configura tu API key en el archivo [bold].env[/bold]")
         sys.exit(1)
 
     # --- Load inputs ---
@@ -108,38 +111,47 @@ Ejemplos:
     else:
         console.print(f"📁 [cyan]Leyendo inputs desde: {args.local_dir}[/cyan]")
         if not os.path.exists(args.local_dir):
-            console.print(f"[bold red]❌ Directorio no encontrado: {args.local_dir}[/bold red]")
+            console.print(
+                f"[bold red]❌ Directorio no encontrado: {args.local_dir}[/bold red]")
             sys.exit(1)
         search_inputs, candidates = load_local_inputs(args.local_dir)
 
     # --- Filter candidate ---
     if args.candidate:
         if args.candidate not in candidates:
-            console.print(f"[bold red]❌ Candidato '{args.candidate}' no encontrado.[/bold red]")
-            console.print(f"  Candidatos disponibles: {list(candidates.keys())}")
+            console.print(
+                f"[bold red]❌ Candidato '{args.candidate}' no encontrado.[/bold red]")
+            console.print(
+                f"  Candidatos disponibles: {list(candidates.keys())}")
             sys.exit(1)
         candidates = {args.candidate: candidates[args.candidate]}
 
     # --- Validation ---
     if not search_inputs.get("jd_text"):
-        console.print("[yellow]⚠️  Advertencia: falta brief_jd.txt (input crítico para GEM5)[/yellow]")
+        console.print(
+            "[yellow]⚠️  Advertencia: falta brief_jd.txt (input crítico para GEM5)[/yellow]")
     if not candidates:
-        console.print("[bold red]❌ No se encontraron candidatos. Revisar estructura de carpetas.[/bold red]")
+        console.print(
+            "[bold red]❌ No se encontraron candidatos. Revisar estructura de carpetas.[/bold red]")
         sys.exit(1)
 
     # --- Output configuration ---
-    output_dir = args.output_dir or os.path.join("runs", args.search_id, "outputs")
+    output_dir = args.output_dir or os.path.join(
+        "runs", args.search_id, "outputs")
 
     # --- Run GEM 6 Orchestrator ---
     gemini = GeminiClient(api_key=api_key, model=args.model)
-    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=args.search_id, output_dir=output_dir)
+    orchestrator = GEM6Orchestrator(
+        gemini=gemini, search_id=args.search_id, output_dir=output_dir)
 
     # El orquestador maneja los eventos y el procesamiento asíncrono
     try:
         import asyncio
-        results = asyncio.run(orchestrator.run_pipeline(search_inputs, candidates))
+        results = asyncio.run(
+            orchestrator.run_pipeline(search_inputs, candidates))
     except Exception as e:
-        console.print(f"[bold red]❌ Error durante la ejecución del pipeline: {e}[/bold red]")
+        console.print(
+            f"[bold red]❌ Error durante la ejecución del pipeline: {e}[/bold red]")
         import traceback
         console.print(traceback.format_exc())
         sys.exit(1)
@@ -153,7 +165,8 @@ Ejemplos:
                 # Use print directly to ensure clean JSON stdout
                 sys.stdout.write(f.read() + "\n")
         else:
-            sys.stdout.write(json.dumps({"error": "No summary generated", "status": "error"}) + "\n")
+            sys.stdout.write(json.dumps(
+                {"error": "No summary generated", "status": "error"}) + "\n")
     else:
         console.print(f"\n📄 Resumen guardado en: [bold]{summary_path}[/bold]")
         console.print("[bold green]✨ Pipeline completado.[/bold green]")
