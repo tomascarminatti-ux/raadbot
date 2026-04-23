@@ -32,10 +32,11 @@ QUERIES = {
     """
 }
 
+
 def print_metrics():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    
+
     print("--- GEM v3.0 FUNNEL METRICS ---")
     for name, query in QUERIES.items():
         print(f"\nMetric: {name}")
@@ -44,6 +45,7 @@ def print_metrics():
         for row in results:
             print(row)
     conn.close()
+
 
 if __name__ == "__main__":
     print_metrics()

@@ -6,6 +6,7 @@ from fastapi import WebSocket
 
 active_connections: List[WebSocket] = []
 
+
 async def broadcast_log(data: dict):
     """
     Broadcasts a log message to all connected WebSocket clients.
