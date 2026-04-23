@@ -14,6 +14,9 @@
         .active-gem { border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, 0.1); }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        #live-logs.collapsed { height: 48px !important; }
+        .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden">
@@ -83,10 +86,22 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <!-- Live Logs Drawer -->
+    <div id="live-logs" class="fixed bottom-6 right-6 w-96 h-80 glass rounded-xl flex flex-col transition-all duration-300 z-50 shadow-2xl overflow-hidden" aria-expanded="true">
+        <div class="p-3 border-b border-white/10 flex items-center justify-between bg-black/20 cursor-pointer" onclick="toggleLogs()">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 bg-green-500 rounded-full pulse"></span>
+                <h3 class="text-xs font-bold text-slate-300 uppercase tracking-widest">Live Logs</h3>
+            </div>
+            <button aria-label="Toggle logs" class="p-1 hover:bg-white/10 rounded transition-colors">
+                <span id="log-toggle-icon">▼</span>
+            </button>
+        </div>
+        <div id="logs-container" class="flex-1 p-4 font-mono text-[10px] overflow-y-auto space-y-2 bg-black/40 text-green-400">
+            <!-- Logs will appear here -->
+        </div>
     </div>
+
     <script>
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -102,6 +117,14 @@
 
         let gems = [];
         let activeGem = null;
+
+        function toggleLogs() {
+            const drawer = document.getElementById('live-logs');
+            const icon = document.getElementById('log-toggle-icon');
+            const isCollapsed = drawer.classList.toggle('collapsed');
+            drawer.setAttribute('aria-expanded', !isCollapsed);
+            icon.innerText = isCollapsed ? '▲' : '▼';
+        }
 
         async function loadGems() {
             try {
@@ -193,6 +216,14 @@
                 history.scrollTop = history.scrollHeight;
             }
         }
+
+        // Keyboard Shortcuts
+        document.getElementById('refine-input').addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                refineGem();
+            }
+        });
 
         // Init
         loadGems();
