@@ -1,0 +1,3 @@
+## 2025-05-15 - [Prompt Builder Optimization]
+**Learning:** Significant performance gains can be achieved in agent-based systems by caching prompt templates and optimizing the variable injection process. Disk I/O was a bottleneck even for small files, as evidenced by the reduction in "cold start" time. Moving `json` imports out of hot loops and using single-pass regex substitution further minimizes overhead.
+**Action:** Always cache static or slow-changing templates (e.g., using `functools.lru_cache`) and ensure a clear invalidation strategy (e.g., `cache_clear()`) is implemented in code paths that update those files. Use `re.sub` with a mapping function for efficient bulk string replacements.
