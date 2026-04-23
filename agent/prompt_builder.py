@@ -67,10 +67,11 @@ def build_prompt(gem_name: str, variables: dict) -> str:
         return processed_vars.get(var_name, match.group(0))
 
     # Single-pass substitution for all variables
-    prompt = re.sub(r"\{\{(\w+)\}\}", replace_var, prompt)
+    # We use a broader regex [^\s}]+ to allow characters like - or . in variable names
+    prompt = re.sub(r"\{\{([^\s}]+)\}\}", replace_var, prompt)
 
     # Validar que no queden variables sin reemplazar
-    remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
+    remaining = re.findall(r"\{\{([^\s}]+)\}\}", prompt)
     if remaining:
         # Filtrar VERSION que es metadata, no un input
         remaining = [v for v in remaining if v != "VERSION"]
