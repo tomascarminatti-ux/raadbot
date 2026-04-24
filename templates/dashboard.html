@@ -74,8 +74,8 @@
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
-                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <textarea id="refine-input" aria-label="Instrucción de refinamiento" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV... (Ctrl+Enter)"></textarea>
+                    <button onclick="refineGem()" id="send-btn" aria-label="Enviar refinamiento" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                         <span>🚀</span> Refinar Prompt
                     </button>
                 </div>
@@ -83,9 +83,17 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <div id="live-logs" class="glass fixed bottom-0 right-8 w-96 h-[400px] rounded-t-xl transition-all duration-300 z-50 flex flex-col translate-y-[352px]" aria-expanded="false" aria-controls="logs-container">
+        <button onclick="toggleLogs()" class="h-12 w-full flex items-center justify-between px-4 hover:bg-white/5 transition-colors border-b border-white/10" aria-label="Toggle live logs">
+            <span class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-2">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                Live Logs
+            </span>
+            <span id="logs-toggle-icon" class="text-xs text-slate-400">▲</span>
+        </button>
+        <div id="logs-container" class="flex-1 overflow-y-auto p-4 font-mono text-[10px] leading-relaxed">
+            <div class="text-slate-500 italic mb-4">Iniciando flujo de telemetría...</div>
+        </div>
     </div>
     <script>
         const logsContainer = document.getElementById('logs-container');
@@ -102,6 +110,23 @@
 
         let gems = [];
         let activeGem = null;
+        let logsExpanded = false;
+
+        function toggleLogs() {
+            logsExpanded = !logsExpanded;
+            const container = document.getElementById('live-logs');
+            const icon = document.getElementById('logs-toggle-icon');
+
+            if (logsExpanded) {
+                container.classList.remove('translate-y-[352px]');
+                icon.innerText = '▼';
+                container.setAttribute('aria-expanded', 'true');
+            } else {
+                container.classList.add('translate-y-[352px]');
+                icon.innerText = '▲';
+                container.setAttribute('aria-expanded', 'false');
+            }
+        }
 
         async function loadGems() {
             try {
@@ -116,9 +141,9 @@
         function renderNav() {
             const nav = document.getElementById('gem-nav');
             nav.innerHTML = gems.map(gem => `
-                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
+                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" aria-label="Seleccionar ${gem.name}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
                     <span>${gem.name}</span>
-                    <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" aria-hidden="true">➔</span>
                 </button>
             `).join('');
         }
@@ -193,6 +218,14 @@
                 history.scrollTop = history.scrollHeight;
             }
         }
+
+        // Keyboard Shortcuts
+        document.getElementById('refine-input').addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                refineGem();
+            }
+        });
 
         // Init
         loadGems();
