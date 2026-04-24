@@ -11,6 +11,7 @@ import httpx
 import asyncio
 
 import config
+from agent.prompt_builder import load_prompt
 from agent.gemini_client import GeminiClient
 from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
@@ -270,6 +271,8 @@ async def refine_gem(request: RefineRequest):
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write(new_prompt)
+        # Clear cache to ensure the new prompt is loaded next time
+        load_prompt.cache_clear()
         return {"status": "success", "new_prompt": new_prompt}
     
     return {"status": "error", "message": "Failed to generate new prompt"}
