@@ -18,7 +18,6 @@ from agent.utils import load_local_inputs
 from agent.config import DEFAULT_MODEL
 from agent.logger import logger
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Check for API Key on startup
