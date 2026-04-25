@@ -21,6 +21,8 @@ console = Console()
 class Pipeline:
     """Orquestador del pipeline GEM Nivel Psicópata (Stateful & Rich UI)."""
 
+    _schema_cache = None
+
     def __init__(self, gemini: GeminiClient, search_id: str, output_dir: str):
         self.gemini = gemini
         self.search_id = search_id
@@ -35,12 +37,17 @@ class Pipeline:
         self._lock = asyncio.Lock()
 
     def _load_schema(self) -> Optional[dict]:
+        if Pipeline._schema_cache is not None:
+            return Pipeline._schema_cache
+
         schema_path = os.path.join(
-            os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
+            os.path.dirname(
+                __file__), "..", "schemas", "gem_output.schema.json"
         )
         if os.path.exists(schema_path):
             with open(schema_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+                Pipeline._schema_cache = json.load(f)
+                return Pipeline._schema_cache
         return None
 
     def _load_state(self) -> dict:
@@ -79,8 +86,6 @@ class Pipeline:
             cost_p = (p_tokens / 1_000_000) * PRICE_PROMPT_1M
             cost_c = (c_tokens / 1_000_000) * PRICE_COMPLETION_1M
             self.state["usage"]["total_cost_usd"] += cost_p + cost_c
-
-        await self._save_state()
 
     async def _save_output(
         self, gem_name: str, result: dict, candidate_id: Optional[str] = None
@@ -165,10 +170,12 @@ class Pipeline:
                 return result
             except ValueError as e:
                 if attempt < MAX_RETRIES_ON_BLOCK:
-                    logger.warning(f"⚠️ Error de validación en {gem_name} ({e}). Reintentando {attempt+1}/{MAX_RETRIES_ON_BLOCK}...")
+                    logger.warning(
+                        f"⚠️ Error de validación en {gem_name} ({e}). Reintentando {attempt+1}/{MAX_RETRIES_ON_BLOCK}...")
                     await asyncio.sleep(2)
                 else:
-                    logger.error(f"❌ Error definitivo de validación en {gem_name}.")
+                    logger.error(
+                        f"❌ Error definitivo de validación en {gem_name}.")
                     return result
         return {}  # Fallback final para el linter
 
@@ -179,7 +186,8 @@ class Pipeline:
 
         async with self._lock:
             cache = self.state["results_cache"].get(candidate_id, {})
-            completed = gem_name in self.state["completed_gems"].get(candidate_id, [])
+            completed = gem_name in self.state["completed_gems"].get(
+                candidate_id, [])
 
         if completed:
             # console.print("[dim]  ⏭️  Recuperando de caché...[/dim]")
@@ -192,14 +200,17 @@ class Pipeline:
         score = self._get_score(result.get("json"))
 
         if score is None:
-            logger.error(f"❌ Error parseando score en {gem_name} para {candidate_id}. Fallo automático.")
+            logger.error(
+                f"❌ Error parseando score en {gem_name} para {candidate_id}. Fallo automático.")
             return result, score, False
 
         passed = self._check_gate(gem_name, score)
         if not passed:
-            logger.warning(f"⚠️ {gem_name} score ({score}) < {THRESHOLDS.get(gem_name)} para {candidate_id}. Candidato descartado en este punto.")
+            logger.warning(
+                f"⚠️ {gem_name} score ({score}) < {THRESHOLDS.get(gem_name)} para {candidate_id}. Candidato descartado en este punto.")
         else:
-            pass # console.print(f"[green]  ✅ {gem_name} aprobado para {candidate_id}[/green] (score {score})")
+            # console.print(f"[green]  ✅ {gem_name} aprobado para {candidate_id}[/green] (score {score})")
+            pass
 
         return result, score, passed
 
@@ -212,7 +223,8 @@ class Pipeline:
         )
 
         async with self._lock:
-            completed = "gem5" in self.state["completed_gems"].get("search", [])
+            completed = "gem5" in self.state["completed_gems"].get(
+                "search", [])
             cache = self.state["results_cache"].get("search", {}).get("gem5")
 
         if completed:
@@ -232,7 +244,8 @@ class Pipeline:
             result = await self._run_gem_with_validation("gem5", variables)
 
         await self._save_output("gem5", result)
-        confidence = (result.get("json") or {}).get("scores", {}).get("confidence")
+        confidence = (result.get("json") or {}).get(
+            "scores", {}).get("confidence")
         console.print(
             f"[bold green]  ✅ GEM5 completado[/bold green] | Confidence: {confidence}"
         )
@@ -262,7 +275,8 @@ class Pipeline:
             else gem5_result.get("markdown", "")
         )
         gem5_key_challenge = gem5_content.get(
-            "problema_real_del_rol", gem5_result.get("markdown", "No disponible")
+            "problema_real_del_rol", gem5_result.get(
+                "markdown", "No disponible")
         )
 
         # --- GEM1 ---
@@ -392,21 +406,24 @@ class Pipeline:
         }
 
         # 2. Iterar candidatos en paralelo
-        console.print(f"[bold blue]🚀 Procesando {len(candidates)} candidatos en paralelo...[/bold blue]")
+        console.print(
+            f"[bold blue]🚀 Procesando {len(candidates)} candidatos en paralelo...[/bold blue]")
 
         async def process_candidate(cid, cinputs):
             try:
                 logger.info(f"👤 Iniciando pipeline para candidato: {cid}")
                 return cid, await self.run_candidate_pipeline(cid, cinputs, gem5_result)
             except Exception as e:
-                logger.error(f"❌ Error crítico procesando candidato {cid}: {e}", exc_info=True)
+                logger.error(
+                    f"❌ Error crítico procesando candidato {cid}: {e}", exc_info=True)
                 return cid, {
                     "candidate_id": cid,
                     "decision": f"ERROR_EJECUCION: {e}",
                     "gem4_score": None,
                 }
 
-        tasks = [process_candidate(cid, cinputs) for cid, cinputs in candidates.items()]
+        tasks = [process_candidate(cid, cinputs)
+                 for cid, cinputs in candidates.items()]
         candidate_results = await asyncio.gather(*tasks)
 
         for cid, result in candidate_results:
