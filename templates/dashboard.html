@@ -74,8 +74,8 @@
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
-                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..." aria-label="Instrucción de refinamiento"></textarea>
+                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2" aria-label="Enviar refinamiento">
                         <span>🚀</span> Refinar Prompt
                     </button>
                 </div>
@@ -83,22 +83,66 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <!-- Live Logs Terminal -->
+    <div id="live-logs" class="fixed bottom-0 right-8 w-96 glass rounded-t-xl shadow-2xl transition-all duration-300 translate-y-[352px] z-50 flex flex-col" style="height: 400px;">
+        <button onclick="toggleLogs()" class="w-full flex items-center justify-between p-4 border-b border-white/10 hover:bg-white/5 transition-colors focus:outline-none" aria-expanded="false" aria-controls="logs-content" aria-label="Alternar registros en vivo">
+            <div class="flex items-center gap-3">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Live Logs</span>
+            </div>
+            <span id="logs-toggle-icon" class="text-slate-400 transition-transform duration-300">▲</span>
+        </button>
+        <div id="logs-content" class="flex-1 p-4 overflow-y-auto font-mono text-[10px] leading-relaxed bg-black/40">
+            <div id="logs-container" class="flex flex-col gap-2"></div>
+        </div>
     </div>
+
     <script>
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws/logs`);
+
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
             const logEntry = document.createElement('div');
-            logEntry.style.marginBottom = '5px';
+            logEntry.className = "pb-2 border-b border-white/5 last:border-0";
             const time = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
-            logEntry.innerHTML = `[${time}] <span style="color:#3b82f6">${data.gem}</span>: ${data.action} - <span style="color:${data.status === 'OK' ? '#4ade80' : '#f87171'}">${data.status}</span> (Score: ${data.score || 'N/A'})`;
+
+            const statusColor = data.status === 'OK' ? 'text-green-400' : 'text-red-400';
+
+            logEntry.innerHTML = `
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-slate-500">[${time}]</span>
+                    <span class="text-blue-400 font-bold uppercase">${data.gem}</span>
+                </div>
+                <div class="text-slate-300">
+                    ${data.action} - <span class="${statusColor} font-semibold">${data.status}</span>
+                    <span class="text-slate-500 ml-1">(Score: ${data.score || 'N/A'})</span>
+                </div>
+            `;
             logsContainer.prepend(logEntry);
         };
+
+        function toggleLogs() {
+            const logs = document.getElementById('live-logs');
+            const btn = logs.querySelector('button');
+            const icon = document.getElementById('logs-toggle-icon');
+            const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+
+            if (isExpanded) {
+                logs.classList.add('translate-y-[352px]');
+                btn.setAttribute('aria-expanded', 'false');
+                icon.innerText = '▲';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                logs.classList.remove('translate-y-[352px]');
+                btn.setAttribute('aria-expanded', 'true');
+                icon.innerText = '▼';
+            }
+        }
 
         let gems = [];
         let activeGem = null;
@@ -116,9 +160,9 @@
         function renderNav() {
             const nav = document.getElementById('gem-nav');
             nav.innerHTML = gems.map(gem => `
-                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
+                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group" aria-label="Seleccionar ${gem.name}">
                     <span>${gem.name}</span>
-                    <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" aria-hidden="true">➔</span>
                 </button>
             `).join('');
         }
@@ -193,6 +237,14 @@
                 history.scrollTop = history.scrollHeight;
             }
         }
+
+        // Keyboard Shortcuts
+        document.getElementById('refine-input').addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                refineGem();
+            }
+        });
 
         // Init
         loadGems();
