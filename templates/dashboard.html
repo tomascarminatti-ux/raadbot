@@ -83,21 +83,54 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <!-- Live Logs Drawer -->
+    <div id="live-logs" class="fixed bottom-0 right-8 w-96 h-[400px] glass rounded-t-xl transition-all duration-300 translate-y-[352px] z-50 flex flex-col" aria-expanded="false">
+        <button onclick="toggleLogs()" class="p-3 border-b border-white/10 flex items-center justify-between hover:bg-white/5 transition-colors w-full text-left" aria-label="Mostrar logs en vivo">
+            <div class="flex items-center gap-3">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                </span>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Live Logs</span>
+            </div>
+            <span id="log-toggle-icon" class="text-slate-400 transition-transform">▲</span>
+        </button>
+        <div id="logs-container" class="flex-1 overflow-y-auto p-4 font-mono text-[10px] space-y-2">
+            <!-- Logs appear here -->
+        </div>
     </div>
+
     <script>
+        function toggleLogs() {
+            const logs = document.getElementById('live-logs');
+            const icon = document.getElementById('log-toggle-icon');
+            const btn = logs.querySelector('button');
+            const isExpanded = logs.getAttribute('aria-expanded') === 'true';
+
+            logs.classList.toggle('translate-y-[352px]', isExpanded);
+            logs.setAttribute('aria-expanded', !isExpanded);
+            icon.innerText = isExpanded ? '▲' : '▼';
+            btn.setAttribute('aria-label', isExpanded ? 'Mostrar logs en vivo' : 'Ocultar logs en vivo');
+        }
+
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws/logs`);
         socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            const logEntry = document.createElement('div');
-            logEntry.style.marginBottom = '5px';
-            const time = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
-            logEntry.innerHTML = `[${time}] <span style="color:#3b82f6">${data.gem}</span>: ${data.action} - <span style="color:${data.status === 'OK' ? '#4ade80' : '#f87171'}">${data.status}</span> (Score: ${data.score || 'N/A'})`;
-            logsContainer.prepend(logEntry);
+            const { timestamp, gem, action, status, score } = JSON.parse(event.data);
+            const time = timestamp ? timestamp.split('T')[1].split('.')[0] : '--:--:--';
+            const html = `
+                <div class="p-2 rounded bg-black/20 border border-white/5 flex flex-col gap-1">
+                    <div class="flex justify-between items-center text-[9px] opacity-50">
+                        <span>${time}</span><span class="font-bold text-blue-400 uppercase">${gem}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-300">${action}</span>
+                        <span class="${status === 'OK' ? 'text-green-400' : 'text-red-400'} font-bold">${status}</span>
+                    </div>
+                    ${score ? `<div class="text-[9px] text-slate-500 italic">Score: ${score}</div>` : ''}
+                </div>`;
+            logsContainer.insertAdjacentHTML('afterbegin', html);
         };
 
         let gems = [];
