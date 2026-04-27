@@ -4,13 +4,17 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import functools
+import json
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+VARIABLE_PATTERN = re.compile(r"\{\{(\w+)\}\}")
 
 
+@functools.lru_cache(maxsize=32)
 def load_prompt(gem_name: str) -> str:
-    """Carga un prompt desde el directorio de prompts."""
+    """Carga un prompt desde el directorio de prompts (con cache)."""
     filename = f"{gem_name}.md"
     filepath = os.path.join(PROMPTS_DIR, filename)
 
@@ -51,19 +55,20 @@ def build_prompt(gem_name: str, variables: dict) -> str:
 
     # Inyectar variables
     for key, value in variables.items():
-        placeholder = "{{" + key + "}}"
+        placeholder = f"{{{{{key}}}}}"
         if isinstance(value, dict):
-            import json
-
+            # Optimization: Use pre-imported json
             value = json.dumps(value, ensure_ascii=False, indent=2)
         prompt = prompt.replace(placeholder, str(value))
 
     # Validar que no queden variables sin reemplazar
-    remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
+    # Optimization: Use pre-compiled regex
+    remaining = VARIABLE_PATTERN.findall(prompt)
     if remaining:
         # Filtrar VERSION que es metadata, no un input
         remaining = [v for v in remaining if v != "VERSION"]
         if remaining:
+            # Note: In a production environment, logging might be preferred over print
             print(f"  ⚠️  Variables sin reemplazar: {remaining}")
 
     return prompt
@@ -77,7 +82,8 @@ def get_required_variables(gem_name: str) -> list[str]:
         Lista de nombres de variables (sin {{ }})
     """
     prompt = load_prompt(gem_name)
-    variables = re.findall(r"\{\{(\w+)\}\}", prompt)
+    # Optimization: Use pre-compiled regex
+    variables = VARIABLE_PATTERN.findall(prompt)
     # Filtrar las que se resuelven automáticamente
     auto_resolved = {"PROMPT_MAESTRO", "VERSION"}
     return [v for v in set(variables) if v not in auto_resolved]
