@@ -1,4 +1,4 @@
-
+from agent.prompt_builder import build_prompt
 import time
 import sys
 import os
@@ -6,7 +6,6 @@ import os
 # Add parent directory to path to import agent
 sys.path.append(os.getcwd())
 
-from agent.prompt_builder import build_prompt
 
 def benchmark():
     variables = {
@@ -32,12 +31,14 @@ def benchmark():
     avg_time = (end_time - start_time) / iterations
     print(f"Average build_prompt time: {avg_time*1000:.4f} ms")
 
+
 if __name__ == "__main__":
     # Ensure prompts exist
     if not os.path.exists("prompts/gem1.md"):
         os.makedirs("prompts", exist_ok=True)
         with open("prompts/gem1.md", "w") as f:
-            f.write("Role: {{PROMPT_MAESTRO}}\nContext: {{context}}\nID: {{candidate_id}}")
+            f.write(
+                "Role: {{PROMPT_MAESTRO}}\nContext: {{context}}\nID: {{candidate_id}}")
     if not os.path.exists("prompts/00_prompt_maestro.md"):
         with open("prompts/00_prompt_maestro.md", "w") as f:
             f.write("I am the Maestro.")
