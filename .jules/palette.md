@@ -1,0 +1,3 @@
+## 2026-04-28 - Unified Glassmorphism and Accessibility in Raadbot Dashboard
+**Learning:** Consistent visual language (glassmorphism) and localized accessibility (Spanish ARIA labels) significantly improve the professional feel and usability of the industrial orchestrator dashboard. Collapsible components like the "Live Logs" drawer should follow clear mental models for state toggling (e.g., ▲ for expand, ▼ for collapse) and provide pulsing visual cues for active background processes.
+**Action:** Always verify that new interactive elements follow the established Spanish localization for ARIA labels and use the `.glass` Tailwind class for visual consistency with the existing dashboard theme.
