@@ -56,7 +56,12 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-3">
+                            <button onclick="copyPrompt(event)" id="copy-btn" class="text-xs text-slate-400 hover:text-blue-400 transition-colors flex items-center gap-1 px-2 py-1 rounded bg-white/5 border border-white/10" aria-label="Copy prompt to clipboard">
+                                <span>📋</span> <span>Copy</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        </div>
                     </div>
                     <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
@@ -139,6 +144,21 @@
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?
                 </div>
             `;
+        }
+
+        async function copyPrompt(event) {
+            const content = document.getElementById('prompt-content').innerText;
+            const btn = event.currentTarget;
+            const originalHTML = btn.innerHTML;
+            try {
+                await navigator.clipboard.writeText(content);
+                btn.innerHTML = '<span>✅</span> <span>Copied</span>';
+                btn.classList.add('text-green-400', 'border-green-500/50');
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('text-green-400', 'border-green-500/50');
+                }, 2000);
+            } catch (err) { console.error('Failed to copy: ', err); }
         }
 
         async function refineGem() {
