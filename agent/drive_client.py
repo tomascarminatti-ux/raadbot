@@ -35,9 +35,11 @@ class DriveClient:
 
         if os.path.exists(token_path):
             try:
-                creds = Credentials.from_authorized_user_file(token_path, SCOPES)
+                creds = Credentials.from_authorized_user_file(
+                    token_path, SCOPES)
             except Exception as e:
-                console.print(f"[yellow]  ⚠️  Error cargando token: {e}. Re-autenticando...[/yellow]")
+                console.print(
+                    f"[yellow]  ⚠️  Error cargando token: {e}. Re-autenticando...[/yellow]")
 
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
@@ -45,7 +47,7 @@ class DriveClient:
                     creds.refresh(Request())
                 except Exception:
                     creds = None
-            
+
             if not creds:
                 if not os.path.exists(self.credentials_path):
                     raise FileNotFoundError(
@@ -55,7 +57,7 @@ class DriveClient:
                 flow = InstalledAppFlow.from_client_secrets_file(
                     self.credentials_path, SCOPES
                 )
-                # Nota: run_local_server requiere navegador. 
+                # Nota: run_local_server requiere navegador.
                 # En servidores headless se debe proveer el token.json previamente.
                 creds = flow.run_local_server(port=0)
 
@@ -138,7 +140,8 @@ class DriveClient:
             try:
                 content = self.download_file(file_info["id"], mime)
             except Exception as e:
-                console.print(f"[bold red]  ❌ Error descargando {name}: {e}[/bold red]")
+                console.print(
+                    f"[bold red]  ❌ Error descargando {name}: {e}[/bold red]")
                 continue
 
             # Guardar localmente
@@ -149,8 +152,9 @@ class DriveClient:
                     safe_name += ".txt"
             else:
                 if mime == "application/pdf" or "wordprocessing" in mime:
-                    console.print(f"[yellow]  ⚠️  Aviso: '{name}' es binario ({mime}). El contenido podría estar corrupto para el LLM.[/yellow]")
-                
+                    console.print(
+                        f"[yellow]  ⚠️  Aviso: '{name}' es binario ({mime}). El contenido podría estar corrupto para el LLM.[/yellow]")
+
                 if not safe_name.endswith(".txt") and mime.startswith("text/"):
                     safe_name += ".txt"
 
@@ -202,12 +206,14 @@ class DriveClient:
                 elif "culture" in name or "cultura" in name:
                     search_inputs["client_culture"] = content
             except Exception as e:
-                console.print(f"[bold red]  ❌ Error descargando input de búsqueda {f['name']}: {e}[/bold red]")
+                console.print(
+                    f"[bold red]  ❌ Error descargando input de búsqueda {f['name']}: {e}[/bold red]")
 
         # Subcarpetas = candidatos
         for folder in folders:
             candidate_id = folder["name"]
-            console.print(f"  [cyan]👤 Candidato encontrado: {candidate_id}[/cyan]")
+            console.print(
+                f"  [cyan]👤 Candidato encontrado: {candidate_id}[/cyan]")
             candidate_files = self.list_files(folder["id"])
             candidate_inputs = {}
 
@@ -229,7 +235,8 @@ class DriveClient:
                     elif "culture" in name or "cultura" in name:
                         candidate_inputs["client_culture"] = content
                 except Exception as e:
-                    console.print(f"[bold red]  ❌ Error descargando archivo de candidato {f['name']}: {e}[/bold red]")
+                    console.print(
+                        f"[bold red]  ❌ Error descargando archivo de candidato {f['name']}: {e}[/bold red]")
 
             candidates[candidate_id] = candidate_inputs
 
