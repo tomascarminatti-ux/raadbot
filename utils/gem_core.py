@@ -60,7 +60,7 @@ def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
         with open(contract_path, "r") as f:
             contract = json.load(f)
-        
+
         for key in contract:
             if not isinstance(key, str):
                 continue
@@ -75,7 +75,7 @@ def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
             if expected_type == "string" and not isinstance(val, str): return False
             if expected_type == "object" and not isinstance(val, dict): return False
             if expected_type == "boolean" and not isinstance(val, bool): return False
-            
+
         return True
     except Exception as e:
         logger.error(f"Contract validation error: {e}")

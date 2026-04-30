@@ -7,28 +7,28 @@ class MetricsCollector:
     """
     Recolección y exportación de métricas de performance y calidad en tiempo real.
     """
-    
+
     def __init__(self):
         self.counters: Dict[str, int] = defaultdict(int)
         self.histograms: Dict[str, List[float]] = defaultdict(list)
         self.gauges: Dict[str, float] = defaultdict(float)
         self.start_time = datetime.now(timezone.utc)
-        
+
     def increment(self, metric_name: str, value: int = 1):
         """Incrementa un contador."""
         current = self.counters[metric_name]
         self.counters[metric_name] = current + value
-        
+
     def record_histogram(self, metric_name: str, value: float):
         """Registra un valor en un histograma (ej: duración)."""
         current_list = self.histograms[metric_name]
         current_list.append(value)
         self.histograms[metric_name] = current_list
-        
+
     def set_gauge(self, metric_name: str, value: float):
         """Establece un valor instantáneo."""
         self.gauges[metric_name] = value
-        
+
     def export(self) -> Dict[str, Any]:
         """Exporta todas las métricas en un formato estructurado."""
         results: Dict[str, Any] = {
@@ -49,9 +49,9 @@ class MetricsCollector:
                 'max': max(values),
                 'p95': self._percentile(values, 95)
             }
-            
+
         return results
-    
+
     def _percentile(self, values: List[float], p: int) -> float:
         if not values:
             return 0.0
