@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="GEM v3.0 DB API")
 
@@ -31,8 +31,8 @@ def startup_event():
 
 # Models
 class EntityUpdate(BaseModel):
-    entity_id: str
-    current_stage: str
+    entity_id: str = Field(..., pattern=r"^[a-zA-Z0-9_-]+$")
+    current_stage: str = Field(..., pattern=r"^[a-zA-Z0-9_-]+$")
     state: str
     last_score: Optional[float] = None
     human_required: Optional[bool] = False
@@ -41,8 +41,8 @@ class EntityUpdate(BaseModel):
     trace_id: str
 
 class DiscardEntity(BaseModel):
-    entity_id: str
-    stage_at_discard: str
+    entity_id: str = Field(..., pattern=r"^[a-zA-Z0-9_-]+$")
+    stage_at_discard: str = Field(..., pattern=r"^[a-zA-Z0-9_-]+$")
     reason: str
     score_at_discard: Optional[float] = None
     metadata: Optional[Dict[str, Any]] = {}
