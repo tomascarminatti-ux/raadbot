@@ -3,7 +3,8 @@ import os
 import tempfile
 import shutil
 from agent import prompt_builder
-from agent.prompt_builder import build_prompt, load_prompt
+from agent.prompt_builder import build_prompt
+
 
 class TestPromptBuilder(unittest.TestCase):
     def setUp(self):
@@ -33,10 +34,10 @@ class TestPromptBuilder(unittest.TestCase):
         self.assertIn('"key": "val"', result)
 
     def test_missing_variable(self):
-        # Should not raise error but might print warning
         variables = {"var1": "V1"}
         result = build_prompt("test_gem", variables)
         self.assertIn("{{var2}}", result)
+
 
 if __name__ == "__main__":
     unittest.main()

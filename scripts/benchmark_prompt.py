@@ -1,11 +1,15 @@
 import time
 import os
 import sys
+import tempfile
+import shutil
 
 # Añadir el directorio raíz al path para poder importar agent
 sys.path.append(os.getcwd())
 
 from agent.prompt_builder import build_prompt
+from agent import prompt_builder
+
 
 def benchmark_build_prompt():
     variables = {
@@ -15,10 +19,6 @@ def benchmark_build_prompt():
         "var4": "value4",
         "var5": "value5",
     }
-
-    import tempfile
-    import shutil
-    from agent import prompt_builder
 
     tmp_dir = tempfile.mkdtemp()
     original_dir = prompt_builder.PROMPTS_DIR
@@ -48,6 +48,7 @@ def benchmark_build_prompt():
         prompt_builder.PROMPTS_DIR = original_dir
         prompt_builder.load_prompt.cache_clear()
         shutil.rmtree(tmp_dir)
+
 
 if __name__ == "__main__":
     benchmark_build_prompt()

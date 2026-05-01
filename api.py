@@ -11,6 +11,7 @@ import httpx
 import asyncio
 
 import config
+from agent.prompt_builder import load_prompt
 from agent.gemini_client import GeminiClient
 from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
@@ -240,7 +241,6 @@ class RefineRequest(BaseModel):
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
-    from agent.prompt_builder import load_prompt
     prompt_path = f"prompts/{request.gem_id}.md"
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
