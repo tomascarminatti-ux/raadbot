@@ -3,10 +3,10 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 import httpx
 import asyncio
 
@@ -36,7 +36,8 @@ app = FastAPI(
 )
 
 # --- Configuración de CORS ---
-# Permite que la frontend de Netlify y el dashboard local se comuniquen con la API
+# Permite que la frontend de Netlify y el dashboard local se comuniquen
+# con la API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -52,12 +53,21 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     drive_folder: Optional[str] = None
     local_dir: Optional[str] = None
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("local_dir")
+    @classmethod
+    def prevent_traversal(cls, v):
+        if v:
+            if ".." in v or os.path.isabs(v):
+                raise ValueError(
+                    "local_dir cannot contain '..' or be an absolute path")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -96,7 +106,10 @@ async def run_pipeline(request: PipelineRequest) -> dict:
     os.makedirs(output_dir, exist_ok=True)
 
     gemini = GeminiClient(api_key=api_key, model=request.model)
-    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
+    orchestrator = GEM6Orchestrator(
+        gemini=gemini,
+        search_id=request.search_id,
+        output_dir=output_dir)
 
     # Ejecución asíncrona no bloqueante
     await orchestrator.run_pipeline(search_inputs, candidates)
@@ -129,8 +142,8 @@ async def background_run_pipeline(request: PipelineRequest):
                     await client.post(
                         request.webhook_url,
                         json={
-                            "status": "error", 
-                            "search_id": request.search_id, 
+                            "status": "error",
+                            "search_id": request.search_id,
                             "message": str(e)
                         },
                         timeout=30.0,
@@ -140,7 +153,9 @@ async def background_run_pipeline(request: PipelineRequest):
 
 
 @app.post("/api/v1/run")
-async def trigger_pipeline(request: PipelineRequest, background_tasks: BackgroundTasks):
+async def trigger_pipeline(
+        request: PipelineRequest,
+        background_tasks: BackgroundTasks):
     """
     Verbo POST para iniciar una corrida del pipeline.
     Soporta webhook_url para ejecuciones asíncronas no bloqueantes.
@@ -160,10 +175,11 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
+
 
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
@@ -173,31 +189,34 @@ async def setup_search(request: SetupSearchRequest):
     """
     output_dir = os.path.join("runs", request.search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Simular estructura de inputs para GEM 5
     search_inputs = {
         "kickoff_notes": request.brief_notes,
         "brief_jd": request.jd_content,
         "company_context": request.company_context or ""
     }
-    
+
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     # Ejecutar GEM 5 directamente
     from agent.prompt_builder import build_gem5_prompt
     prompt = build_gem5_prompt(search_inputs)
     result = gemini.run_gem(prompt, gem_name="gem5")
-    
+
     # Guardar resultados
     with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
         json.dump(result.get("data", {}), f, indent=4)
     with open(os.path.join(output_dir, "gem5.md"), "w", encoding="utf-8") as f:
         f.write(result.get("markdown", ""))
-        
+
     return {
         "status": "success",
         "search_id": request.search_id,
-        "gem5_summary": result.get("data", {}).get("mandate_summary", "Mandato generado con éxito.")
-    }
+        "gem5_summary": result.get(
+            "data",
+            {}).get(
+            "mandate_summary",
+            "Mandato generado con éxito.")}
 
 
 # --- Dashboard Endpoints ---
@@ -211,68 +230,74 @@ async def get_dashboard():
     except FileNotFoundError:
         return "Dashboard template not found. Please create templates/dashboard.html"
 
+
 @app.get("/api/v1/gems")
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
     gems = []
     gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
-    
+
     for g in gem_list:
         prompt_path = f"prompts/{g}.md"
         prompt_content = ""
         if os.path.exists(prompt_path):
             with open(prompt_path, "r", encoding="utf-8") as f:
                 prompt_content = f.read()
-        
+
         gems.append({
             "id": g,
             "name": g.upper(),
             "prompt": prompt_content,
             "config": config.GEM_CONFIGS.get(g, {})
         })
-    
+
     return gems
 
+
 class RefineRequest(BaseModel):
-    gem_id: str
+    gem_id: str = Field(pattern=r"^gem[0-9]+$")
     instruction: str
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
     prompt_path = f"prompts/{request.gem_id}.md"
     if not os.path.exists(prompt_path):
-        raise HTTPException(status_code=404, detail="GEM prompt file not found")
-        
+        raise HTTPException(
+            status_code=404,
+            detail="GEM prompt file not found")
+
     with open(prompt_path, "r", encoding="utf-8") as f:
         current_prompt = f.read()
-        
+
     refinement_prompt = f"""
     Eres un experto en Prompt Engineering. Tu misión es REFINAR el siguiente System Prompt de RAADBOT v2.0.
-    
+
     ESTRUCTURA ACTUAL:
     {current_prompt}
-    
+
     INSTRUCCIÓN DEL USUARIO:
     {request.instruction}
-    
+
     REGLAS:
     1. Mantén la estructura de secciones (ROL, CONTEXTO, INSTRUCCIONES CORE, etc.).
     2. Aplica la instrucción del usuario de forma profesional y precisa.
     3. Devuelve el prompt REFINADO completo en formato Markdown.
     4. NO agregues explicaciones, solo el contenido del nuevo prompt.
     """
-    
+
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     result = gemini.run_gem(refinement_prompt)
     new_prompt = result.get("markdown", "") or result.get("raw", "")
-    
+
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write(new_prompt)
         return {"status": "success", "new_prompt": new_prompt}
-    
+
     return {"status": "error", "message": "Failed to generate new prompt"}
+
 
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
@@ -286,11 +311,12 @@ async def websocket_logs(websocket: WebSocket):
         if websocket in active_connections:
             active_connections.remove(websocket)
 
+
 @app.get("/health")
 def health_check():
     return {
-        "status": "ok", 
-        "agent": "raadbot", 
+        "status": "ok",
+        "agent": "raadbot",
         "version": "3.0.0",
         "model": config.DEFAULT_MODEL,
         "provider": config.LLM_PROVIDER
