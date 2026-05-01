@@ -2,8 +2,8 @@ import os
 import sqlite3
 import json
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Request
+from typing import Optional, Dict, Any
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 app = FastAPI(title="GEM v3.0 DB API")
