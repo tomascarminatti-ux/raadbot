@@ -4,6 +4,7 @@ from httpx import AsyncClient, ASGITransport
 from api import app
 from infra.db.api import app as db_app
 
+
 @pytest.mark.asyncio
 async def test_api_path_traversal_search_id():
     transport = ASGITransport(app=app)
@@ -14,6 +15,7 @@ async def test_api_path_traversal_search_id():
             "model": "gemini-2.0-flash"
         })
         assert response.status_code == 422
+
 
 @pytest.mark.asyncio
 async def test_api_path_traversal_local_dir():
@@ -26,6 +28,7 @@ async def test_api_path_traversal_local_dir():
         })
         assert response.status_code == 422
 
+
 @pytest.mark.asyncio
 async def test_api_path_traversal_gem_id():
     transport = ASGITransport(app=app)
@@ -35,6 +38,7 @@ async def test_api_path_traversal_gem_id():
             "instruction": "test"
         })
         assert response.status_code == 422
+
 
 @pytest.mark.asyncio
 async def test_db_path_traversal_entity_id():
@@ -48,6 +52,7 @@ async def test_db_path_traversal_entity_id():
             "trace_id": "valid_trace"
         })
         assert response.status_code == 422
+
 
 @pytest.mark.asyncio
 async def test_db_path_traversal_trace_id():
