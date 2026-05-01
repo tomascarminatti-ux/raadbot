@@ -99,9 +99,7 @@ async def run_pipeline(request: PipelineRequest) -> dict:
 
     if request.candidate_id:
         if request.candidate_id not in candidates:
-            raise ValueError(
-                f"Candidato {
-                    request.candidate_id} no encontrado.")
+            raise ValueError(f"Candidato {request.candidate_id} no encontrado.")
         candidates = {request.candidate_id: candidates[request.candidate_id]}
 
     output_dir = os.path.join("runs", request.search_id, "outputs")
