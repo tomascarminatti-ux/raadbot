@@ -56,7 +56,12 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="copyPrompt()" id="copy-btn" class="text-xs text-slate-400 hover:text-white px-2 py-1 bg-white/5 hover:bg-white/10 rounded border border-white/10 transition-all flex items-center gap-1" aria-label="Copiar prompt al portapapeles">
+                                <span id="copy-icon">📋</span> <span id="copy-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        </div>
                     </div>
                     <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
@@ -85,7 +90,7 @@
 
     <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
         <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+        <div id="logs-container" role="log" aria-live="polite"></div>
     </div>
     <script>
         const logsContainer = document.getElementById('logs-container');
@@ -139,6 +144,31 @@
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?
                 </div>
             `;
+        }
+
+        async function copyPrompt() {
+            const content = document.getElementById('prompt-content').innerText;
+            try {
+                await navigator.clipboard.writeText(content);
+                const btn = document.getElementById('copy-btn');
+                const icon = document.getElementById('copy-icon');
+                const text = document.getElementById('copy-text');
+
+                const originalIcon = icon.innerText;
+                const originalText = text.innerText;
+
+                icon.innerText = '✅';
+                text.innerText = '¡Copiado!';
+                btn.classList.add('text-green-400', 'border-green-500/50');
+
+                setTimeout(() => {
+                    icon.innerText = originalIcon;
+                    text.innerText = originalText;
+                    btn.classList.remove('text-green-400', 'border-green-500/50');
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+            }
         }
 
         async function refineGem() {
