@@ -1,7 +1,7 @@
 import pytest
-from playwright.sync_api import Page, expect
 
-def test_dashboard_ui_elements(page: Page):
+def test_dashboard_ui_elements(page):
+    from playwright.sync_api import expect
     # Go to the dashboard
     page.goto("http://localhost:8000/dashboard")
 
@@ -15,7 +15,8 @@ def test_dashboard_ui_elements(page: Page):
     expect(logs_container).to_have_attribute("role", "log")
     expect(logs_container).to_have_attribute("aria-live", "polite")
 
-def test_copy_button_interaction(page: Page, context):
+def test_copy_button_interaction(page, context):
+    from playwright.sync_api import expect
     # Grant clipboard permissions
     context.grant_permissions(["clipboard-read", "clipboard-write"])
 
