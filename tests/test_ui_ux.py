@@ -1,5 +1,9 @@
 import pytest
 
+# Skip this entire module if playwright is not installed
+pytest.importorskip("playwright")
+
+
 def test_dashboard_ui_elements(page):
     from playwright.sync_api import expect
     # Go to the dashboard
@@ -8,12 +12,15 @@ def test_dashboard_ui_elements(page):
     # Check if the "Copy" button exists
     copy_btn = page.locator("#copy-btn")
     expect(copy_btn).to_be_visible()
-    expect(copy_btn).to_have_attribute("aria-label", "Copiar prompt al portapapeles")
+    expect(copy_btn).to_have_attribute(
+        "aria-label", "Copiar prompt al portapapeles"
+    )
 
     # Check if the logs container has accessibility attributes
     logs_container = page.locator("#logs-container")
     expect(logs_container).to_have_attribute("role", "log")
     expect(logs_container).to_have_attribute("aria-live", "polite")
+
 
 def test_copy_button_interaction(page, context):
     from playwright.sync_api import expect
@@ -34,7 +41,3 @@ def test_copy_button_interaction(page, context):
     # Verify visual feedback
     expect(page.locator("#copy-text")).to_have_text("¡Copiado!")
     expect(page.locator("#copy-icon")).to_have_text("✅")
-
-    # Verify it reverts after some time (optional, but good)
-    # page.wait_for_timeout(2500)
-    # expect(page.locator("#copy-text")).to_have_text("Copiar")

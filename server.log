@@ -1,16 +1,16 @@
-INFO:     Started server process [123060]
+INFO:     Started server process [147353]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 ⚠️  WARNING: GEMINI_API_KEY no detectada. La API fallará si no se configura al momento del request.
-INFO:     127.0.0.1:40244 - "GET /dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:40244 - "GET /api/v1/gems HTTP/1.1" 200 OK
-INFO:     127.0.0.1:40248 - "WebSocket /ws/logs" [accepted]
+INFO:     127.0.0.1:49342 - "GET /dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49342 - "GET /api/v1/gems HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49348 - "WebSocket /ws/logs" [accepted]
 INFO:     connection open
 INFO:     connection closed
-INFO:     127.0.0.1:40260 - "GET /dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:40260 - "GET /api/v1/gems HTTP/1.1" 200 OK
-INFO:     127.0.0.1:40266 - "WebSocket /ws/logs" [accepted]
+INFO:     127.0.0.1:49358 - "GET /dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49358 - "GET /api/v1/gems HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49366 - "WebSocket /ws/logs" [accepted]
 INFO:     connection open
 INFO:     connection closed
 INFO:     Shutting down
