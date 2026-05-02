@@ -49,19 +49,20 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     maestro = load_maestro()
     prompt = load_prompt(gem_name)
 
-    # Combinar variables con el prompt maestro para sustitución en una sola pasada
-    all_vars = {**variables, "PROMPT_MAESTRO": maestro}
+    # Inyectar prompt maestro primero (puede contener placeholders)
+    prompt = prompt.replace("{{PROMPT_MAESTRO}}", maestro)
 
     def _replace(match):
         key = match.group(1)
-        if key in all_vars:
-            val = all_vars[key]
+        if key in variables:
+            val = variables[key]
             if isinstance(val, (dict, list)):
                 return json.dumps(val, ensure_ascii=False, indent=2)
             return str(val)
-        return match.group(0)  # Mantener placeholder si no se encuentra variable
+        # Mantener placeholder si no se encuentra variable
+        return match.group(0)
 
-    # Sustitución eficiente en una sola pasada
+    # Sustitución eficiente usando regex
     prompt = VARIABLE_PATTERN.sub(_replace, prompt)
 
     # Validar que no queden variables sin reemplazar
