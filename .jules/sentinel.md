@@ -1,0 +1,4 @@
+## 2025-05-15 - Hardening API Models against Path Traversal and Injection
+**Vulnerability:** Multiple endpoints (`/api/v1/run`, `/api/v1/gems/refine`, etc.) accepted string identifiers that were used directly in `os.path.join` or database queries without validation, allowing for path traversal (e.g., `../api`) and potential command/SQL injection.
+**Learning:** Fastly evolving APIs often focus on functionality first, leaving Pydantic models as simple `str` types. This trusts the caller too much in a "Hub-and-Spoke" architecture where the API acts as a gateway to the local filesystem and database.
+**Prevention:** Always use Pydantic's `Field(pattern=r"^[a-zA-Z0-9_-]+$")` for identifier fields. For fields representing local paths, implement a `@field_validator` that explicitly rejects `..` sequences and absolute paths to ensure operations remain within the intended sandbox.
