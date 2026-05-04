@@ -9,6 +9,7 @@ active_connections: List[WebSocket] = []
 _log_queue: asyncio.Queue = asyncio.Queue()
 _worker_started = False
 
+
 async def _file_writer_task():
     """Background task to persist logs to disk without blocking the main loop."""
     state_file = "pipeline_state.json"
@@ -37,6 +38,7 @@ async def _file_writer_task():
             print(f"[ws_logger] Error updating pipeline_state.json: {e}")
         finally:
             _log_queue.task_done()
+
 
 async def broadcast_log(data: dict):
     """
