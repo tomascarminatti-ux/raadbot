@@ -56,7 +56,12 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-2">
+                            <button id="copy-btn" onclick="copyPrompt()" aria-label="Copiar prompt al portapapeles" class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded hover:bg-blue-400/20 transition-colors flex items-center gap-1">
+                                <span id="copy-icon">📋</span> <span id="copy-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        </div>
                     </div>
                     <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
@@ -88,6 +93,35 @@
         <div id="logs-container"></div>
     </div>
     <script>
+        async function copyPrompt() {
+            const promptText = document.getElementById('prompt-content').innerText;
+            const btn = document.getElementById('copy-btn');
+            const icon = document.getElementById('copy-icon');
+            const text = document.getElementById('copy-text');
+
+            try {
+                await navigator.clipboard.writeText(promptText);
+
+                // Visual feedback
+                const originalIcon = icon.innerText;
+                const originalText = text.innerText;
+
+                icon.innerText = '✅';
+                text.innerText = 'Copiado!';
+                btn.classList.add('bg-green-500/20', 'text-green-400');
+                btn.classList.remove('bg-blue-400/10', 'text-blue-400');
+
+                setTimeout(() => {
+                    icon.innerText = originalIcon;
+                    text.innerText = originalText;
+                    btn.classList.remove('bg-green-500/20', 'text-green-400');
+                    btn.classList.add('bg-blue-400/10', 'text-blue-400');
+                }, 2000);
+            } catch (err) {
+                console.error('Error al copiar:', err);
+            }
+        }
+
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws/logs`);
