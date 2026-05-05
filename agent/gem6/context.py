@@ -1,7 +1,6 @@
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 from datetime import datetime, timezone
-import uuid
-import json
+
 
 class CandidateContext:
     def __init__(self, candidato_id: str, global_context: Dict[str, Any]):
@@ -32,16 +31,17 @@ class CandidateContext:
             'outputs': self.outputs
         }
 
+
 class ContextManager:
     """
     Gestiona el estado global y contexto compartido entre GEMs.
     """
-    
+
     def __init__(self):
         self.global_context = {}
         self.candidate_contexts: Dict[str, CandidateContext] = {}
         self.version_history = []
-        
+
     def set_global_context(self, pipeline_id: str, mandato: dict, start_time: datetime):
         """
         Establece contexto global inmutable para una ejecución.
@@ -53,7 +53,7 @@ class ContextManager:
             'created_at': datetime.now(timezone.utc).isoformat(),
             'version': 1
         }
-        
+
     def create_candidate_context(self, candidato_id: str) -> CandidateContext:
         """
         Crea un contexto aislado por cada candidato.
@@ -64,7 +64,7 @@ class ContextManager:
         )
         self.candidate_contexts[candidato_id] = context
         return context
-    
+
     def get_candidate_context(self, candidato_id: str) -> Optional[CandidateContext]:
         return self.candidate_contexts.get(candidato_id)
 

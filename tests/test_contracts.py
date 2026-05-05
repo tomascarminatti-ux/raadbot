@@ -1,7 +1,7 @@
-import pytest
 import json
 import os
 from utils.gem_core import validate_contract
+
 
 def test_validate_contract_types():
     # Create temp contract
@@ -16,7 +16,7 @@ def test_validate_contract_types():
     os.makedirs("tests", exist_ok=True)
     with open(contract_path, "w") as f:
         json.dump(contract, f)
-    
+
     # Valid data
     valid_data = {
         "name": "Test",
@@ -26,12 +26,12 @@ def test_validate_contract_types():
         "metadata": {"key": "value"}
     }
     assert validate_contract(valid_data, contract_path) is True
-    
+
     # Invalid type
     invalid_data = valid_data.copy()
     invalid_data["score"] = "high"
     assert validate_contract(invalid_data, contract_path) is False
-    
+
     # Missing key
     missing_data = valid_data.copy()
     missing_data.pop("name", None)
@@ -40,6 +40,7 @@ def test_validate_contract_types():
     # Cleanup
     if os.path.exists(contract_path):
         os.remove(contract_path)
+
 
 def test_real_contracts():
     """Verify that current contracts are valid JSON and can be loaded"""
