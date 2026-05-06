@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
@@ -78,7 +79,7 @@ class GEM6Orchestrator:
             })
 
             # 2. Call GEM 6 for reasoning
-            result = self.gemini.run_gem(prompt, gem_name="gem6")
+            result = await self.gemini.run_gem(prompt, gem_name="gem6")
             gem6_decision = result.get("json", {})
 
             if not gem6_decision:
@@ -185,7 +186,7 @@ class GEM6Orchestrator:
                 # Use prompt_builder for consistent templating
                 full_prompt = build_agent_prompt(agent_id, payload)
 
-                result = self.gemini.run_gem(full_prompt, gem_name=agent_id)
+                result = await self.gemini.run_gem(full_prompt, gem_name=agent_id)
                 return result.get("json", {}) or {}
             except Exception as e:
                 logger.error(f"Error calling Gemini for {agent_id}: {e}")
