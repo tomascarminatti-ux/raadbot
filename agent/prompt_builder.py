@@ -4,11 +4,15 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import functools
+import json
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+VARIABLE_PATTERN = re.compile(r"\{\{(\w+)\}\}")
 
 
+@functools.lru_cache(maxsize=32)
 def load_prompt(gem_name: str) -> str:
     """Carga un prompt desde el directorio de prompts."""
     filename = f"{gem_name}.md"
@@ -21,6 +25,7 @@ def load_prompt(gem_name: str) -> str:
         return f.read()
 
 
+@functools.lru_cache(maxsize=1)
 def load_maestro() -> str:
     """Carga el prompt maestro."""
     return load_prompt("00_prompt_maestro")
@@ -49,17 +54,28 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     # Inyectar prompt maestro
     prompt = prompt.replace("{{PROMPT_MAESTRO}}", maestro)
 
-    # Inyectar variables
-    for key, value in variables.items():
-        placeholder = "{{" + key + "}}"
-        if isinstance(value, dict):
-            import json
+    # Inyectar variables en una sola pasada usando regex para mayor eficiencia
+    def replace_match(match):
+        key = match.group(1)
+        if key == "VERSION":
+            return match.group(0)  # Mantener {{VERSION}}
 
-            value = json.dumps(value, ensure_ascii=False, indent=2)
-        prompt = prompt.replace(placeholder, str(value))
+        value = variables.get(key)
+        if value is not None:
+            if isinstance(value, dict):
+                return json.dumps(value, ensure_ascii=False, indent=2)
+            return str(value)
+        return match.group(0)
+
+    # El maestro puede contener placeholders también (ej. {{VERSION}}),
+    # pero en el flujo actual build_prompt es llamado con las variables finales.
+    # Si el maestro tiene placeholders que dependen de 'variables',
+    # debemos asegurar que se reemplacen después de inyectar el maestro.
+
+    prompt = VARIABLE_PATTERN.sub(replace_match, prompt)
 
     # Validar que no queden variables sin reemplazar
-    remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
+    remaining = VARIABLE_PATTERN.findall(prompt)
     if remaining:
         # Filtrar VERSION que es metadata, no un input
         remaining = [v for v in remaining if v != "VERSION"]
