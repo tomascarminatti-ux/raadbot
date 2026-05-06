@@ -1,9 +1,9 @@
 
-import pytest
 from fastapi.testclient import TestClient
 from api import app
 
 client = TestClient(app)
+
 
 def test_refine_gem_path_traversal_regex():
     # Attempt to access a file outside the prompts directory using path traversal
@@ -14,6 +14,7 @@ def test_refine_gem_path_traversal_regex():
     })
     assert response.status_code == 422
     assert "string_pattern_mismatch" in str(response.json())
+
 
 def test_pipeline_run_path_traversal_validator():
     # local_dir is validated by custom field_validator
@@ -35,6 +36,7 @@ def test_pipeline_run_path_traversal_validator():
     assert response.status_code == 422
     assert "Ruta local_dir no permitida por seguridad" in str(response.json())
 
+
 def test_setup_search_invalid_id():
     # search_id should only allow alphanumeric, _, and -
     response = client.post("/api/v1/search/setup", json={
@@ -44,6 +46,7 @@ def test_setup_search_invalid_id():
     })
     assert response.status_code == 422
     assert "string_pattern_mismatch" in str(response.json())
+
 
 def test_valid_inputs_pass_validation():
     # Ensure we didn't break valid inputs
