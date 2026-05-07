@@ -1,3 +1,4 @@
+from infra.db.api import app
 import os
 from fastapi.testclient import TestClient
 import sys
@@ -5,9 +6,9 @@ import sys
 # Ensure project root is in path
 sys.path.append(os.getcwd())
 
-from infra.db.api import app
 
 client = TestClient(app)
+
 
 def test_db_entity_id_validation():
     # Test entity_id validation in /entity/upsert
@@ -22,6 +23,7 @@ def test_db_entity_id_validation():
     print(f"Upsert (invalid entity_id) Response: {response.status_code}")
     assert response.status_code == 422
 
+
 def test_db_agent_responsible_validation():
     # Test agent_responsible validation
     payload = {
@@ -32,8 +34,10 @@ def test_db_agent_responsible_validation():
         "trace_id": "test_trace"
     }
     response = client.post("/entity/upsert", json=payload)
-    print(f"Upsert (invalid agent_responsible) Response: {response.status_code}")
+    print(
+        f"Upsert (invalid agent_responsible) Response: {response.status_code}")
     assert response.status_code == 422
+
 
 def test_db_valid_payload():
     # Test a valid payload
@@ -49,6 +53,7 @@ def test_db_valid_payload():
     response = client.post("/entity/upsert", json=payload)
     print(f"Upsert (valid payload) Response: {response.status_code}")
     assert response.status_code != 422
+
 
 if __name__ == "__main__":
     try:
