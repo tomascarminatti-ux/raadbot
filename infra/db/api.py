@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="GEM v3.0 DB API")
 
@@ -31,23 +31,25 @@ def startup_event():
 
 # Models
 class EntityUpdate(BaseModel):
-    entity_id: str
+    # Identifiers must be alphanumeric (plus _ and -) to prevent path traversal/injection
+    entity_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     current_stage: str
     state: str
     last_score: Optional[float] = None
     human_required: Optional[bool] = False
     metadata: Optional[Dict[str, Any]] = {}
-    agent_responsible: str
-    trace_id: str
+    agent_responsible: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
+    trace_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
 
 class DiscardEntity(BaseModel):
-    entity_id: str
+    # Identifiers must be alphanumeric (plus _ and -) to prevent path traversal/injection
+    entity_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     stage_at_discard: str
     reason: str
     score_at_discard: Optional[float] = None
     metadata: Optional[Dict[str, Any]] = {}
-    agent_responsible: str
-    trace_id: str
+    agent_responsible: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
+    trace_id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
 
 # Endpoints
 @app.post("/entity/upsert")
