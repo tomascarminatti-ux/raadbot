@@ -1,0 +1,3 @@
+## 2026-05-09 - Enhanced Dashboard Interactivity & Accessibility
+**Learning:** In a single-page dashboard with multiple interactive sections, associating headings with form controls via `aria-labelledby` and providing immediate visual feedback for clipboard operations significantly improves the "pro" feel and accessibility of the interface. Using `aria-hidden="true"` for decorative emojis prevents screen reader noise in dense, log-heavy interfaces.
+**Action:** Always link headings to inputs using `aria-labelledby` when a traditional `<label>` is visually omitted, and implement temporary success states (color + text change) for clipboard actions.
