@@ -56,7 +56,12 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex gap-2 items-center">
+                            <button id="copy-btn" onclick="copyToClipboard()" class="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1 bg-white/5 px-2 py-1 rounded border border-white/10">
+                                <span id="copy-icon">📋</span> <span id="copy-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        </div>
                     </div>
                     <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
@@ -65,7 +70,7 @@
             <!-- Chat & Controls -->
             <section class="w-96 glass border-l p-6 flex flex-col space-y-6">
                 <div class="space-y-4">
-                    <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Refinamiento IA</h3>
+                    <h3 id="refine-label" class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Refinamiento IA</h3>
                     <p class="text-xs text-slate-500">Dale instrucciones al orquestador para ajustar el comportamiento de este GEM.</p>
                 </div>
 
@@ -74,7 +79,7 @@
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                    <textarea id="refine-input" aria-labelledby="refine-label" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
                     <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                         <span>🚀</span> Refinar Prompt
                     </button>
@@ -85,7 +90,7 @@
 
     <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
         <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+        <div id="logs-container" role="log" aria-live="polite"></div>
     </div>
     <script>
         const logsContainer = document.getElementById('logs-container');
@@ -116,9 +121,9 @@
         function renderNav() {
             const nav = document.getElementById('gem-nav');
             nav.innerHTML = gems.map(gem => `
-                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
+                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" aria-label="Seleccionar ${gem.name}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
                     <span>${gem.name}</span>
-                    <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
+                    <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" aria-hidden="true">➔</span>
                 </button>
             `).join('');
         }
@@ -139,6 +144,31 @@
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?
                 </div>
             `;
+        }
+
+        async function copyToClipboard() {
+            const promptText = document.getElementById('prompt-content').innerText;
+            const btn = document.getElementById('copy-btn');
+            const icon = document.getElementById('copy-icon');
+            const text = document.getElementById('copy-text');
+
+            try {
+                await navigator.clipboard.writeText(promptText);
+
+                // Feedback visual
+                icon.innerText = '✅';
+                text.innerText = '¡Copiado!';
+                btn.classList.add('text-green-400', 'border-green-500/30');
+
+                setTimeout(() => {
+                    icon.innerText = '📋';
+                    text.innerText = 'Copiar';
+                    btn.classList.remove('text-green-400', 'border-green-500/30');
+                }, 2000);
+            } catch (err) {
+                console.error('Error al copiar:', err);
+                text.innerText = 'Error';
+            }
         }
 
         async function refineGem() {
@@ -193,6 +223,14 @@
                 history.scrollTop = history.scrollHeight;
             }
         }
+
+        // Keyboard Shortcuts
+        document.getElementById('refine-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                refineGem();
+            }
+        });
 
         // Init
         loadGems();
