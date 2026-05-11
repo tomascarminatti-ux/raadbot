@@ -1,0 +1,3 @@
+## 2025-05-15 - Palette: Dashboard Accessibility and Utility Enhancements
+**Learning:** Providing immediate visual feedback for asynchronous background operations (e.g., changing 'Copy' to '¡Copiado!' on a clipboard button) significantly reduces user uncertainty and enhances the perceived responsiveness of the interface. Additionally, associating form elements with their labels via `aria-labelledby` is a robust pattern for screen reader accessibility in complex dashboards.
+**Action:** Always include micro-feedback states for utility buttons and ensure all interactive elements have clearly defined ARIA associations.
