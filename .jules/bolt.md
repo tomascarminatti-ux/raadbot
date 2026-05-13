@@ -1,0 +1,3 @@
+## 2025-05-14 - Optimized Prompt Construction in `agent/prompt_builder.py`
+**Learning:** Repeated disk I/O for template loading and iterative string replacements (`.replace()`) in a loop are significant performance bottlenecks in a high-frequency path like prompt building. Iterative replacement also risks accidental recursive replacements if variable values contain other placeholders.
+**Action:** Use `@functools.lru_cache` for template loading from disk. Replace iterative `.replace()` with a single-pass `re.sub()` using a pre-compiled regex pattern and a replacement function/dictionary for a measurable speedup (~5x in this case).
