@@ -56,7 +56,12 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-2">
+                            <button id="copy-btn" onclick="copyPrompt()" aria-label="Copiar prompt al portapapeles" class="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1 bg-white/5 px-2 py-1 rounded border border-white/10">
+                                <span>📋</span> <span id="copy-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        </div>
                     </div>
                     <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
@@ -65,7 +70,7 @@
             <!-- Chat & Controls -->
             <section class="w-96 glass border-l p-6 flex flex-col space-y-6">
                 <div class="space-y-4">
-                    <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Refinamiento IA</h3>
+                    <h3 id="refine-label" class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Refinamiento IA</h3>
                     <p class="text-xs text-slate-500">Dale instrucciones al orquestador para ajustar el comportamiento de este GEM.</p>
                 </div>
 
@@ -74,7 +79,7 @@
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                    <textarea id="refine-input" aria-labelledby="refine-label" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
                     <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                         <span>🚀</span> Refinar Prompt
                     </button>
@@ -84,8 +89,8 @@
     </main>
 
     <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;"><span aria-hidden="true">🚀</span> Raadbot Live - GEMs en tiempo real</div>
+        <div id="logs-container" role="log" aria-live="polite"></div>
     </div>
     <script>
         const logsContainer = document.getElementById('logs-container');
@@ -99,6 +104,38 @@
             logEntry.innerHTML = `[${time}] <span style="color:#3b82f6">${data.gem}</span>: ${data.action} - <span style="color:${data.status === 'OK' ? '#4ade80' : '#f87171'}">${data.status}</span> (Score: ${data.score || 'N/A'})`;
             logsContainer.prepend(logEntry);
         };
+
+        async function copyPrompt() {
+            const content = document.getElementById('prompt-content').innerText;
+            const btn = document.getElementById('copy-btn');
+            const text = document.getElementById('copy-text');
+
+            try {
+                await navigator.clipboard.writeText(content);
+                const originalText = text.innerText;
+                const originalIcon = btn.querySelector('span').innerText;
+
+                text.innerText = '¡Copiado!';
+                btn.querySelector('span').innerText = '✅';
+                btn.classList.add('border-green-500/50', 'text-green-400');
+
+                setTimeout(() => {
+                    text.innerText = originalText;
+                    btn.querySelector('span').innerText = originalIcon;
+                    btn.classList.remove('border-green-500/50', 'text-green-400');
+                }, 2000);
+            } catch (err) {
+                console.error('Error al copiar:', err);
+            }
+        }
+
+        // Keyboard shortcuts
+        document.getElementById('refine-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                refineGem();
+            }
+        });
 
         let gems = [];
         let activeGem = null;
