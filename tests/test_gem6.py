@@ -1,27 +1,27 @@
+from agent.gem6.orchestrator import GEM6Orchestrator
+from agent.gemini_client import GeminiClient
 import asyncio
 import os
 import sys
-from datetime import datetime, timezone
 
 # Asegurar que el path incluya la raíz del proyecto
 sys.path.append(os.getcwd())
 
-from agent.gemini_client import GeminiClient
-from agent.gem6.orchestrator import GEM6Orchestrator
 
 async def test_gem6_flow():
     print("🚀 Iniciando Test GEM 6 - Master Orchestrator...")
-    
+
     # Configuración Mock
     api_key = os.getenv("GEMINI_API_KEY", "dummy_key")
     gemini = GeminiClient(api_key=api_key)
     output_dir = "runs/test_gem6"
     config = {"search_id": "TEST-SEARCH-001"}
-    
+
     orchestrator = GEM6Orchestrator(gemini, output_dir, config)
-    
+
     # Inputs Mock
-    search_inputs = {"perfil": "CTO para Startup Fintech", "empresa": "RaadAdvisory"}
+    search_inputs = {"perfil": "CTO para Startup Fintech",
+                     "empresa": "RaadAdvisory"}
     candidates = [
         {
             "candidato_id": "CAND-001",
@@ -29,17 +29,17 @@ async def test_gem6_flow():
             "interview_notes": "Muy técnico, buen fit cultural."
         }
     ]
-    
+
     try:
         # Nota: En un test real sin API Key de verdad, gemini.run_gem fallará o devolverá error.
         # Aquí probamos la estructura de la orquestación.
         # candidates debe ser un dict para run_pipeline
         candidates_dict = {c["candidato_id"]: c for c in candidates}
         result = await orchestrator.run_pipeline(search_inputs, candidates_dict)
-        
+
         print("\n✅ Pipeline Ejecutado!")
         print(f"Results count: {len(result)}")
-        
+
     except Exception as e:
         print(f"\n❌ Error en el test: {e}")
 

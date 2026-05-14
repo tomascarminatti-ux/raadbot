@@ -1,19 +1,20 @@
+from dotenv import load_dotenv
+from agent.gemini_client import GeminiClient
+import asyncio
 import os
 import sys
 
 # Asegurar que el root del proyecto esté en el path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-import asyncio
-from agent.gemini_client import GeminiClient
-from dotenv import load_dotenv
 
-async def test():
+async def run_manual_test():
     load_dotenv()
-    client = GeminiClient(api_key=os.getenv("GEMINI_API_KEY"), model="gemini-2.5-flash")
+    client = GeminiClient(api_key=os.getenv(
+        "GEMINI_API_KEY"), model="gemini-2.5-flash")
     prompt = "Escribe un saludo corto de 5 palabras."
     res = await client.run_gem(prompt)
     print(f"Respuesta length: {len(res['raw'])}")
 
 if __name__ == "__main__":
-    asyncio.run(test())
+    asyncio.run(run_manual_test())
