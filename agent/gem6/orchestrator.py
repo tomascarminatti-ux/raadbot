@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
@@ -21,16 +22,28 @@ class GEM6Orchestrator:
         self.search_id = kwargs.get("search_id", self.config.get("search_id"))
 
     async def run_pipeline(self, search_inputs: Dict[str, Any], candidates: Dict[str, Any]):
-        """Entry point to process all candidates"""
+        """Entry point to process all candidates in parallel"""
         results = {}
-        for candidate_id, candidate_data in candidates.items():
-            context = {
-                "search_inputs": search_inputs,
-                "candidate_id": candidate_id,
-                "candidate_data": candidate_data,
-                "entity_id": candidate_id
-            }
-            results[candidate_id] = await self.process_context(context)
+        semaphore = asyncio.Semaphore(5)  # Limit concurrency to 5 candidates
+
+        async def process_with_semaphore(candidate_id, candidate_data):
+            async with semaphore:
+                context = {
+                    "search_inputs": search_inputs,
+                    "candidate_id": candidate_id,
+                    "candidate_data": candidate_data,
+                    "entity_id": candidate_id
+                }
+                return candidate_id, await self.process_context(context)
+
+        tasks = [
+            process_with_semaphore(cid, cdata)
+            for cid, cdata in candidates.items()
+        ]
+
+        completed_tasks = await asyncio.gather(*tasks)
+        for cid, result in completed_tasks:
+            results[cid] = result
         
         # Save summary
         if self.output_dir:
@@ -78,7 +91,7 @@ class GEM6Orchestrator:
             })
 
             # 2. Call GEM 6 for reasoning
-            result = self.gemini.run_gem(prompt, gem_name="gem6")
+            result = await self.gemini.run_gem(prompt, gem_name="gem6")
             gem6_decision = result.get("json", {})
 
             if not gem6_decision:
@@ -185,7 +198,7 @@ class GEM6Orchestrator:
                 # Use prompt_builder for consistent templating
                 full_prompt = build_agent_prompt(agent_id, payload)
 
-                result = self.gemini.run_gem(full_prompt, gem_name=agent_id)
+                result = await self.gemini.run_gem(full_prompt, gem_name=agent_id)
                 return result.get("json", {}) or {}
             except Exception as e:
                 logger.error(f"Error calling Gemini for {agent_id}: {e}")
