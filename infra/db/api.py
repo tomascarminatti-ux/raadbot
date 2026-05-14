@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI(title="GEM v3.0 DB API")
 
@@ -30,24 +30,39 @@ def startup_event():
     init_db()
 
 # Models
+ID_PATTERN = r"^[a-zA-Z0-9_-]+$"
+
 class EntityUpdate(BaseModel):
-    entity_id: str
+    entity_id: str = Field(pattern=ID_PATTERN)
     current_stage: str
     state: str
     last_score: Optional[float] = None
     human_required: Optional[bool] = False
     metadata: Optional[Dict[str, Any]] = {}
-    agent_responsible: str
-    trace_id: str
+    agent_responsible: str = Field(pattern=ID_PATTERN)
+    trace_id: str = Field(pattern=ID_PATTERN)
 
 class DiscardEntity(BaseModel):
-    entity_id: str
+    entity_id: str = Field(pattern=ID_PATTERN)
     stage_at_discard: str
     reason: str
     score_at_discard: Optional[float] = None
     metadata: Optional[Dict[str, Any]] = {}
-    agent_responsible: str
-    trace_id: str
+    agent_responsible: str = Field(pattern=ID_PATTERN)
+    trace_id: str = Field(pattern=ID_PATTERN)
+
+class DiscoveryLog(BaseModel):
+    entity_id: str = Field(pattern=ID_PATTERN)
+    agent_id: str = Field(pattern=ID_PATTERN)
+    input_ok: bool = Field(alias="input_contract_verified", default=True)
+    output_ok: bool = Field(alias="output_contract_verified", default=True)
+    time_ms: int = Field(alias="execution_time_ms")
+    status: str
+    error: Optional[str] = Field(alias="error_message", default=None)
+    trace_id: str = Field(pattern=ID_PATTERN)
+
+    class Config:
+        populate_by_name = True
 
 # Endpoints
 @app.post("/entity/upsert")
@@ -79,9 +94,9 @@ async def upsert_entity(data: EntityUpdate):
         ))
         conn.commit()
         return {"status": "success"}
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal database error")
     finally:
         conn.close()
 
@@ -105,9 +120,9 @@ async def discard_entity(data: DiscardEntity):
         cursor.execute("DELETE FROM entity_state WHERE entity_id = ?", (data.entity_id,))
         conn.commit()
         return {"status": "discarded"}
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal database error")
     finally:
         conn.close()
 
@@ -124,7 +139,7 @@ async def get_entities(stage: Optional[str] = None):
     return [dict(row) for row in rows]
 
 @app.post("/log/discovery")
-async def log_discovery(data: Dict[str, Any]):
+async def log_discovery(data: DiscoveryLog):
     conn = get_db()
     cursor = conn.cursor()
     try:
@@ -135,12 +150,15 @@ async def log_discovery(data: Dict[str, Any]):
                 error_message, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            data.get("entity_id"), data.get("agent_id"), data.get("input_ok"),
-            data.get("output_ok"), data.get("time_ms"), data.get("status"),
-            data.get("error"), data.get("trace_id")
+            data.entity_id, data.agent_id, data.input_ok,
+            data.output_ok, data.time_ms, data.status,
+            data.error, data.trace_id
         ))
         conn.commit()
         return {"status": "logged"}
+    except Exception:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail="Internal database error")
     finally:
         conn.close()
 
