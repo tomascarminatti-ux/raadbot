@@ -4,11 +4,15 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import json
+from functools import lru_cache
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+VARIABLE_PATTERN = re.compile(r"\{\{(\w+)\}\}")
 
 
+@lru_cache(maxsize=32)
 def load_prompt(gem_name: str) -> str:
     """Carga un prompt desde el directorio de prompts."""
     filename = f"{gem_name}.md"
@@ -21,6 +25,7 @@ def load_prompt(gem_name: str) -> str:
         return f.read()
 
 
+@lru_cache(maxsize=1)
 def load_maestro() -> str:
     """Carga el prompt maestro."""
     return load_prompt("00_prompt_maestro")
@@ -49,17 +54,22 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     # Inyectar prompt maestro
     prompt = prompt.replace("{{PROMPT_MAESTRO}}", maestro)
 
-    # Inyectar variables
-    for key, value in variables.items():
-        placeholder = "{{" + key + "}}"
-        if isinstance(value, dict):
-            import json
+    # Pre-procesar variables y reemplazar en un solo paso
+    processed_vars = {}
+    for k, v in variables.items():
+        if isinstance(v, dict):
+            processed_vars[k] = json.dumps(v, ensure_ascii=False, indent=2)
+        else:
+            processed_vars[k] = str(v)
 
-            value = json.dumps(value, ensure_ascii=False, indent=2)
-        prompt = prompt.replace(placeholder, str(value))
+    def replace_match(match):
+        var_name = match.group(1)
+        return processed_vars.get(var_name, match.group(0))
+
+    prompt = VARIABLE_PATTERN.sub(replace_match, prompt)
 
     # Validar que no queden variables sin reemplazar
-    remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
+    remaining = VARIABLE_PATTERN.findall(prompt)
     if remaining:
         # Filtrar VERSION que es metadata, no un input
         remaining = [v for v in remaining if v != "VERSION"]
@@ -77,7 +87,7 @@ def get_required_variables(gem_name: str) -> list[str]:
         Lista de nombres de variables (sin {{ }})
     """
     prompt = load_prompt(gem_name)
-    variables = re.findall(r"\{\{(\w+)\}\}", prompt)
+    variables = VARIABLE_PATTERN.findall(prompt)
     # Filtrar las que se resuelven automáticamente
     auto_resolved = {"PROMPT_MAESTRO", "VERSION"}
     return [v for v in set(variables) if v not in auto_resolved]
