@@ -1,0 +1,4 @@
+## 2025-05-22 - Identifier-based Path Traversal and Error Masking
+**Vulnerability:** Application endpoints used raw string identifiers (search_id, gem_id, entity_id) directly in file path construction (e.g., f"prompts/{gem_id}.md") or database queries without validation. Additionally, raw exception strings were leaked to clients.
+**Learning:** Pydantic models without explicit constraints default to allowing any string, which can include path traversal sequences like "../". Lack of catch-all error handling in FastAPI endpoints allows internal system details (like SQLite error messages) to leak to the frontend.
+**Prevention:** Always use `Field(pattern=r"^[a-zA-Z0-9_-]+$")` for identifier fields in Pydantic models. Implement explicit exception handling in API endpoints to mask raw internal errors with generic user-friendly messages.
