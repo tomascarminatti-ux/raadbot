@@ -1,0 +1,3 @@
+## 2026-05-16 - Non-blocking log persistence with caching and threads
+**Learning:** Performing synchronous disk I/O (JSON load/dump) in an `async` logging function blocks the event loop, causing latency in real-time updates and other API requests. Using a thread-safe in-memory cache and `asyncio.to_thread` for background persistence significantly improves responsiveness.
+**Action:** Always offload synchronous file I/O to a background thread using `asyncio.to_thread` when working in an `async` context, and use atomic file operations (temp file + `os.replace`) to ensure data integrity during concurrent background writes.
