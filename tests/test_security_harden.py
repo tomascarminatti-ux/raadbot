@@ -1,9 +1,9 @@
 
 from fastapi.testclient import TestClient
 from api import app
-import pytest
 
 client = TestClient(app, raise_server_exceptions=False)
+
 
 def test_path_traversal_refine_gem():
     # Attempt to read a file outside the prompts directory
@@ -15,12 +15,14 @@ def test_path_traversal_refine_gem():
     # Must be blocked by Pydantic validation (422)
     assert response.status_code == 422
 
+
 def test_path_traversal_run_pipeline():
     response = client.post("/api/v1/run", json={
         "search_id": "../../../etc/passwd",
         "local_dir": "tests"
     })
     assert response.status_code == 422
+
 
 def test_invalid_search_id_setup():
     response = client.post("/api/v1/search/setup", json={
@@ -29,6 +31,7 @@ def test_invalid_search_id_setup():
         "jd_content": "test"
     })
     assert response.status_code == 422
+
 
 def test_error_masking_run_pipeline():
     # Provide valid search_id but something that will cause a crash (e.g. missing local_dir)
