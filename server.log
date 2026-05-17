@@ -1,11 +1,24 @@
-INFO:     Started server process [4967]
+INFO:     Started server process [8461]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:33144 - "GET /dashboard HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33144 - "GET /api/v1/gems HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33156 - "WebSocket /ws/logs" [accepted]
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:47754 - "GET /dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47754 - "GET /api/v1/gems HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47766 - "WebSocket /ws/logs" [accepted]
 INFO:     connection open
 INFO:     connection closed
-INFO:     Shutting down
-INFO:     Waiting for background tasks to complete. (CTRL+C to force quit)
+INFO:     127.0.0.1:42178 - "GET /dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42178 - "GET /api/v1/gems HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42188 - "WebSocket /ws/logs" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:40686 - "GET /dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40686 - "GET /api/v1/gems HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40696 - "WebSocket /ws/logs" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:43600 - "GET /dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43600 - "GET /api/v1/gems HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43614 - "WebSocket /ws/logs" [accepted]
+INFO:     connection open
+INFO:     connection closed
