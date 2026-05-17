@@ -1,11 +1,11 @@
-import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from api import app
 from infra.db.api import app as db_app
 
 client = TestClient(app)
 db_client = TestClient(db_app)
+
 
 def test_pipeline_request_validation():
     # Test invalid search_id
@@ -32,6 +32,7 @@ def test_pipeline_request_validation():
     assert response.status_code == 422
     assert "Invalid path" in response.text
 
+
 def test_refine_request_validation():
     # Test invalid gem_id
     response = client.post("/api/v1/gems/refine", json={
@@ -39,6 +40,7 @@ def test_refine_request_validation():
         "instruction": "refine"
     })
     assert response.status_code == 422
+
 
 def test_db_entity_upsert_validation():
     # Test invalid entity_id in DB API
@@ -50,6 +52,7 @@ def test_db_entity_upsert_validation():
         "trace_id": "valid-trace"
     })
     assert response.status_code == 422
+
 
 def test_db_log_discovery_validation():
     # Test invalid agent_id in log_discovery
@@ -64,6 +67,7 @@ def test_db_log_discovery_validation():
     })
     assert response.status_code == 422
 
+
 @patch("api.run_pipeline")
 def test_pipeline_error_masking(mock_run):
     mock_run.side_effect = Exception("Secret internal error details")
@@ -74,6 +78,7 @@ def test_pipeline_error_masking(mock_run):
     assert response.status_code == 400
     assert response.json()["detail"] == "Pipeline execution failed"
     assert "Secret internal error details" not in response.text
+
 
 @patch("infra.db.api.get_db")
 def test_db_error_masking(mock_get_db):
