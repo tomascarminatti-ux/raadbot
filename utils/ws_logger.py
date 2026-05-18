@@ -22,6 +22,7 @@ if os.path.exists(_STATE_FILE):
     except (json.JSONDecodeError, Exception):
         _pipeline_state_steps = []
 
+
 def _sync_save_state(steps_snapshot: list):
     """Saves the state snapshot to disk."""
     try:
@@ -30,6 +31,7 @@ def _sync_save_state(steps_snapshot: list):
             json.dump(state_data, f, indent=2, ensure_ascii=False)
     except Exception as e:
         print(f"Error saving {_STATE_FILE}: {e}")
+
 
 async def broadcast_log(data: dict):
     """
