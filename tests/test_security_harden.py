@@ -1,10 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
 from api import app
-import os
-import shutil
 
 client = TestClient(app, raise_server_exceptions=False)
+
 
 def test_identifier_validation():
     # Test invalid search_id
@@ -21,6 +20,7 @@ def test_identifier_validation():
     })
     assert response.status_code == 422
 
+
 def test_error_masking():
     # Trigger an error that would normally leak info (e.g. invalid model in background)
     # Actually, trigger_pipeline masks errors in the try/except block
@@ -34,6 +34,7 @@ def test_error_masking():
     # Ensure it doesn't contain "GeminiClient" or specific file paths
     assert "GeminiClient" not in str(response.json())
     assert "load_local_inputs" not in str(response.json())
+
 
 def test_db_api_hardening():
     from infra.db.api import app as db_app
@@ -64,6 +65,7 @@ def test_db_api_hardening():
     # If we send a valid model but something fails internally (e.g. db connection)
     # For now we just check the existing hardening
     pass
+
 
 if __name__ == "__main__":
     # This is for manual run if needed

@@ -2,8 +2,8 @@ import os
 import sqlite3
 import json
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Request
+from typing import Optional, Dict, Any
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 import config
 
@@ -11,10 +11,12 @@ app = FastAPI(title="GEM v3.0 DB API")
 
 DB_PATH = os.getenv("DB_PATH", "infra/db/gem_v3.sqlite")
 
+
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def init_db():
     schema_path = "infra/db/schema.sql"
@@ -26,11 +28,14 @@ def init_db():
         conn.commit()
         conn.close()
 
+
 @app.on_event("startup")
 def startup_event():
     init_db()
 
 # Models
+
+
 class EntityUpdate(BaseModel):
     entity_id: str = Field(pattern=config.ID_PATTERN)
     current_stage: str
@@ -41,6 +46,7 @@ class EntityUpdate(BaseModel):
     agent_responsible: str = Field(pattern=config.ID_PATTERN)
     trace_id: str = Field(pattern=config.ID_PATTERN)
 
+
 class DiscardEntity(BaseModel):
     entity_id: str = Field(pattern=config.ID_PATTERN)
     stage_at_discard: str
@@ -49,6 +55,7 @@ class DiscardEntity(BaseModel):
     metadata: Optional[Dict[str, Any]] = {}
     agent_responsible: str = Field(pattern=config.ID_PATTERN)
     trace_id: str = Field(pattern=config.ID_PATTERN)
+
 
 class DiscoveryLog(BaseModel):
     entity_id: str = Field(pattern=config.ID_PATTERN)
@@ -61,6 +68,8 @@ class DiscoveryLog(BaseModel):
     trace_id: str = Field(pattern=config.ID_PATTERN)
 
 # Endpoints
+
+
 @app.post("/entity/upsert")
 async def upsert_entity(data: EntityUpdate):
     conn = None
@@ -70,8 +79,8 @@ async def upsert_entity(data: EntityUpdate):
         now = datetime.now().isoformat()
         cursor.execute("""
             INSERT INTO entity_state (
-                entity_id, current_stage, state, last_score, 
-                human_required, metadata, agent_responsible, trace_id, 
+                entity_id, current_stage, state, last_score,
+                human_required, metadata, agent_responsible, trace_id,
                 created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(entity_id) DO UPDATE SET
@@ -85,7 +94,8 @@ async def upsert_entity(data: EntityUpdate):
                 updated_at=excluded.updated_at
         """, (
             data.entity_id, data.current_stage, data.state, data.last_score,
-            data.human_required, json.dumps(data.metadata), data.agent_responsible, data.trace_id,
+            data.human_required, json.dumps(
+                data.metadata), data.agent_responsible, data.trace_id,
             now, now
         ))
         conn.commit()
@@ -98,6 +108,7 @@ async def upsert_entity(data: EntityUpdate):
         if conn:
             conn.close()
 
+
 @app.post("/entity/discard")
 async def discard_entity(data: DiscardEntity):
     conn = None
@@ -107,7 +118,7 @@ async def discard_entity(data: DiscardEntity):
         # Move to discarded table
         cursor.execute("""
             INSERT INTO discarded_entities (
-                entity_id, stage_at_discard, reason, score_at_discard, 
+                entity_id, stage_at_discard, reason, score_at_discard,
                 metadata, agent_responsible, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
@@ -115,7 +126,8 @@ async def discard_entity(data: DiscardEntity):
             json.dumps(data.metadata), data.agent_responsible, data.trace_id
         ))
         # Remove from active state
-        cursor.execute("DELETE FROM entity_state WHERE entity_id = ?", (data.entity_id,))
+        cursor.execute(
+            "DELETE FROM entity_state WHERE entity_id = ?", (data.entity_id,))
         conn.commit()
         return {"status": "discarded"}
     except Exception:
@@ -126,17 +138,20 @@ async def discard_entity(data: DiscardEntity):
         if conn:
             conn.close()
 
+
 @app.get("/entities")
 async def get_entities(stage: Optional[str] = None):
     conn = get_db()
     cursor = conn.cursor()
     if stage:
-        cursor.execute("SELECT * FROM entity_state WHERE current_stage = ?", (stage,))
+        cursor.execute(
+            "SELECT * FROM entity_state WHERE current_stage = ?", (stage,))
     else:
         cursor.execute("SELECT * FROM entity_state")
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
 
 @app.post("/log/discovery")
 async def log_discovery(data: DiscoveryLog):
@@ -146,8 +161,8 @@ async def log_discovery(data: DiscoveryLog):
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO discovery_logs (
-                entity_id, agent_id, input_contract_verified, 
-                output_contract_verified, execution_time_ms, status, 
+                entity_id, agent_id, input_contract_verified,
+                output_contract_verified, execution_time_ms, status,
                 error_message, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
@@ -164,6 +179,7 @@ async def log_discovery(data: DiscoveryLog):
     finally:
         if conn:
             conn.close()
+
 
 @app.get("/health")
 async def health_check():
