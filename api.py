@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import httpx
 import asyncio
 
@@ -52,10 +52,10 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=config.ID_PATTERN)
     drive_folder: Optional[str] = None
     local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    candidate_id: Optional[str] = Field(None, pattern=config.ID_PATTERN)  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
 
@@ -155,12 +155,12 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
     else:
         try:
             return await run_pipeline(request)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        except Exception:
+            raise HTTPException(status_code=400, detail="Pipeline execution failed")
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=config.ID_PATTERN)
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
@@ -171,33 +171,36 @@ async def setup_search(request: SetupSearchRequest):
     Inicializa una búsqueda ejecutando únicamente GEM 5 (Radiografía Estratégica).
     Crea la estructura de carpetas y guarda el mandato inicial.
     """
-    output_dir = os.path.join("runs", request.search_id, "outputs")
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Simular estructura de inputs para GEM 5
-    search_inputs = {
-        "kickoff_notes": request.brief_notes,
-        "brief_jd": request.jd_content,
-        "company_context": request.company_context or ""
-    }
-    
-    gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
-    # Ejecutar GEM 5 directamente
-    from agent.prompt_builder import build_gem5_prompt
-    prompt = build_gem5_prompt(search_inputs)
-    result = gemini.run_gem(prompt, gem_name="gem5")
-    
-    # Guardar resultados
-    with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
-        json.dump(result.get("data", {}), f, indent=4)
-    with open(os.path.join(output_dir, "gem5.md"), "w", encoding="utf-8") as f:
-        f.write(result.get("markdown", ""))
+    try:
+        output_dir = os.path.join("runs", request.search_id, "outputs")
+        os.makedirs(output_dir, exist_ok=True)
         
-    return {
-        "status": "success",
-        "search_id": request.search_id,
-        "gem5_summary": result.get("data", {}).get("mandate_summary", "Mandato generado con éxito.")
-    }
+        # Simular estructura de inputs para GEM 5
+        search_inputs = {
+            "kickoff_notes": request.brief_notes,
+            "brief_jd": request.jd_content,
+            "company_context": request.company_context or ""
+        }
+
+        gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
+        # Ejecutar GEM 5 directamente
+        from agent.prompt_builder import build_gem5_prompt
+        prompt = build_gem5_prompt(search_inputs)
+        result = gemini.run_gem(prompt, gem_name="gem5")
+
+        # Guardar resultados
+        with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
+            json.dump(result.get("data", {}), f, indent=4)
+        with open(os.path.join(output_dir, "gem5.md"), "w", encoding="utf-8") as f:
+            f.write(result.get("markdown", ""))
+
+        return {
+            "status": "success",
+            "search_id": request.search_id,
+            "gem5_summary": result.get("data", {}).get("mandate_summary", "Mandato generado con éxito.")
+        }
+    except Exception:
+        raise HTTPException(status_code=500, detail="Search setup failed")
 
 
 # --- Dashboard Endpoints ---
@@ -234,7 +237,7 @@ async def list_gems():
     return gems
 
 class RefineRequest(BaseModel):
-    gem_id: str
+    gem_id: str = Field(pattern=config.ID_PATTERN)
     instruction: str
 
 @app.post("/api/v1/gems/refine")
@@ -268,9 +271,12 @@ async def refine_gem(request: RefineRequest):
     new_prompt = result.get("markdown", "") or result.get("raw", "")
     
     if new_prompt:
-        with open(prompt_path, "w", encoding="utf-8") as f:
-            f.write(new_prompt)
-        return {"status": "success", "new_prompt": new_prompt}
+        try:
+            with open(prompt_path, "w", encoding="utf-8") as f:
+                f.write(new_prompt)
+            return {"status": "success", "new_prompt": new_prompt}
+        except Exception:
+            raise HTTPException(status_code=500, detail="Failed to save refined prompt")
     
     return {"status": "error", "message": "Failed to generate new prompt"}
 
