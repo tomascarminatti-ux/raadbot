@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 import httpx
 import asyncio
 
@@ -52,10 +52,10 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=config.ID_PATTERN)
     drive_folder: Optional[str] = None
     local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    candidate_id: Optional[str] = Field(None, pattern=config.ID_PATTERN)
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
 
@@ -156,11 +156,13 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
         try:
             return await run_pipeline(request)
         except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            # Mask internal error details and log the original error
+            print(f"Error in trigger_pipeline: {e}")
+            raise HTTPException(status_code=400, detail="Error initiating the pipeline.")
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=config.ID_PATTERN)
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
@@ -215,7 +217,7 @@ async def get_dashboard():
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
     gems = []
-    gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
+    gem_list = config.ALLOWED_GEMS
     
     for g in gem_list:
         prompt_path = f"prompts/{g}.md"
@@ -234,8 +236,15 @@ async def list_gems():
     return gems
 
 class RefineRequest(BaseModel):
-    gem_id: str
+    gem_id: str = Field(pattern=config.ID_PATTERN)
     instruction: str
+
+    @field_validator("gem_id")
+    @classmethod
+    def validate_gem_id(cls, v: str) -> str:
+        if v not in config.ALLOWED_GEMS:
+            raise ValueError(f"Invalid gem_id. Must be one of {config.ALLOWED_GEMS}")
+        return v
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
@@ -244,8 +253,12 @@ async def refine_gem(request: RefineRequest):
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
         
-    with open(prompt_path, "r", encoding="utf-8") as f:
-        current_prompt = f.read()
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            current_prompt = f.read()
+    except Exception as e:
+        print(f"Error reading prompt {prompt_path}: {e}")
+        raise HTTPException(status_code=500, detail="Error reading the current prompt.")
         
     refinement_prompt = f"""
     Eres un experto en Prompt Engineering. Tu misión es REFINAR el siguiente System Prompt de RAADBOT v2.0.
@@ -268,9 +281,13 @@ async def refine_gem(request: RefineRequest):
     new_prompt = result.get("markdown", "") or result.get("raw", "")
     
     if new_prompt:
-        with open(prompt_path, "w", encoding="utf-8") as f:
-            f.write(new_prompt)
-        return {"status": "success", "new_prompt": new_prompt}
+        try:
+            with open(prompt_path, "w", encoding="utf-8") as f:
+                f.write(new_prompt)
+            return {"status": "success", "new_prompt": new_prompt}
+        except Exception as e:
+            print(f"Error saving refined prompt to {prompt_path}: {e}")
+            raise HTTPException(status_code=500, detail="Error saving the new prompt.")
     
     return {"status": "error", "message": "Failed to generate new prompt"}
 

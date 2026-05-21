@@ -4,7 +4,8 @@ import json
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+import config
 
 app = FastAPI(title="GEM v3.0 DB API")
 
@@ -31,23 +32,33 @@ def startup_event():
 
 # Models
 class EntityUpdate(BaseModel):
-    entity_id: str
+    entity_id: str = Field(pattern=config.ID_PATTERN)
     current_stage: str
     state: str
     last_score: Optional[float] = None
     human_required: Optional[bool] = False
     metadata: Optional[Dict[str, Any]] = {}
     agent_responsible: str
-    trace_id: str
+    trace_id: str = Field(pattern=config.ID_PATTERN)
 
 class DiscardEntity(BaseModel):
-    entity_id: str
+    entity_id: str = Field(pattern=config.ID_PATTERN)
     stage_at_discard: str
     reason: str
     score_at_discard: Optional[float] = None
     metadata: Optional[Dict[str, Any]] = {}
     agent_responsible: str
-    trace_id: str
+    trace_id: str = Field(pattern=config.ID_PATTERN)
+
+class DiscoveryLog(BaseModel):
+    entity_id: str = Field(pattern=config.ID_PATTERN)
+    agent_id: str = Field(pattern=config.ID_PATTERN)
+    input_ok: bool
+    output_ok: bool
+    time_ms: int
+    status: str
+    error: Optional[str] = None
+    trace_id: str = Field(pattern=config.ID_PATTERN)
 
 # Endpoints
 @app.post("/entity/upsert")
@@ -80,8 +91,9 @@ async def upsert_entity(data: EntityUpdate):
         conn.commit()
         return {"status": "success"}
     except Exception as e:
+        print(f"Error in upsert_entity: {e}")
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error updating the entity.")
     finally:
         conn.close()
 
@@ -106,8 +118,9 @@ async def discard_entity(data: DiscardEntity):
         conn.commit()
         return {"status": "discarded"}
     except Exception as e:
+        print(f"Error in discard_entity: {e}")
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error discarding the entity.")
     finally:
         conn.close()
 
@@ -124,7 +137,7 @@ async def get_entities(stage: Optional[str] = None):
     return [dict(row) for row in rows]
 
 @app.post("/log/discovery")
-async def log_discovery(data: Dict[str, Any]):
+async def log_discovery(data: DiscoveryLog):
     conn = get_db()
     cursor = conn.cursor()
     try:
@@ -135,12 +148,16 @@ async def log_discovery(data: Dict[str, Any]):
                 error_message, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            data.get("entity_id"), data.get("agent_id"), data.get("input_ok"),
-            data.get("output_ok"), data.get("time_ms"), data.get("status"),
-            data.get("error"), data.get("trace_id")
+            data.entity_id, data.agent_id, data.input_ok,
+            data.output_ok, data.time_ms, data.status,
+            data.error, data.trace_id
         ))
         conn.commit()
         return {"status": "logged"}
+    except Exception as e:
+        print(f"Error in log_discovery: {e}")
+        conn.rollback()
+        raise HTTPException(status_code=500, detail="Error logging discovery.")
     finally:
         conn.close()
 
