@@ -1,11 +1,11 @@
 import os
 import sys
+from dotenv import load_dotenv
 
 # Asegurar que el root del proyecto esté en el path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from agent.gemini_client import GeminiClient
-from dotenv import load_dotenv
+from agent.gemini_client import GeminiClient  # noqa: E402
 
 if __name__ == "__main__":
     load_dotenv()
