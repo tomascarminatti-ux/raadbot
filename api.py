@@ -12,6 +12,7 @@ import asyncio
 
 import config
 from agent.gemini_client import GeminiClient
+from agent.prompt_builder import load_prompt, load_maestro
 from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
 from utils.input_loader import load_local_inputs
@@ -218,11 +219,10 @@ async def list_gems():
     gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
     
     for g in gem_list:
-        prompt_path = f"prompts/{g}.md"
-        prompt_content = ""
-        if os.path.exists(prompt_path):
-            with open(prompt_path, "r", encoding="utf-8") as f:
-                prompt_content = f.read()
+        try:
+            prompt_content = load_prompt(g)
+        except FileNotFoundError:
+            prompt_content = ""
         
         gems.append({
             "id": g,
@@ -270,6 +270,9 @@ async def refine_gem(request: RefineRequest):
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write(new_prompt)
+        # Invalidar cache para reflejar cambios inmediatamente
+        load_prompt.cache_clear()
+        load_maestro.cache_clear()
         return {"status": "success", "new_prompt": new_prompt}
     
     return {"status": "error", "message": "Failed to generate new prompt"}
