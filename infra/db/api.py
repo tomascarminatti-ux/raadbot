@@ -80,8 +80,9 @@ async def upsert_entity(data: EntityUpdate):
         conn.commit()
         return {"status": "success"}
     except Exception as e:
+        print(f"DB ERROR in upsert_entity: {e}")
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Database operation failed.")
     finally:
         conn.close()
 
@@ -106,8 +107,9 @@ async def discard_entity(data: DiscardEntity):
         conn.commit()
         return {"status": "discarded"}
     except Exception as e:
+        print(f"DB ERROR in discard_entity: {e}")
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Database operation failed.")
     finally:
         conn.close()
 
@@ -123,8 +125,18 @@ async def get_entities(stage: Optional[str] = None):
     conn.close()
     return [dict(row) for row in rows]
 
+class DiscoveryLog(BaseModel):
+    entity_id: str
+    agent_id: str
+    input_ok: bool
+    output_ok: bool
+    time_ms: int
+    status: str
+    error: Optional[str] = None
+    trace_id: str
+
 @app.post("/log/discovery")
-async def log_discovery(data: Dict[str, Any]):
+async def log_discovery(data: DiscoveryLog):
     conn = get_db()
     cursor = conn.cursor()
     try:
@@ -135,12 +147,15 @@ async def log_discovery(data: Dict[str, Any]):
                 error_message, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            data.get("entity_id"), data.get("agent_id"), data.get("input_ok"),
-            data.get("output_ok"), data.get("time_ms"), data.get("status"),
-            data.get("error"), data.get("trace_id")
+            data.entity_id, data.agent_id, data.input_ok,
+            data.output_ok, data.time_ms, data.status,
+            data.error, data.trace_id
         ))
         conn.commit()
         return {"status": "logged"}
+    except Exception as e:
+        print(f"DB ERROR in log_discovery: {e}")
+        raise HTTPException(status_code=500, detail="Failed to log discovery.")
     finally:
         conn.close()
 
