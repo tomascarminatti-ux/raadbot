@@ -1,0 +1,3 @@
+## 2024-05-23 - Parallelization of GEM 6 Orchestrator
+**Learning:** Sequential processing of multiple candidates in an LLM-driven pipeline is a significant bottleneck. Since LLM calls are I/O bound and typically independent for each candidate, parallelization using `asyncio.gather` combined with `asyncio.to_thread` (to avoid blocking the event loop with synchronous API clients) provides a massive speedup (e.g., ~3.7x for 5 candidates).
+**Action:** Always look for opportunities to parallelize independent agent execution steps and ensure synchronous I/O calls are offloaded to threads in async codebases.
