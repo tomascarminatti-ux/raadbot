@@ -1,10 +1,18 @@
 import os
 import sqlite3
 import json
+import re
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+# Import config from root if possible, or define local pattern
+try:
+    import config
+    ID_PATTERN = config.ID_PATTERN
+except ImportError:
+    ID_PATTERN = r"^[a-zA-Z0-9_-]+$"
 
 app = FastAPI(title="GEM v3.0 DB API")
 
@@ -30,7 +38,14 @@ def startup_event():
     init_db()
 
 # Models
-class EntityUpdate(BaseModel):
+class BaseValidatedModel(BaseModel):
+    @classmethod
+    def validate_id_field(cls, v):
+        if v and not re.match(ID_PATTERN, v):
+            raise ValueError(f"Invalid format for field")
+        return v
+
+class EntityUpdate(BaseValidatedModel):
     entity_id: str
     current_stage: str
     state: str
@@ -40,7 +55,12 @@ class EntityUpdate(BaseModel):
     agent_responsible: str
     trace_id: str
 
-class DiscardEntity(BaseModel):
+    @field_validator("entity_id", "agent_responsible", "trace_id")
+    @classmethod
+    def validate_ids(cls, v):
+        return cls.validate_id_field(v)
+
+class DiscardEntity(BaseValidatedModel):
     entity_id: str
     stage_at_discard: str
     reason: str
@@ -48,6 +68,26 @@ class DiscardEntity(BaseModel):
     metadata: Optional[Dict[str, Any]] = {}
     agent_responsible: str
     trace_id: str
+
+    @field_validator("entity_id", "agent_responsible", "trace_id")
+    @classmethod
+    def validate_ids(cls, v):
+        return cls.validate_id_field(v)
+
+class DiscoveryLog(BaseValidatedModel):
+    entity_id: str
+    agent_id: str
+    input_ok: bool
+    output_ok: bool
+    time_ms: int
+    status: str
+    error: Optional[str] = None
+    trace_id: str
+
+    @field_validator("entity_id", "agent_id", "trace_id")
+    @classmethod
+    def validate_ids(cls, v):
+        return cls.validate_id_field(v)
 
 # Endpoints
 @app.post("/entity/upsert")
@@ -124,7 +164,7 @@ async def get_entities(stage: Optional[str] = None):
     return [dict(row) for row in rows]
 
 @app.post("/log/discovery")
-async def log_discovery(data: Dict[str, Any]):
+async def log_discovery(data: DiscoveryLog):
     conn = get_db()
     cursor = conn.cursor()
     try:
@@ -135,12 +175,15 @@ async def log_discovery(data: Dict[str, Any]):
                 error_message, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            data.get("entity_id"), data.get("agent_id"), data.get("input_ok"),
-            data.get("output_ok"), data.get("time_ms"), data.get("status"),
-            data.get("error"), data.get("trace_id")
+            data.entity_id, data.agent_id, data.input_ok,
+            data.output_ok, data.time_ms, data.status,
+            data.error, data.trace_id
         ))
         conn.commit()
         return {"status": "logged"}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail="Internal database error")
     finally:
         conn.close()
 
