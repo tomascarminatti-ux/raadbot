@@ -3,25 +3,25 @@ import sqlite3
 import json
 import re
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Request
+from typing import Optional, Dict, Any
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, field_validator
 
-# Import config from root if possible, or define local pattern
 try:
     import config
+
     ID_PATTERN = config.ID_PATTERN
 except ImportError:
     ID_PATTERN = r"^[a-zA-Z0-9_-]+$"
-
 app = FastAPI(title="GEM v3.0 DB API")
-
 DB_PATH = os.getenv("DB_PATH", "infra/db/gem_v3.sqlite")
+
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def init_db():
     schema_path = "infra/db/schema.sql"
@@ -33,17 +33,19 @@ def init_db():
         conn.commit()
         conn.close()
 
+
 @app.on_event("startup")
 def startup_event():
     init_db()
 
-# Models
+
 class BaseValidatedModel(BaseModel):
     @classmethod
     def validate_id_field(cls, v):
         if v and not re.match(ID_PATTERN, v):
-            raise ValueError(f"Invalid format for field")
+            raise ValueError("Invalid format for field")
         return v
+
 
 class EntityUpdate(BaseValidatedModel):
     entity_id: str
@@ -60,6 +62,7 @@ class EntityUpdate(BaseValidatedModel):
     def validate_ids(cls, v):
         return cls.validate_id_field(v)
 
+
 class DiscardEntity(BaseValidatedModel):
     entity_id: str
     stage_at_discard: str
@@ -73,6 +76,7 @@ class DiscardEntity(BaseValidatedModel):
     @classmethod
     def validate_ids(cls, v):
         return cls.validate_id_field(v)
+
 
 class DiscoveryLog(BaseValidatedModel):
     entity_id: str
@@ -89,18 +93,18 @@ class DiscoveryLog(BaseValidatedModel):
     def validate_ids(cls, v):
         return cls.validate_id_field(v)
 
-# Endpoints
+
 @app.post("/entity/upsert")
 async def upsert_entity(data: EntityUpdate):
     conn = get_db()
     cursor = conn.cursor()
     now = datetime.now().isoformat()
-    
     try:
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO entity_state (
-                entity_id, current_stage, state, last_score, 
-                human_required, metadata, agent_responsible, trace_id, 
+                entity_id, current_stage, state, last_score,
+                human_required, metadata, agent_responsible, trace_id,
                 created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(entity_id) DO UPDATE SET
@@ -112,44 +116,66 @@ async def upsert_entity(data: EntityUpdate):
                 agent_responsible=excluded.agent_responsible,
                 trace_id=excluded.trace_id,
                 updated_at=excluded.updated_at
-        """, (
-            data.entity_id, data.current_stage, data.state, data.last_score,
-            data.human_required, json.dumps(data.metadata), data.agent_responsible, data.trace_id,
-            now, now
-        ))
+        """,
+            (
+                data.entity_id,
+                data.current_stage,
+                data.state,
+                data.last_score,
+                data.human_required,
+                json.dumps(data.metadata),
+                data.agent_responsible,
+                data.trace_id,
+                now,
+                now,
+            ),
+        )
         conn.commit()
         return {"status": "success"}
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        if conn:
+            conn.rollback()
+        raise HTTPException(status_code=500, detail="Internal database error")
     finally:
-        conn.close()
+        if conn:
+            conn.close()
+
 
 @app.post("/entity/discard")
 async def discard_entity(data: DiscardEntity):
     conn = get_db()
     cursor = conn.cursor()
-    
     try:
-        # Move to discarded table
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO discarded_entities (
-                entity_id, stage_at_discard, reason, score_at_discard, 
+                entity_id, stage_at_discard, reason, score_at_discard,
                 metadata, agent_responsible, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            data.entity_id, data.stage_at_discard, data.reason, data.score_at_discard,
-            json.dumps(data.metadata), data.agent_responsible, data.trace_id
-        ))
-        # Remove from active state
-        cursor.execute("DELETE FROM entity_state WHERE entity_id = ?", (data.entity_id,))
+        """,
+            (
+                data.entity_id,
+                data.stage_at_discard,
+                data.reason,
+                data.score_at_discard,
+                json.dumps(data.metadata),
+                data.agent_responsible,
+                data.trace_id,
+            ),
+        )
+        cursor.execute(
+            "DELETE FROM entity_state WHERE entity_id = ?", (data.entity_id,)
+        )
         conn.commit()
         return {"status": "discarded"}
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        if conn:
+            conn.rollback()
+        raise HTTPException(status_code=500, detail="Internal database error")
     finally:
-        conn.close()
+        if conn:
+            conn.close()
+
 
 @app.get("/entities")
 async def get_entities(stage: Optional[str] = None):
@@ -163,34 +189,48 @@ async def get_entities(stage: Optional[str] = None):
     conn.close()
     return [dict(row) for row in rows]
 
+
 @app.post("/log/discovery")
 async def log_discovery(data: DiscoveryLog):
     conn = get_db()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO discovery_logs (
-                entity_id, agent_id, input_contract_verified, 
-                output_contract_verified, execution_time_ms, status, 
+                entity_id, agent_id, input_contract_verified,
+                output_contract_verified, execution_time_ms, status,
                 error_message, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            data.entity_id, data.agent_id, data.input_ok,
-            data.output_ok, data.time_ms, data.status,
-            data.error, data.trace_id
-        ))
+        """,
+            (
+                data.entity_id,
+                data.agent_id,
+                data.input_ok,
+                data.output_ok,
+                data.time_ms,
+                data.status,
+                data.error,
+                data.trace_id,
+            ),
+        )
         conn.commit()
         return {"status": "logged"}
-    except Exception as e:
-        conn.rollback()
+    except Exception:
+        if conn:
+            conn.rollback()
         raise HTTPException(status_code=500, detail="Internal database error")
     finally:
-        conn.close()
+        if conn:
+            conn.close()
+
 
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "db-api"}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
