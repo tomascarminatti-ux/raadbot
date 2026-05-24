@@ -1,0 +1,3 @@
+## 2024-05-24 - Parallelization and Template Optimization
+**Learning:** Sequential processing of multiple candidates in LLM pipelines is a major bottleneck. Synchronous LLM clients block the event loop even when using async wrappers if not offloaded to threads. Frequent disk I/O for prompt templates and multiple string replacements are significant overhead in high-frequency loops.
+**Action:** Use `asyncio.gather` for independent parallel tasks. Wrap synchronous I/O or CPU-bound calls (like LLM `run_gem`) in `asyncio.to_thread`. Implement `lru_cache` for static resources like templates and use single-pass regex substitution for complex string templating.
