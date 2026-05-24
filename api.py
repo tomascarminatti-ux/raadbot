@@ -1,12 +1,13 @@
 import os
 import json
+import re
 from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -54,6 +55,13 @@ app.add_middleware(
 class PipelineRequest(BaseModel):
     search_id: str
     drive_folder: Optional[str] = None
+
+    @field_validator("search_id")
+    @classmethod
+    def validate_search_id(cls, v):
+        if not re.match(config.ID_PATTERN, v):
+            raise ValueError("search_id contains invalid characters")
+        return v
     local_dir: Optional[str] = None
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
@@ -162,6 +170,13 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
 class SetupSearchRequest(BaseModel):
     search_id: str
     brief_notes: str
+
+    @field_validator("search_id")
+    @classmethod
+    def validate_search_id(cls, v):
+        if not re.match(config.ID_PATTERN, v):
+            raise ValueError("search_id contains invalid characters")
+        return v
     jd_content: str
     company_context: Optional[str] = None
 
@@ -215,7 +230,7 @@ async def get_dashboard():
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
     gems = []
-    gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
+    gem_list = config.ALLOWED_GEMS
     
     for g in gem_list:
         prompt_path = f"prompts/{g}.md"
@@ -236,6 +251,13 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id")
+    @classmethod
+    def validate_gem_id(cls, v):
+        if v not in config.ALLOWED_GEMS:
+            raise ValueError(f"Invalid gem_id. Must be one of {config.ALLOWED_GEMS}")
+        return v
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
