@@ -1,9 +1,8 @@
-import pytest
 from fastapi.testclient import TestClient
 from api import app
-import config
 
 client = TestClient(app)
+
 
 def test_pipeline_run_path_traversal():
     """Test that path traversal in search_id is rejected."""
@@ -14,6 +13,7 @@ def test_pipeline_run_path_traversal():
     assert response.status_code == 422
     assert "search_id" in response.text
 
+
 def test_pipeline_run_valid_id():
     """Test that a valid search_id is accepted (even if it fails later due to missing API key)."""
     response = client.post("/api/v1/run", json={
@@ -22,6 +22,7 @@ def test_pipeline_run_valid_id():
     })
     # If API_KEY is missing, it returns 400. If it passes validation, it shouldn't be 422.
     assert response.status_code != 422
+
 
 def test_search_setup_path_traversal():
     """Test that path traversal in search_id is rejected in search setup."""
@@ -32,6 +33,7 @@ def test_search_setup_path_traversal():
     })
     assert response.status_code == 422
 
+
 def test_gem_refine_invalid_gem():
     """Test that invalid gem_id is rejected."""
     response = client.post("/api/v1/gems/refine", json={
@@ -40,10 +42,14 @@ def test_gem_refine_invalid_gem():
     })
     assert response.status_code == 422
 
+
 def test_gem_refine_valid_gem(mocker):
     """Test that valid gem_id is accepted."""
     # Mock GeminiClient.run_gem to avoid external API calls
-    mocker.patch("agent.gemini_client.GeminiClient.run_gem", return_value={"markdown": "new prompt", "raw": "new prompt", "json": None, "usage": {}})
+    mocker.patch(
+        "agent.gemini_client.GeminiClient.run_gem",
+        return_value={"markdown": "new prompt", "raw": "new prompt", "json": None, "usage": {}}
+    )
 
     # Mock the file system for prompts/gem1.md to avoid overwriting real files
     mocker.patch("os.path.exists", side_effect=lambda p: True if p == "prompts/gem1.md" else False)
@@ -56,6 +62,7 @@ def test_gem_refine_valid_gem(mocker):
     })
     # Should not be 422.
     assert response.status_code != 422
+
 
 def test_db_api_validation():
     """Test validation in DB API models (importing app from infra.db.api)."""
