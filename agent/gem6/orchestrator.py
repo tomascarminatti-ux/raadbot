@@ -3,11 +3,12 @@ import json
 import uuid
 import asyncio
 import time
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
 import config
 from utils.ws_logger import broadcast_log
+
 
 class GEM6Orchestrator:
     def __init__(self, *args, **kwargs):
@@ -37,7 +38,7 @@ class GEM6Orchestrator:
         tasks = [process_candidate(cid, cdata) for cid, cdata in candidates.items()]
         completed_results = await asyncio.gather(*tasks)
         results = dict(completed_results)
-        
+
         # Save summary
         if self.output_dir:
             os.makedirs(self.output_dir, exist_ok=True)
@@ -49,19 +50,19 @@ class GEM6Orchestrator:
             }
             with open(summary_path, "w") as f:
                 json.dump(summary, f, indent=2)
-        
+
         return results
 
     async def process_context(self, context_data: Dict[str, Any]):
         trace_id = str(uuid.uuid4())
         entity_id = context_data.get("entity_id", "unknown")
-        
+
         logger.info(f"Starting AUTONOMOUS orchestration for {entity_id} | Trace: {trace_id}")
-        
+
         working_memory = []
         max_steps = 10
         step = 0
-        
+
         initial_context = {
             "search_inputs": context_data.get("search_inputs", {}),
             "candidate_data": context_data.get("candidate_data", {}),
@@ -185,7 +186,7 @@ class GEM6Orchestrator:
     async def call_agent(self, agent_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Calls the agent using GeminiClient or fallback to mock if client missing"""
         logger.info(f"Calling agent {agent_id}")
-        
+
         if self.gemini:
             try:
                 # Use prompt_builder for consistent templating
@@ -197,7 +198,7 @@ class GEM6Orchestrator:
             except Exception as e:
                 logger.error(f"Error calling Gemini for {agent_id}: {e}")
                 return {"error": str(e)}
-        
+
         # Fallback to mock for local testing/demo if no Gemini client
         await asyncio.sleep(0.1)
         if agent_id == "gem1":
@@ -226,6 +227,7 @@ class GEM6Orchestrator:
             "trace_id": trace_id
         })
         return is_ok
+
 
 if __name__ == "__main__":
     orch = GEM6Orchestrator()
