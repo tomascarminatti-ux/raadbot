@@ -1,0 +1,3 @@
+## 2024-05-23 - Optimized Prompt Construction with Caching and Regex
+**Learning:** In LLM-driven applications, core string processing functions like prompt construction are called frequently in loops. Repeated disk I/O for templates and multiple string replacements in a loop create a significant bottleneck. Single-pass regex substitution with a callback combined with LRU caching for templates can provide massive speedups (~10x-40x) with minimal complexity.
+**Action:** Use lru_cache for static template files and prefer single-pass re.sub with callbacks over multiple .replace calls when injecting multiple variables into a large string.
