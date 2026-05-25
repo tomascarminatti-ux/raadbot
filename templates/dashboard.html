@@ -22,7 +22,7 @@
     <aside class="w-64 glass border-r flex flex-col">
         <div class="p-6 border-b border-white/10">
             <h1 class="text-xl font-bold flex items-center gap-2 text-blue-400">
-                <span>🤖</span> RAADBOT 2.0
+                <span aria-hidden="true">🤖</span> RAADBOT 2.0
             </h1>
             <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest font-semibold">Industrial Orchestrator</p>
         </div>
@@ -74,9 +74,9 @@
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto... (Ctrl + Enter para enviar)"></textarea>
                     <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
-                        <span>🚀</span> Refinar Prompt
+                        <span aria-hidden="true">🚀</span> Refinar Prompt
                     </button>
                 </div>
             </section>
@@ -118,7 +118,7 @@
             nav.innerHTML = gems.map(gem => `
                 <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
                     <span>${gem.name}</span>
-                    <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
+                    <span aria-hidden="true" class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
                 </button>
             `).join('');
         }
@@ -139,6 +139,10 @@
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?
                 </div>
             `;
+
+            // Palette UX: Auto-focus the input field
+            const refineInput = document.getElementById('refine-input');
+            refineInput.focus();
         }
 
         async function refineGem() {
@@ -193,6 +197,17 @@
                 history.scrollTop = history.scrollHeight;
             }
         }
+
+        // Palette UX: Add Ctrl+Enter shortcut
+        document.getElementById('refine-input').addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                const btn = document.getElementById('send-btn');
+                if (!btn.disabled) {
+                    e.preventDefault();
+                    refineGem();
+                }
+            }
+        });
 
         // Init
         loadGems();
