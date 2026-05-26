@@ -232,7 +232,7 @@ async def get_dashboard():
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
     gems = []
-    gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
+    gem_list = config.ALLOWED_GEMS
 
     for g in gem_list:
         prompt_path = f"prompts/{g}.md"
