@@ -219,8 +219,8 @@
         }
 
         // Keyboard shortcuts
-        document.getElementById('refine-input').addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'Enter') {
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter' && e.target.id === 'refine-input') {
                 e.preventDefault();
                 refineGem();
             }
