@@ -83,9 +83,12 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9; transition: all 0.3s ease;">
+        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold; display: flex; justify-content: space-between; align-items: center;">
+            <span>🚀 Raadbot Live - GEMs en tiempo real</span>
+            <button onclick="toggleLogs()" id="toggle-logs-btn" aria-label="Contraer logs" style="background: none; border: 1px solid #0f0; color: #0f0; cursor: pointer; padding: 0 5px; font-size: 10px; border-radius: 3px;">_</button>
+        </div>
+        <div id="logs-container" style="height:250px; overflow-y:auto;"></div>
     </div>
     <script>
         const logsContainer = document.getElementById('logs-container');
@@ -139,6 +142,9 @@
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?
                 </div>
             `;
+
+            // Auto-focus on input for better UX
+            setTimeout(() => document.getElementById('refine-input').focus(), 100);
         }
 
         async function refineGem() {
@@ -193,6 +199,32 @@
                 history.scrollTop = history.scrollHeight;
             }
         }
+
+        function toggleLogs() {
+            const container = document.getElementById('logs-container');
+            const btn = document.getElementById('toggle-logs-btn');
+            const liveLogs = document.getElementById('live-logs');
+
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                btn.innerText = '_';
+                btn.setAttribute('aria-label', 'Contraer logs');
+                liveLogs.style.height = 'auto';
+            } else {
+                container.style.display = 'none';
+                btn.innerText = '▢';
+                btn.setAttribute('aria-label', 'Expandir logs');
+                liveLogs.style.height = '40px';
+            }
+        }
+
+        // Keyboard shortcuts
+        document.getElementById('refine-input').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                refineGem();
+            }
+        });
 
         // Init
         loadGems();
