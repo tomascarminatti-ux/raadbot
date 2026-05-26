@@ -4,22 +4,24 @@ import json
 import re
 import sys
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Request
+from typing import Optional, Dict, Any
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, field_validator
 
 # Fix imports for config
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-import config
+import config  # noqa: E402
 
 app = FastAPI(title="GEM v3.0 DB API")
 
 DB_PATH = os.getenv("DB_PATH", "infra/db/gem_v3.sqlite")
 
+
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def init_db():
     schema_path = "infra/db/schema.sql"
@@ -31,9 +33,11 @@ def init_db():
         conn.commit()
         conn.close()
 
+
 @app.on_event("startup")
 def startup_event():
     init_db()
+
 
 # Models
 class EntityUpdate(BaseModel):
@@ -53,6 +57,7 @@ class EntityUpdate(BaseModel):
             raise ValueError("Invalid identifier format")
         return v
 
+
 class DiscardEntity(BaseModel):
     entity_id: str
     stage_at_discard: str
@@ -68,6 +73,7 @@ class DiscardEntity(BaseModel):
         if not re.match(config.ID_PATTERN, v):
             raise ValueError("Invalid identifier format")
         return v
+
 
 class DiscoveryLog(BaseModel):
     entity_id: str
@@ -86,6 +92,7 @@ class DiscoveryLog(BaseModel):
             raise ValueError("Invalid identifier format")
         return v
 
+
 # Endpoints
 @app.post("/entity/upsert")
 async def upsert_entity(data: EntityUpdate):
@@ -97,8 +104,8 @@ async def upsert_entity(data: EntityUpdate):
 
         cursor.execute("""
             INSERT INTO entity_state (
-                entity_id, current_stage, state, last_score, 
-                human_required, metadata, agent_responsible, trace_id, 
+                entity_id, current_stage, state, last_score,
+                human_required, metadata, agent_responsible, trace_id,
                 created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(entity_id) DO UPDATE SET
@@ -125,6 +132,7 @@ async def upsert_entity(data: EntityUpdate):
         if conn:
             conn.close()
 
+
 @app.post("/entity/discard")
 async def discard_entity(data: DiscardEntity):
     conn = None
@@ -135,7 +143,7 @@ async def discard_entity(data: DiscardEntity):
         # Move to discarded table
         cursor.execute("""
             INSERT INTO discarded_entities (
-                entity_id, stage_at_discard, reason, score_at_discard, 
+                entity_id, stage_at_discard, reason, score_at_discard,
                 metadata, agent_responsible, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
@@ -154,6 +162,7 @@ async def discard_entity(data: DiscardEntity):
         if conn:
             conn.close()
 
+
 @app.get("/entities")
 async def get_entities(stage: Optional[str] = None):
     conn = None
@@ -170,6 +179,7 @@ async def get_entities(stage: Optional[str] = None):
         if conn:
             conn.close()
 
+
 @app.post("/log/discovery")
 async def log_discovery(data: DiscoveryLog):
     conn = None
@@ -178,8 +188,8 @@ async def log_discovery(data: DiscoveryLog):
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO discovery_logs (
-                entity_id, agent_id, input_contract_verified, 
-                output_contract_verified, execution_time_ms, status, 
+                entity_id, agent_id, input_contract_verified,
+                output_contract_verified, execution_time_ms, status,
                 error_message, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
@@ -193,9 +203,11 @@ async def log_discovery(data: DiscoveryLog):
         if conn:
             conn.close()
 
+
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "db-api"}
+
 
 if __name__ == "__main__":
     import uvicorn

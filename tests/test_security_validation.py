@@ -1,9 +1,8 @@
-import pytest
 from fastapi.testclient import TestClient
 from api import app
-import config
 
 client = TestClient(app)
+
 
 def test_pipeline_request_validation():
     # Valid search_id
@@ -31,6 +30,7 @@ def test_pipeline_request_validation():
     })
     assert response.status_code == 422
 
+
 def test_setup_search_validation(mocker):
     # Mock GeminiClient.run_gem to avoid external calls
     mocker.patch("api.GeminiClient.run_gem", return_value={"data": {}, "markdown": ""})
@@ -51,6 +51,7 @@ def test_setup_search_validation(mocker):
     })
     assert response.status_code == 422
 
+
 def test_refine_gem_validation():
     # Valid
     # (Note: this might actually try to run GEM if validation passes)
@@ -58,7 +59,7 @@ def test_refine_gem_validation():
 
     # Invalid gem_id
     response = client.post("/api/v1/gems/refine", json={
-        "gem_id": "gem6", # Only 1-5 allowed in config.ALLOWED_GEMS
+        "gem_id": "gem6",  # Only 1-5 allowed in config.ALLOWED_GEMS
         "instruction": "refine"
     })
     assert response.status_code == 422
@@ -68,6 +69,7 @@ def test_refine_gem_validation():
         "instruction": "refine"
     })
     assert response.status_code == 422
+
 
 def test_error_message_leaks():
     # Trigger an error and check if it leaks str(e)
