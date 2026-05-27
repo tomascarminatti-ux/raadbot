@@ -83,11 +83,32 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
+    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9; transition: all 0.3s ease;">
+        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleLogs()">
+            <span>🚀 Raadbot Live - GEMs en tiempo real</span>
+            <button id="toggle-logs-btn" style="background:none; border:none; color:#0f0; cursor:pointer; font-size:16px;" aria-label="Toggle log window" aria-expanded="true">−</button>
+        </div>
         <div id="logs-container"></div>
     </div>
     <script>
+        function toggleLogs() {
+            const logs = document.getElementById('live-logs');
+            const btn = document.getElementById('toggle-logs-btn');
+            const isCollapsed = logs.style.height === '40px';
+
+            if (isCollapsed) {
+                logs.style.height = '300px';
+                logs.style.overflowY = 'auto';
+                btn.innerText = '−';
+                btn.setAttribute('aria-expanded', 'true');
+            } else {
+                logs.style.height = '40px';
+                logs.style.overflowY = 'hidden';
+                btn.innerText = '+';
+                btn.setAttribute('aria-expanded', 'false');
+            }
+        }
+
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws/logs`);
