@@ -1,0 +1,3 @@
+## 2025-05-24 - Optimization of Prompt Construction and Pipeline Orchestration
+**Learning:** Sequential template string replacement and file I/O for prompts were identified as a bottleneck in high-throughput scenarios. Implementing `lru_cache` and single-pass regex substitution significantly reduced latency. Additionally, processing multiple candidates sequentially in the orchestrator caused total execution time to scale linearly with the number of candidates; parallelizing with `asyncio.gather` and offloading blocking I/O to threads provides sub-linear scaling.
+**Action:** Always prefer cached template loading and single-pass regex for prompt construction. Use parallel execution for independent entity processing in orchestrators.
