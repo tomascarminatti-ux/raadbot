@@ -2,9 +2,13 @@ import os
 import sqlite3
 import json
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+import sys
+# Ensure project root is in path to import config
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import config  # noqa: E402
+from typing import Optional, Dict, Any  # noqa: E402
+from fastapi import FastAPI, HTTPException  # noqa: E402
+from pydantic import BaseModel, Field  # noqa: E402
 
 app = FastAPI(title="GEM v3.0 DB API")
 
@@ -31,36 +35,36 @@ def startup_event():
 
 # Models
 class EntityUpdate(BaseModel):
-    entity_id: str
+    entity_id: str = Field(..., pattern=config.ID_PATTERN)
     current_stage: str
     state: str
     last_score: Optional[float] = None
     human_required: Optional[bool] = False
     metadata: Optional[Dict[str, Any]] = {}
     agent_responsible: str
-    trace_id: str
+    trace_id: str = Field(..., pattern=config.ID_PATTERN)
 
 class DiscardEntity(BaseModel):
-    entity_id: str
+    entity_id: str = Field(..., pattern=config.ID_PATTERN)
     stage_at_discard: str
     reason: str
     score_at_discard: Optional[float] = None
     metadata: Optional[Dict[str, Any]] = {}
     agent_responsible: str
-    trace_id: str
+    trace_id: str = Field(..., pattern=config.ID_PATTERN)
 
 # Endpoints
 @app.post("/entity/upsert")
 async def upsert_entity(data: EntityUpdate):
-    conn = get_db()
-    cursor = conn.cursor()
-    now = datetime.now().isoformat()
-    
+    conn = None
     try:
+        conn = get_db()
+        cursor = conn.cursor()
+        now = datetime.now().isoformat()
         cursor.execute("""
             INSERT INTO entity_state (
-                entity_id, current_stage, state, last_score, 
-                human_required, metadata, agent_responsible, trace_id, 
+                entity_id, current_stage, state, last_score,
+                human_required, metadata, agent_responsible, trace_id,
                 created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(entity_id) DO UPDATE SET
@@ -79,22 +83,25 @@ async def upsert_entity(data: EntityUpdate):
         ))
         conn.commit()
         return {"status": "success"}
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        if conn:
+            conn.rollback()
+        # Sentinel: Generic error to prevent info leakage
+        raise HTTPException(status_code=500, detail="Database error occurred.")
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 @app.post("/entity/discard")
 async def discard_entity(data: DiscardEntity):
-    conn = get_db()
-    cursor = conn.cursor()
-    
+    conn = None
     try:
+        conn = get_db()
+        cursor = conn.cursor()
         # Move to discarded table
         cursor.execute("""
             INSERT INTO discarded_entities (
-                entity_id, stage_at_discard, reason, score_at_discard, 
+                entity_id, stage_at_discard, reason, score_at_discard,
                 metadata, agent_responsible, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
@@ -105,33 +112,41 @@ async def discard_entity(data: DiscardEntity):
         cursor.execute("DELETE FROM entity_state WHERE entity_id = ?", (data.entity_id,))
         conn.commit()
         return {"status": "discarded"}
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        if conn:
+            conn.rollback()
+        # Sentinel: Generic error to prevent info leakage
+        raise HTTPException(status_code=500, detail="Database error occurred.")
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 @app.get("/entities")
 async def get_entities(stage: Optional[str] = None):
-    conn = get_db()
-    cursor = conn.cursor()
-    if stage:
-        cursor.execute("SELECT * FROM entity_state WHERE current_stage = ?", (stage,))
-    else:
-        cursor.execute("SELECT * FROM entity_state")
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    conn = None
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        if stage:
+            cursor.execute("SELECT * FROM entity_state WHERE current_stage = ?", (stage,))
+        else:
+            cursor.execute("SELECT * FROM entity_state")
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        if conn:
+            conn.close()
 
 @app.post("/log/discovery")
 async def log_discovery(data: Dict[str, Any]):
-    conn = get_db()
-    cursor = conn.cursor()
+    conn = None
     try:
+        conn = get_db()
+        cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO discovery_logs (
-                entity_id, agent_id, input_contract_verified, 
-                output_contract_verified, execution_time_ms, status, 
+                entity_id, agent_id, input_contract_verified,
+                output_contract_verified, execution_time_ms, status,
                 error_message, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
@@ -142,7 +157,8 @@ async def log_discovery(data: Dict[str, Any]):
         conn.commit()
         return {"status": "logged"}
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 @app.get("/health")
 async def health_check():
