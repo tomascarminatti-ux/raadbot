@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 import httpx
 import asyncio
 
@@ -52,7 +52,7 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(..., pattern=config.ID_PATTERN)
     drive_folder: Optional[str] = None
     local_dir: Optional[str] = None
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
@@ -155,12 +155,13 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
     else:
         try:
             return await run_pipeline(request)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        except Exception:
+            # Sentinel: Generic error to prevent info leakage
+            raise HTTPException(status_code=400, detail="Error executing pipeline. Please check parameters.")
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(..., pattern=config.ID_PATTERN)
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
@@ -237,9 +238,17 @@ class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
 
+    @field_validator("gem_id")
+    @classmethod
+    def validate_gem_id(cls, v):
+        if v not in config.ALLOWED_GEMS:
+            raise ValueError(f"Invalid gem_id. Must be one of: {config.ALLOWED_GEMS}")
+        return v
+
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
+    # Sentinel: Using whitelisted gem_id prevents path traversal
     prompt_path = f"prompts/{request.gem_id}.md"
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
