@@ -1,10 +1,15 @@
 import os
+import sys
 import sqlite3
 import json
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from typing import Optional, Dict, Any
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+
+# Ensure we can import config from the root
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+import config # noqa: E402
 
 app = FastAPI(title="GEM v3.0 DB API")
 
@@ -31,23 +36,33 @@ def startup_event():
 
 # Models
 class EntityUpdate(BaseModel):
-    entity_id: str
+    entity_id: str = Field(..., pattern=config.ID_PATTERN)
     current_stage: str
     state: str
     last_score: Optional[float] = None
     human_required: Optional[bool] = False
     metadata: Optional[Dict[str, Any]] = {}
     agent_responsible: str
-    trace_id: str
+    trace_id: str = Field(..., pattern=config.ID_PATTERN)
 
 class DiscardEntity(BaseModel):
-    entity_id: str
+    entity_id: str = Field(..., pattern=config.ID_PATTERN)
     stage_at_discard: str
     reason: str
     score_at_discard: Optional[float] = None
     metadata: Optional[Dict[str, Any]] = {}
     agent_responsible: str
-    trace_id: str
+    trace_id: str = Field(..., pattern=config.ID_PATTERN)
+
+class DiscoveryLog(BaseModel):
+    entity_id: str = Field(..., pattern=config.ID_PATTERN)
+    agent_responsible: str
+    input_ok: Optional[bool] = True
+    output_ok: Optional[bool] = True
+    time_ms: Optional[int] = 0
+    status: Optional[str] = "success"
+    error: Optional[str] = None
+    trace_id: str = Field(..., pattern=config.ID_PATTERN)
 
 # Endpoints
 @app.post("/entity/upsert")
@@ -55,12 +70,12 @@ async def upsert_entity(data: EntityUpdate):
     conn = get_db()
     cursor = conn.cursor()
     now = datetime.now().isoformat()
-    
+
     try:
         cursor.execute("""
             INSERT INTO entity_state (
-                entity_id, current_stage, state, last_score, 
-                human_required, metadata, agent_responsible, trace_id, 
+                entity_id, current_stage, state, last_score,
+                human_required, metadata, agent_responsible, trace_id,
                 created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(entity_id) DO UPDATE SET
@@ -79,9 +94,9 @@ async def upsert_entity(data: EntityUpdate):
         ))
         conn.commit()
         return {"status": "success"}
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Database error during upsert")
     finally:
         conn.close()
 
@@ -89,12 +104,12 @@ async def upsert_entity(data: EntityUpdate):
 async def discard_entity(data: DiscardEntity):
     conn = get_db()
     cursor = conn.cursor()
-    
+
     try:
         # Move to discarded table
         cursor.execute("""
             INSERT INTO discarded_entities (
-                entity_id, stage_at_discard, reason, score_at_discard, 
+                entity_id, stage_at_discard, reason, score_at_discard,
                 metadata, agent_responsible, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
@@ -105,9 +120,9 @@ async def discard_entity(data: DiscardEntity):
         cursor.execute("DELETE FROM entity_state WHERE entity_id = ?", (data.entity_id,))
         conn.commit()
         return {"status": "discarded"}
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Database error during discard")
     finally:
         conn.close()
 
@@ -124,23 +139,26 @@ async def get_entities(stage: Optional[str] = None):
     return [dict(row) for row in rows]
 
 @app.post("/log/discovery")
-async def log_discovery(data: Dict[str, Any]):
+async def log_discovery(data: DiscoveryLog):
     conn = get_db()
     cursor = conn.cursor()
     try:
         cursor.execute("""
             INSERT INTO discovery_logs (
-                entity_id, agent_id, input_contract_verified, 
-                output_contract_verified, execution_time_ms, status, 
+                entity_id, agent_id, input_contract_verified,
+                output_contract_verified, execution_time_ms, status,
                 error_message, trace_id
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            data.get("entity_id"), data.get("agent_id"), data.get("input_ok"),
-            data.get("output_ok"), data.get("time_ms"), data.get("status"),
-            data.get("error"), data.get("trace_id")
+            data.entity_id, data.agent_responsible, data.input_ok,
+            data.output_ok, data.time_ms, data.status,
+            data.error, data.trace_id
         ))
         conn.commit()
         return {"status": "logged"}
+    except Exception:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail="Database error during logging")
     finally:
         conn.close()
 
