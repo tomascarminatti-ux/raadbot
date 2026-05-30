@@ -1,0 +1,4 @@
+## 2025-05-24 - Mitigation of Path Traversal and Information Leakage
+**Vulnerability:** The application was vulnerable to path traversal through identifier fields (search_id, gem_id, etc.) used in file I/O operations. It also leaked internal system details by returning raw exception strings in API responses.
+**Learning:** Using identifiers directly in `os.path.join` without strict regex validation or whitelisting is a primary vector for path traversal. Returning `str(e)` in FastAPI `HTTPException` is a common but insecure pattern that exposes internal stack traces or database errors.
+**Prevention:** Centralize identifier validation using a strict regex (e.g., `^[a-zA-Z0-9_-]+$`) in Pydantic models. Whitelist sensitive identifiers like prompt IDs. Mask raw exceptions with generic, security-safe error messages in all user-facing endpoints and background tasks.
