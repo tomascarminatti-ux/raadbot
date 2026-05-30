@@ -59,10 +59,10 @@ def build_prompt(gem_name: str, variables: dict) -> str:
         if key == "VERSION":
             return match.group(0)  # Mantener metadata VERSION
 
-        value = variables.get(key)
-        if value is None:
+        if key not in variables:
             return match.group(0)  # No reemplazar si no está en variables
 
+        value = variables[key]
         if isinstance(value, dict):
             return json.dumps(value, ensure_ascii=False, indent=2)
         return str(value)
