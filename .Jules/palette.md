@@ -1,0 +1,3 @@
+## 2025-05-24 - Accessibility & Feedback Patterns in Industrial Dark Mode
+**Learning:** In dark-themed, "industrial" UIs like Raadbot, traditional focus outlines can be visually jarring. Using `focus-visible:ring-2` with `outline-none` ensures accessibility for keyboard navigators while maintaining the aesthetic for mouse users. Additionally, changing button text (e.g., 'COPY' to 'COPIED!') provides much clearer confirmation than subtle color changes alone in a low-contrast environment.
+**Action:** Always pair `focus-visible` ring styles with `outline-none` and prioritize explicit text-based state feedback for icon-only or micro-action buttons.
