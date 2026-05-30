@@ -4,6 +4,7 @@ import config
 
 client = TestClient(app)
 
+
 def test_pipeline_request_path_traversal():
     """Test that search_id with path traversal characters is rejected."""
     payload = {
@@ -13,6 +14,7 @@ def test_pipeline_request_path_traversal():
     response = client.post("/api/v1/run", json=payload)
     assert response.status_code == 422
     assert "search_id" in response.text
+
 
 def test_pipeline_request_valid_id():
     """Test that a valid search_id passes validation (even if backend fails later)."""
@@ -27,6 +29,7 @@ def test_pipeline_request_valid_id():
     # The point is it didn't fail with path traversal.
     assert response.status_code != 422 or "search_id" not in response.text
 
+
 def test_refine_request_invalid_gem():
     """Test that invalid gem_id is rejected."""
     payload = {
@@ -37,6 +40,7 @@ def test_refine_request_invalid_gem():
     assert response.status_code == 422
     assert "Invalid gem_id" in response.text
 
+
 def test_refine_request_path_traversal():
     """Test that path traversal in gem_id is rejected."""
     payload = {
@@ -46,6 +50,7 @@ def test_refine_request_path_traversal():
     response = client.post("/api/v1/gems/refine", json=payload)
     assert response.status_code == 422
 
+
 def test_list_gems_uses_whitelist():
     """Test that list_gems only returns allowed gems."""
     response = client.get("/api/v1/gems")
@@ -54,6 +59,7 @@ def test_list_gems_uses_whitelist():
     gem_ids = [g["id"] for g in data]
     assert all(gid in config.ALLOWED_GEMS for gid in gem_ids)
     assert "gem1" in gem_ids
+
 
 def test_db_api_validation():
     """Test validation in the DB API."""
