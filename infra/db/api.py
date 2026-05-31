@@ -1,10 +1,15 @@
 import os
+import sys
 import sqlite3
 import json
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+# Ensure config can be imported from project root
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+import config  # noqa: E402
 
 app = FastAPI(title="GEM v3.0 DB API")
 
@@ -31,23 +36,23 @@ def startup_event():
 
 # Models
 class EntityUpdate(BaseModel):
-    entity_id: str
+    entity_id: str = Field(..., pattern=config.ID_PATTERN)
     current_stage: str
     state: str
     last_score: Optional[float] = None
     human_required: Optional[bool] = False
     metadata: Optional[Dict[str, Any]] = {}
     agent_responsible: str
-    trace_id: str
+    trace_id: str = Field(..., pattern=config.ID_PATTERN)
 
 class DiscardEntity(BaseModel):
-    entity_id: str
+    entity_id: str = Field(..., pattern=config.ID_PATTERN)
     stage_at_discard: str
     reason: str
     score_at_discard: Optional[float] = None
     metadata: Optional[Dict[str, Any]] = {}
     agent_responsible: str
-    trace_id: str
+    trace_id: str = Field(..., pattern=config.ID_PATTERN)
 
 # Endpoints
 @app.post("/entity/upsert")
@@ -79,9 +84,9 @@ async def upsert_entity(data: EntityUpdate):
         ))
         conn.commit()
         return {"status": "success"}
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno al actualizar la entidad.")
     finally:
         conn.close()
 
@@ -105,9 +110,9 @@ async def discard_entity(data: DiscardEntity):
         cursor.execute("DELETE FROM entity_state WHERE entity_id = ?", (data.entity_id,))
         conn.commit()
         return {"status": "discarded"}
-    except Exception as e:
+    except Exception:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error interno al descartar la entidad.")
     finally:
         conn.close()
 
