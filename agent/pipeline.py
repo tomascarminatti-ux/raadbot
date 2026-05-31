@@ -59,12 +59,14 @@ class Pipeline:
         }
 
     async def _save_state(self):
-        """Guarda el estado actual en disco (con lock para concurrencia)."""
+        """Guarda el estado actual en disco (con lock para concurrencia, offloaded to thread)."""
         async with self._lock:
-            with open(self.state_file, "w", encoding="utf-8") as f:
-                json.dump(self.state, f, ensure_ascii=False, indent=2)
+            def _write():
+                with open(self.state_file, "w", encoding="utf-8") as f:
+                    json.dump(self.state, f, ensure_ascii=False, indent=2)
+            await asyncio.to_thread(_write)
 
-    async def _track_usage(self, usage: dict):
+    async def _track_usage(self, usage: dict, skip_save: bool = False):
         """Suma tokens y calcula costo acumulado."""
         if not usage:
             return
@@ -80,7 +82,8 @@ class Pipeline:
             cost_c = (c_tokens / 1_000_000) * PRICE_COMPLETION_1M
             self.state["usage"]["total_cost_usd"] += cost_p + cost_c
 
-        await self._save_state()
+        if not skip_save:
+            await self._save_state()
 
     async def _save_output(
         self, gem_name: str, result: dict, candidate_id: Optional[str] = None
@@ -96,9 +99,9 @@ class Pipeline:
             base = self.output_dir
             state_key = "search"
 
-        # Track usage
+        # Track usage (skip immediate save because we'll save state below)
         if "usage" in result:
-            await self._track_usage(result["usage"])
+            await self._track_usage(result["usage"], skip_save=True)
 
         async with self._lock:
             # Update state cache
@@ -111,26 +114,30 @@ class Pipeline:
                 self.state["results_cache"][state_key] = {}
             self.state["results_cache"][state_key][gem_name] = result
 
+        # Consolidated state save
         await self._save_state()
 
-        # Files
-        json_path = os.path.join(base, f"{prefix}.json")
-        if result.get("json"):
-            with open(json_path, "w", encoding="utf-8") as f:
-                json.dump(result["json"], f, ensure_ascii=False, indent=2)
+        # Files (Offload I/O to threads to keep event loop free)
+        def _write_files():
+            json_path = os.path.join(base, f"{prefix}.json")
+            if result.get("json"):
+                with open(json_path, "w", encoding="utf-8") as f:
+                    json.dump(result["json"], f, ensure_ascii=False, indent=2)
 
-        md_path = os.path.join(base, f"{prefix}.md")
-        with open(md_path, "w", encoding="utf-8") as f:
-            md_content = result.get("markdown")
-            if md_content is None:
-                md_content = result.get("raw", "")
-            f.write(str(md_content))
+            md_path = os.path.join(base, f"{prefix}.md")
+            with open(md_path, "w", encoding="utf-8") as f:
+                md_content = result.get("markdown")
+                if md_content is None:
+                    md_content = result.get("raw", "")
+                f.write(str(md_content))
 
-        raw_path = os.path.join(base, f"{prefix}.raw.txt")
-        with open(raw_path, "w", encoding="utf-8") as f:
-            f.write(result.get("raw", ""))
+            raw_path = os.path.join(base, f"{prefix}.raw.txt")
+            with open(raw_path, "w", encoding="utf-8") as f:
+                f.write(result.get("raw", ""))
 
-        return json_path, md_path
+            return json_path, md_path
+
+        return await asyncio.to_thread(_write_files)
 
     def _validate_output(self, json_data: dict, gem_name: str) -> bool:
         if not self.schema or not json_data:
