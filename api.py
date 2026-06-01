@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import httpx
 import asyncio
 
@@ -52,7 +52,7 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(..., pattern=r"^[a-zA-Z0-9_-]+$")
     drive_folder: Optional[str] = None
     local_dir: Optional[str] = None
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
@@ -122,7 +122,7 @@ async def background_run_pipeline(request: PipelineRequest):
         if request.webhook_url:
             async with httpx.AsyncClient() as client:
                 await client.post(request.webhook_url, json=resultado, timeout=60.0)
-    except Exception as e:
+    except Exception:
         if request.webhook_url:
             try:
                 async with httpx.AsyncClient() as client:
@@ -131,7 +131,7 @@ async def background_run_pipeline(request: PipelineRequest):
                         json={
                             "status": "error", 
                             "search_id": request.search_id, 
-                            "message": str(e)
+                            "message": "Internal error during background execution"
                         },
                         timeout=30.0,
                     )
@@ -155,12 +155,12 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
     else:
         try:
             return await run_pipeline(request)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        except Exception:
+            raise HTTPException(status_code=400, detail="Internal error during pipeline execution")
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(..., pattern=r"^[a-zA-Z0-9_-]+$")
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
@@ -215,7 +215,7 @@ async def get_dashboard():
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
     gems = []
-    gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
+    gem_list = config.ALLOWED_GEMS
     
     for g in gem_list:
         prompt_path = f"prompts/{g}.md"
@@ -234,12 +234,15 @@ async def list_gems():
     return gems
 
 class RefineRequest(BaseModel):
-    gem_id: str
+    gem_id: str = Field(..., pattern=r"^[a-zA-Z0-9_-]+$")
     instruction: str
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
+    if request.gem_id not in config.ALLOWED_GEMS:
+        raise HTTPException(status_code=403, detail="Access denied to this GEM")
+
     prompt_path = f"prompts/{request.gem_id}.md"
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
