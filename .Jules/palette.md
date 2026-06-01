@@ -1,0 +1,3 @@
+## 2026-06-01 - Industrial Log Overlay & Accessibility
+**Learning:** Combining the existing `.glass` class with Tailwind utility classes like `bg-black/20` for content areas creates a consistent 'industrial' feel for overlay components in the Raadbot UI. Adding a collapse/expand toggle to fixed overlays significantly improves screen real estate management on dense dashboards.
+**Action:** For any new fixed overlays, use the `.glass` class, include a toggle mechanism for visibility, and ensure `aria-live="polite"` is used on real-time update containers to balance visibility and non-intrusive accessibility.
