@@ -83,20 +83,63 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <div id="live-logs" class="fixed bottom-5 right-5 w-96 glass rounded-xl shadow-2xl z-50 flex flex-col transition-all duration-300 overflow-hidden" style="height: 300px;">
+        <div class="flex items-center justify-between p-3 border-b border-white/10 bg-black/20">
+            <div class="flex items-center gap-2 text-xs font-bold text-blue-400">
+                <span class="animate-pulse">🚀</span>
+                <span>RAADBOT LIVE</span>
+            </div>
+            <button onclick="toggleLogs()" aria-label="Toggle logs visibility" class="text-slate-400 hover:text-white transition-colors p-1 rounded hover:bg-white/5">
+                <svg id="toggle-icon" class="transition-transform duration-300" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+            </button>
+        </div>
+        <div id="logs-container" role="log" aria-live="polite" aria-label="Real-time execution logs" class="flex-1 p-3 font-mono text-[10px] overflow-y-auto space-y-2 bg-black/40">
+            <div class="text-slate-500 italic">Esperando actividad del orquestador...</div>
+        </div>
     </div>
     <script>
+        function toggleLogs() {
+            const logs = document.getElementById('live-logs');
+            const icon = document.getElementById('toggle-icon');
+            const isCollapsed = logs.style.height === '44px';
+
+            if (isCollapsed) {
+                logs.style.height = '300px';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                logs.style.height = '44px';
+                icon.style.transform = 'rotate(180deg)';
+            }
+        }
+
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws/logs`);
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
             const logEntry = document.createElement('div');
-            logEntry.style.marginBottom = '5px';
+            logEntry.className = 'border-l-2 border-white/10 pl-2 py-1';
             const time = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
-            logEntry.innerHTML = `[${time}] <span style="color:#3b82f6">${data.gem}</span>: ${data.action} - <span style="color:${data.status === 'OK' ? '#4ade80' : '#f87171'}">${data.status}</span> (Score: ${data.score || 'N/A'})`;
+            const statusColor = data.status === 'OK' ? 'text-green-400' : 'text-red-400';
+
+            logEntry.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <span class="text-slate-500">[${time}]</span>
+                    <span class="px-1.5 py-0.5 bg-blue-500/10 text-blue-400 rounded text-[9px] font-bold uppercase">${data.gem}</span>
+                </div>
+                <div class="mt-0.5 text-xs">
+                    <span class="text-slate-300">${data.action}</span>
+                    <span class="${statusColor} font-bold ml-1">${data.status}</span>
+                    <span class="text-slate-500 ml-1 text-[10px]">(Score: ${data.score || 'N/A'})</span>
+                </div>
+            `;
+
+            // Remove placeholder if it exists
+            const placeholder = logsContainer.querySelector('.italic');
+            if (placeholder) {
+                placeholder.remove();
+            }
+
             logsContainer.prepend(logEntry);
         };
 
