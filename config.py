@@ -13,6 +13,10 @@ DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.3:70b")
 
+# Security & Validation
+ID_PATTERN = r'^[a-zA-Z0-9_-]+$'
+ALLOWED_GEMS = ["gem1", "gem2", "gem3", "gem4", "gem5"]
+
 # Gating Thresholds
 SCORING_CUTOFF = float(os.getenv("SCORING_CUTOFF", "0.4"))
 QA_GATE_CUTOFF = float(os.getenv("QA_GATE_CUTOFF", "0.85"))
