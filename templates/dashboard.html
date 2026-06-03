@@ -83,11 +83,41 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <!-- Live Logs Window -->
+    <div id="live-logs" class="fixed bottom-5 right-5 w-80 glass rounded-xl shadow-2xl z-50 flex flex-col transition-all duration-300 h-80 overflow-hidden border-blue-500/30" role="log" aria-live="polite">
+        <div class="flex items-center justify-between p-3 border-b border-white/10 bg-white/5">
+            <div class="flex items-center gap-2 text-xs font-bold text-blue-400">
+                <span>🚀</span> <span>Raadbot Live</span>
+            </div>
+            <button onclick="toggleLogs()" class="p-1 hover:bg-white/10 rounded transition-colors text-slate-400" aria-label="Toggle logs visibility" id="toggle-logs-btn">
+                <span id="toggle-icon">▼</span>
+            </button>
+        </div>
+        <div id="logs-container" class="flex-1 overflow-y-auto p-3 font-mono text-[10px] leading-relaxed space-y-1 bg-black/20">
+            <!-- Logs appear here -->
+        </div>
     </div>
+
     <script>
+        function toggleLogs() {
+            const container = document.getElementById('live-logs');
+            const btn = document.getElementById('toggle-logs-btn');
+            const icon = document.getElementById('toggle-icon');
+            const isCollapsed = container.classList.contains('h-12');
+
+            if (isCollapsed) {
+                container.classList.remove('h-12');
+                container.classList.add('h-80');
+                icon.innerText = '▼';
+                btn.setAttribute('aria-expanded', 'true');
+            } else {
+                container.classList.remove('h-80');
+                container.classList.add('h-12');
+                icon.innerText = '▲';
+                btn.setAttribute('aria-expanded', 'false');
+            }
+        }
+
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws/logs`);
