@@ -83,11 +83,39 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <div id="live-logs" class="fixed bottom-5 right-5 w-96 glass rounded-xl overflow-hidden z-50 flex flex-col transition-all duration-300 shadow-2xl border-blue-500/30">
+        <div class="p-3 border-b border-white/10 flex justify-between items-center bg-blue-500/10">
+            <h3 class="text-xs font-bold text-blue-400 flex items-center gap-2">
+                <span class="animate-pulse">🚀</span> RAADBOT LIVE
+            </h3>
+            <button onclick="toggleLogs()" class="text-slate-400 hover:text-white transition-colors p-1" aria-label="Toggle logs visibility" aria-expanded="true" id="logs-toggle-btn">
+                <span id="toggle-icon">➖</span>
+            </button>
+        </div>
+        <div id="logs-content" class="h-64 flex flex-col transition-all duration-300">
+            <div id="logs-container" class="flex-1 overflow-y-auto p-3 font-mono text-[10px] space-y-2 scrollbar-thin" role="log" aria-live="polite">
+                <!-- Logs appear here -->
+            </div>
+        </div>
     </div>
     <script>
+        function toggleLogs() {
+            const content = document.getElementById('logs-content');
+            const icon = document.getElementById('toggle-icon');
+            const btn = document.getElementById('logs-toggle-btn');
+            const isHidden = content.classList.contains('hidden');
+
+            if (isHidden) {
+                content.classList.remove('hidden');
+                icon.innerText = '➖';
+                btn.setAttribute('aria-expanded', 'true');
+            } else {
+                content.classList.add('hidden');
+                icon.innerText = '➕';
+                btn.setAttribute('aria-expanded', 'false');
+            }
+        }
+
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws/logs`);
