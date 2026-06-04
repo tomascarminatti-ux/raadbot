@@ -44,3 +44,7 @@ GEM_CONFIGS = {
 # Google Drive Settings
 DRIVE_CREDENTIALS_PATH = os.getenv("DRIVE_CREDENTIALS_PATH", "credentials.json")
 DRIVE_TOKEN_FILE = "token.json"
+
+# Security Patterns
+ID_PATTERN = r'^[a-zA-Z0-9_-]+$'
+ALLOWED_GEMS = list(GEM_CONFIGS.keys())
