@@ -3,7 +3,7 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -129,8 +129,8 @@ async def background_run_pipeline(request: PipelineRequest):
                     await client.post(
                         request.webhook_url,
                         json={
-                            "status": "error", 
-                            "search_id": request.search_id, 
+                            "status": "error",
+                            "search_id": request.search_id,
                             "message": str(e)
                         },
                         timeout=30.0,
@@ -159,6 +159,8 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
             # Prevent leaking internal information via str(e)
             print(f"Error triggering pipeline: {e}")
             raise HTTPException(status_code=400, detail="An error occurred while processing the pipeline request.")
+
+
 
 
 class SetupSearchRequest(BaseModel):
@@ -204,6 +206,7 @@ async def setup_search(request: SetupSearchRequest):
 
 # --- Dashboard Endpoints ---
 
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard():
     """Sirve la interfaz del Dashboard."""
@@ -235,9 +238,11 @@ async def list_gems():
     
     return gems
 
+
 class RefineRequest(BaseModel):
     gem_id: str = Field(..., pattern=config.ID_PATTERN)
     instruction: str
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
@@ -279,6 +284,7 @@ async def refine_gem(request: RefineRequest):
     
     return {"status": "error", "message": "Failed to generate new prompt"}
 
+
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
     await websocket.accept()
@@ -290,6 +296,7 @@ async def websocket_logs(websocket: WebSocket):
     except WebSocketDisconnect:
         if websocket in active_connections:
             active_connections.remove(websocket)
+
 
 @app.get("/health")
 def health_check():
