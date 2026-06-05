@@ -3,10 +3,10 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import httpx
 import asyncio
 
@@ -52,10 +52,10 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(..., pattern=config.ID_PATTERN)
     drive_folder: Optional[str] = None
     local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    candidate_id: Optional[str] = Field(None, pattern=config.ID_PATTERN)  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
 
@@ -129,8 +129,8 @@ async def background_run_pipeline(request: PipelineRequest):
                     await client.post(
                         request.webhook_url,
                         json={
-                            "status": "error", 
-                            "search_id": request.search_id, 
+                            "status": "error",
+                            "search_id": request.search_id,
                             "message": str(e)
                         },
                         timeout=30.0,
@@ -156,11 +156,15 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
         try:
             return await run_pipeline(request)
         except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            # Prevent leaking internal information via str(e)
+            print(f"Error triggering pipeline: {e}")
+            raise HTTPException(status_code=400, detail="An error occurred while processing the pipeline request.")
+
+
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(..., pattern=config.ID_PATTERN)
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
@@ -202,6 +206,7 @@ async def setup_search(request: SetupSearchRequest):
 
 # --- Dashboard Endpoints ---
 
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard():
     """Sirve la interfaz del Dashboard."""
@@ -233,13 +238,18 @@ async def list_gems():
     
     return gems
 
+
 class RefineRequest(BaseModel):
-    gem_id: str
+    gem_id: str = Field(..., pattern=config.ID_PATTERN)
     instruction: str
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
+    if request.gem_id not in config.ALLOWED_GEMS:
+        raise HTTPException(status_code=403, detail="Access to this GEM is restricted")
+
     prompt_path = f"prompts/{request.gem_id}.md"
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
@@ -274,6 +284,7 @@ async def refine_gem(request: RefineRequest):
     
     return {"status": "error", "message": "Failed to generate new prompt"}
 
+
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
     await websocket.accept()
@@ -285,6 +296,7 @@ async def websocket_logs(websocket: WebSocket):
     except WebSocketDisconnect:
         if websocket in active_connections:
             active_connections.remove(websocket)
+
 
 @app.get("/health")
 def health_check():
