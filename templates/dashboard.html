@@ -74,8 +74,9 @@
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
-                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <label for="refine-input" class="sr-only">Instrucciones de refinamiento</label>
+                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600 focus-visible:ring-2 focus-visible:ring-blue-500" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">
                         <span>🚀</span> Refinar Prompt
                     </button>
                 </div>
@@ -83,10 +84,20 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <div id="live-logs" class="fixed bottom-6 right-6 w-96 glass rounded-xl overflow-hidden z-50 flex flex-col transition-all duration-300" style="height: 300px;">
+        <div class="p-3 border-b border-white/10 flex items-center justify-between bg-black/20">
+            <h3 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                <span class="animate-pulse">🚀</span> Raadbot Live
+            </h3>
+            <button onclick="toggleLogs()" id="toggle-logs-btn" aria-label="Collapse logs" aria-expanded="true" class="text-slate-400 hover:text-white focus-visible:ring-2 focus-visible:ring-blue-500 rounded outline-none p-1 transition-colors">
+                <span id="toggle-icon">▼</span>
+            </button>
+        </div>
+        <div id="logs-content" class="flex-1 p-3 font-mono text-[10px] overflow-y-auto bg-black/40">
+            <div id="logs-container" role="log" aria-live="polite" class="space-y-1"></div>
+        </div>
     </div>
+
     <script>
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -94,11 +105,48 @@
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
             const logEntry = document.createElement('div');
-            logEntry.style.marginBottom = '5px';
+            logEntry.className = 'border-b border-white/5 pb-1 last:border-0 flex gap-1 flex-wrap items-baseline';
             const time = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
-            logEntry.innerHTML = `[${time}] <span style="color:#3b82f6">${data.gem}</span>: ${data.action} - <span style="color:${data.status === 'OK' ? '#4ade80' : '#f87171'}">${data.status}</span> (Score: ${data.score || 'N/A'})`;
+            const statusColor = data.status === 'OK' ? 'text-green-400' : 'text-red-400';
+
+            const createSpan = (text, className) => {
+                const s = document.createElement('span');
+                s.className = className;
+                s.textContent = text;
+                return s;
+            };
+
+            logEntry.appendChild(createSpan(`[${time}]`, 'text-slate-500'));
+            logEntry.appendChild(createSpan(data.gem, 'text-blue-400 font-bold'));
+            logEntry.appendChild(createSpan(':', 'text-slate-300'));
+            logEntry.appendChild(createSpan(data.action, 'text-slate-300'));
+            logEntry.appendChild(createSpan('-', 'text-slate-300'));
+            logEntry.appendChild(createSpan(data.status, statusColor));
+            logEntry.appendChild(createSpan(`(S: ${data.score || 'N/A'})`, 'text-slate-500 italic'));
+
             logsContainer.prepend(logEntry);
         };
+
+        function toggleLogs() {
+            const logs = document.getElementById('live-logs');
+            const content = document.getElementById('logs-content');
+            const icon = document.getElementById('toggle-icon');
+            const btn = document.getElementById('toggle-logs-btn');
+
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                logs.style.height = '300px';
+                icon.innerText = '▼';
+                btn.setAttribute('aria-expanded', 'true');
+                btn.setAttribute('aria-label', 'Collapse logs');
+            } else {
+                content.classList.add('hidden');
+                logs.style.height = 'auto';
+                icon.innerText = '▲';
+                btn.setAttribute('aria-expanded', 'false');
+                btn.setAttribute('aria-label', 'Expand logs');
+            }
+        }
 
         let gems = [];
         let activeGem = null;
@@ -116,7 +164,7 @@
         function renderNav() {
             const nav = document.getElementById('gem-nav');
             nav.innerHTML = gems.map(gem => `
-                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
+                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">
                     <span>${gem.name}</span>
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
                 </button>
