@@ -1,0 +1,3 @@
+## 2025-05-15 - Accessible Glassmorphism Toggles
+**Learning:** In highly stylized "industrial" UIs using glassmorphism and fixed positioning, interactive elements like log windows often lack clear affordances and accessibility states. Combining Tailwind's `glass` effect with explicit ARIA attributes (`aria-expanded`, `aria-label`) and semantic roles (`role="log"`) ensures that "invisible" UX polish remains perceptible to all users.
+**Action:** Always pair visual state changes (like height transitions or rotations) with corresponding ARIA attribute updates to maintain functional parity for screen reader users.
