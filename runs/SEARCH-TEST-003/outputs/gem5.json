@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "search_id": "SEARCH-TEST-003",
+    "candidate_id": null,
+    "gem": "GEM 5 - Radiografía Estratégica",
+    "prompt_version": "v1.2",
+    "timestamp": "2024-07-30T12:00:00Z",
+    "sources": [
+      "Brief/JD",
+      "Notas kick-off",
+      "Contexto compañía"
+    ]
+  },
+  "scores": {
+    "score_dimension": null,
+    "confidence": 9
+  },
+  "blockers": [],
+  "content": {
+    "problema_real_del_rol": [
+      "La operación actual está desorganizada y genera pérdidas significativas debido a ineficiencias logísticas y procesos manuales sin KPIs claros [Fuente: Notas kick-off; Contexto compañía].",
+      "Existe una cultura de trabajo caótica y reactiva, con silos entre áreas, que requiere una transformación hacia la orientación a resultados y la agilidad [Fuente: Notas kick-off; Contexto compañía].",
+      "La empresa necesita escalar rápidamente sus operaciones con la apertura de 2 nuevos centros de distribución, lo que agravará el caos si no se implementa una estructura sólida [Fuente: Notas kick-off; Contexto compañía]."
+    ],
+    "exitos_esperados_12_18_meses": [
+      "Reducción del 15% en costos logísticos mediante la optimización de la cadena de suministro [Fuente: Brief/JD].",
+      "Implementación exitosa de nuevos sistemas tecnológicos para la gestión de inventario, con KPIs de eficiencia definidos y monitoreados [Fuente: Brief/JD; Contexto compañía].",
+      "Operacionalización completa y eficiente de 2 nuevos centros de distribución, integrados a la red existente y con métricas de rendimiento claras [Fuente: Notas kick-off].",
+      "Establecimiento de una cultura operativa orientada a resultados, con procesos estandarizados y KPIs claros en todas las áreas de almacén y transporte [Fuente: Notas kick-off; Contexto compañía].",
+      "Mejora en la productividad y compromiso del equipo de más de 200 personas, evidenciada por métricas de desempeño y retención [Fuente: Brief/JD; Notas kick-off]."
+    ],
+    "no_fits": [
+      "**Perfiles puramente estratégicos o consultores sin experiencia operativa hands-on:** La necesidad es de alguien que 'se arremangue y entienda la operación desde el piso del almacén', no un 'político de oficina' [Fuente: Notas kick-off].",
+      "**Candidatos de sectores no minoristas o e-commerce:** Se requiere experiencia específica en logística y operaciones en estos sectores para entender la dinámica de alto volumen y rapidez [Fuente: Brief/JD].",
+      "**Líderes que evitan la confrontación o el cambio cultural:** La empresa necesita 'mano dura pero empático' para transformar una cultura caótica y desorganizada hacia una orientada a resultados [Fuente: Notas kick-off]."
+    ],
+    "stakeholders_criticos_tensiones": [
+      "**CEO:** Principal sponsor y demandante de resultados. Tensión: Expectativa de transformación rápida vs. realidad de la resistencia al cambio y complejidad operativa [Fuente: Notas kick-off].",
+      "**Equipo de Operaciones (200+ personas):** Directamente impactados por los cambios. Tensión: Resistencia a la estandarización y nuevos procesos vs. necesidad de eficiencia y orden [Fuente: Brief/JD; Contexto compañía].",
+      "**Equipo de Tecnología:** Colaboradores clave para la implementación de sistemas. Tensión: Prioridades de desarrollo y recursos limitados vs. urgencia de las necesidades operativas [Fuente: Brief/JD].",
+      "**Equipo de Finanzas:** Interesados en la reducción de costos. Tensión: Necesidad de inversión inicial para la transformación vs. presión por la rentabilidad inmediata [Fuente: Brief/JD; Notas kick-off]."
+    ],
+    "mapa_de_mercado": {
+      "targets": [
+        "E-commerce (grandes jugadores)",
+        "Retail (grandes cadenas con fuerte componente online)",
+        "Empresas de Logística 3PL (con experiencia en e-commerce y tecnología)",
+        "Startups de logística/última milla (con escala y crecimiento rápido)"
+      ],
+      "no_go": [
+        "Manufactura tradicional",
+        "Logística de carga pesada/granel",
+        "Retail tradicional (sin e-commerce significativo)",
+        "Servicios financieros/consultoría (sin experiencia operativa directa)"
+      ],
+      "competidores": [
+        "Amazon México",
+        "Mercado Libre",
+        "Walmart México (e-commerce)",
+        "Liverpool (e-commerce)",
+        "Coppel (e-commerce)",
+        "Estafeta (operaciones e-commerce)",
+        "DHL (operaciones e-commerce)"
+      ]
+    },
+    "riesgos_del_mandato": [
+      "**Resistencia cultural y del equipo:** La cultura actual es caótica; el cambio hacia la disciplina y resultados puede generar fricción y rotación [Fuente: Notas kick-off; Contexto compañía].",
+      "**Recursos insuficientes:** Falta de presupuesto o personal cualificado para implementar los nuevos sistemas y procesos necesarios [Fuente: Hipótesis no validada – requiere verificación].",
+      "**Expectativas poco realistas del CEO:** Presión para lograr resultados rápidos (ej. reducción del 15% en 1 año) en un entorno de alto crecimiento y desorganización preexistente [Fuente: Notas kick-off; Brief/JD].",
+      "**Dificultad para escalar y optimizar simultáneamente:** El crecimiento acelerado y la apertura de nuevos CDDs pueden complicar la estabilización y optimización de la operación existente [Fuente: Notas kick-off; Contexto compañía].",
+      "**Integración tecnológica compleja:** Los procesos manuales y la falta de KPIs pueden dificultar la implementación de nuevos sistemas de gestión de inventario [Fuente: Brief/JD; Contexto compañía].",
+      "**Silos organizacionales persistentes:** A pesar de los esfuerzos, la inercia de los silos entre almacén y transporte puede impedir una optimización integral [Fuente: Contexto compañía]."
+    ],
+    "criterios_de_decision_final": [
+      "Historial comprobable liderando transformaciones operativas y de cadena de suministro en e-commerce o retail [Fuente: Brief/JD; Notas kick-off].",
+      "Capacidad demostrada para liderar y desarrollar equipos grandes (>200 personas) y gestionar el cambio cultural hacia resultados [Fuente: Brief/JD; Notas kick-off].",
+      "Experiencia práctica en optimización logística, reducción de costos y escalamiento de operaciones (ej. apertura de CDDs) [Fuente: Brief/JD; Notas kick-off].",
+      "Habilidades analíticas y financieras sólidas para identificar ineficiencias y medir el impacto de las mejoras [Fuente: Brief/JD].",
+      "Mentalidad 'hands-on' y capacidad para entender la operación desde el piso del almacén, no solo desde la estrategia [Fuente: Notas kick-off].",
+      "Experiencia en implementación de sistemas tecnológicos para gestión de inventario o WMS [Fuente: Brief/JD]."
+    ]
+  }
+}

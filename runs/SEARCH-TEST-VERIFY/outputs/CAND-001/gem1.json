@@ -1,0 +1,19 @@
+{
+  "meta": {
+    "search_id": "SEARCH-TEST-VERIFY",
+    "candidate_id": "CAND-001",
+    "gem": "GEM1",
+    "timestamp": "2024-07-30T12:00:00Z",
+    "prompt_version": "v1.2",
+    "sources": [
+      "cv",
+      "interview_notes"
+    ]
+  },
+  "content": {},
+  "scores": {
+    "score_dimension": 7,
+    "confidence": 8
+  },
+  "issues_found": []
+}

@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "search_id": "SEARCH-TEST-VERIFY",
+    "candidate_id": "CAND-001",
+    "gem": "GEM2",
+    "timestamp": "2024-07-30T12:30:00Z",
+    "prompt_version": "v1.2",
+    "sources": [
+      "cv",
+      "interview_notes"
+    ]
+  },
+  "content": {},
+  "scores": {
+    "score_dimension": 1,
+    "confidence": 1
+  },
+  "blockers": [
+    "Ausencia completa de datos de evaluación específicos del candidato CAND-001 (CV, notas de entrevista, resultados de tests). El campo 'content' del Output GEM1 estaba vacío, impidiendo cualquier análisis de conducta observable o impacto de negocio.",
+    "No se proporcionaron tests ni casos/entrevistas conductuales adicionales para el candidato."
+  ]
+}

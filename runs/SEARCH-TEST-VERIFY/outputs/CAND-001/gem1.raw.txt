@@ -1,0 +1,68 @@
+Como Consultor Senior de Executive Search en RAAD, presento el análisis de Trayectoria y Logros (GEM 1) para el candidato Martín Gómez (CAND-001), evaluado contra los requisitos del rol definido en GEM 5.
+
+---
+
+### A) JSON Output
+
+```json
+{
+  "meta": {
+    "search_id": "SEARCH-TEST-VERIFY",
+    "candidate_id": "CAND-001",
+    "gem": "GEM1",
+    "timestamp": "2024-07-30T12:00:00Z",
+    "prompt_version": "v1.2",
+    "sources": ["cv", "interview_notes"]
+  },
+  "content": {},
+  "scores": {
+    "score_dimension": 7,
+    "confidence": 8
+  },
+  "issues_found": []
+}
+```
+
+---
+
+### B) Markdown Ejecutivo
+
+**Análisis GEM 1: Trayectoria y Logros - Martín Gómez (CAND-001)**
+
+**1) Resumen ejecutivo**
+Martín Gómez es un líder de operaciones con 12 años de experiencia en supply chain y e-commerce, con una trayectoria sólida en optimización de procesos, reducción de costos y gestión de equipos. Demuestra capacidad ejecutora y pragmática, alineándose con la necesidad de eficiencia operativa y transformación cultural. Sin embargo, su experiencia en la apertura de nuevos centros de distribución desde cero es limitada, lo que representa una reserva clave frente al requisito de escalamiento de la posición.
+
+**2) Trayectoria: coherencia y progresión**
+*   **Progresión ascendente y coherente:** Martín ha avanzado de Gerente de Almacén a Director de Logística, asumiendo responsabilidades crecientes en gestión de equipos y número de almacenes [Fuente: CV – sección "Experiencia"].
+*   **Enfoque consistente en eficiencia:** Su carrera se ha centrado en la optimización de la cadena de suministro, la reducción de costos y la mejora de la eficiencia operativa, lo cual es directamente relevante para el rol [Fuente: CV – sección "Perfil", "Experiencia"].
+*   **Liderazgo de equipos y transformación:** Ha liderado equipos de hasta 150 personas y ha demostrado capacidad para intervenir en operaciones desorganizadas, realizando cambios de personal para alinear al equipo con el nuevo ritmo [Fuente: CV – Director de Logística; Entrevista].
+*   **Formación académica complementaria:** Su Ingeniería Industrial y MBA Ejecutivo refuerzan su perfil técnico y estratégico, brindando una base sólida para la toma de decisiones en operaciones [Fuente: CV – sección "Educación"].
+*   **Experiencia en e-commerce y logística:** Su trayectoria en GlobalShop y FastRetail lo posiciona con experiencia directa en el sector y los desafíos logísticos asociados [Fuente: CV – sección "Experiencia"].
+
+**3) Logros calibrados**
+
+| Problema                                  | Acción                                                                | Resultado                                                                 | Métrica                 | Fuente                                    |
+| :---------------------------------------- | :-------------------------------------------------------------------- | :------------------------------------------------------------------------ | :---------------------- | :---------------------------------------- |
+| Ineficiencia en entregas de última milla  | Implementación de un nuevo ruteador inteligente                       | Reducción del tiempo de entrega de última milla                           | 20%                     | [Fuente: CV – Director de Logística]      |
+| Altos costos operativos                   | Renegociación de contratos de transporte                              | Optimización de costos operativos                                         | 12% en 2022             | [Fuente: CV – Director de Logística]      |
+| Riesgo de rotura de stock por crisis      | Gestión proactiva de la cadena de suministro durante la pandemia      | Superación de la crisis de suministro sin roturas de stock críticas       | No informado en fuentes | [Fuente: CV – Director de Logística]      |
+| Operación logística desorganizada         | Reestructuración del equipo de gerencia y procesos                    | Transformación de una operación "desastre" a un nuevo ritmo               | No informado en fuentes | [Fuente: Entrevista]                      |
+| Procesos de almacén manuales y lentos     | Implementación del primer WMS (Warehouse Management System)           | Modernización y optimización de la gestión de inventario                  | No informado en fuentes | [Fuente: CV – Gerente de Almacén]         |
+| Alta merma de inventario                  | Implementación de controles y procesos de gestión de inventario       | Reducción significativa de la merma de inventario                         | Del 3% al 0.5% en 2 años | [Fuente: CV – Gerente de Almacén]         |
+
+**4) Señales de riesgo**
+*   **Vacío temporal no explicado (2013-2015):** Existe un período de dos años entre la finalización de su Ingeniería Industrial y el inicio de su rol en FastRetail que no está documentado [Fuente: CV – sección "Educación", "Experiencia"].
+*   **Experiencia limitada en apertura de CDDs desde cero:** A pesar de su perfil de "escalar operaciones", el candidato confiesa que su experiencia abriendo centros desde cero es limitada ("solo abrí uno pequeño en 2018"), lo cual es una debilidad para el requisito de expansión del rol (2 nuevos CDDs) [Fuente: CV – sección "Perfil"; Entrevista].
+*   **Reacio a discutir fracasos:** Martín minimizó un "error con un proveedor en 2017", lo que podría indicar una falta de autocrítica o transparencia sobre lecciones aprendidas de experiencias negativas [Fuente: Entrevista].
+
+**5) Vacíos e inconsistencias**
+*   **Validar vacío temporal (2013-2015):** Se requiere entender las actividades y responsabilidades del candidato durante este período.
+*   **Calibrar experiencia en apertura de CDDs:** Necesidad de profundizar en el tamaño, complejidad y alcance del "almacén pequeño" abierto en 2018 para evaluar su aplicabilidad a la expansión requerida.
+*   **Detallar "error con proveedor en 2017":** Es crucial comprender la naturaleza del error, el impacto real y las acciones correctivas tomadas para evaluar la capacidad de gestión de crisis y aprendizaje del candidato.
+*   **Cuantificar impacto de cambios gerenciales:** Se requiere métricas o resultados concretos de la transformación de la operación en GlobalShop tras el cambio de gerentes.
+
+**6) Score GEM1: 7/10 | Confidence: 8/10**
+**Justificación:** Martín presenta una trayectoria sólida y logros relevantes en eficiencia operativa y liderazgo de equipos, alineándose bien con la necesidad de optimización y transformación cultural. Sin embargo, su limitada experiencia en la apertura de nuevos centros de distribución desde cero es una reserva significativa para un rol que demanda una expansión ambiciosa. La confianza es alta debido a la consistencia de los inputs, aunque se identifican áreas específicas para validación.
+
+**7) Blockers**
+No se identifican blockers absolutos en esta etapa, pero la limitada experiencia en la apertura de nuevos CDDs desde cero es un riesgo crítico que debe ser evaluado a fondo en fases posteriores, dado que es un requisito explícito del rol.

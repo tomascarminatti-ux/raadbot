@@ -1,0 +1,130 @@
+```json
+{
+  "meta": {
+    "search_id": "SEARCH-TEST-003",
+    "candidate_id": "CAND-001",
+    "gem": "GEM 1",
+    "prompt_version": "v1.2",
+    "timestamp": "2024-07-30T12:00:00Z",
+    "sources": [
+      "CV",
+      "Entrevista",
+      "Notas kick-off",
+      "Contexto compañía",
+      "Brief/JD"
+    ]
+  },
+  "scores": {
+    "score_dimension": 8,
+    "confidence": 7
+  },
+  "blockers": [],
+  "content": {
+    "resumen_ejecutivo": "Martín Gómez es un líder de operaciones con 12 años de experiencia en supply chain y e-commerce, con un historial comprobado en reducción de costos y optimización logística. Ha demostrado capacidad para liderar equipos y gestionar transformaciones operativas, aunque su experiencia en la apertura de grandes centros de distribución y la gestión de cambios culturales a gran escala requiere mayor validación.",
+    "trayectoria_coherencia_progresion": [
+      "12 años de experiencia en supply chain y e-commerce, con una progresión clara desde Gerente de Almacén a Director de Logística, gestionando equipos y operaciones de creciente complejidad [Fuente: CV – Perfil; Experiencia].",
+      "Especialización en escalar operaciones y reducir costos, directamente alineada con los problemas y éxitos esperados del rol [Fuente: CV – Perfil; Brief/JD].",
+      "Experiencia en sectores de retail y e-commerce (GlobalShop, FastRetail) que se alinea con el requisito de experiencia específica del sector [Fuente: CV – Experiencia; Brief/JD].",
+      "Obtención de un MBA Ejecutivo (IPADE, 2021) que demuestra un compromiso con el desarrollo de liderazgo y visión estratégica [Fuente: CV – Educación].",
+      "Estilo de liderazgo 'ejecutor y pragmático', con comunicación directa, que puede ser efectivo para la transformación cultural requerida [Fuente: Entrevista; Notas kick-off].",
+      "Interés explícito en un puesto 'C-level' que indica ambición y disposición para asumir un rol de alto impacto y transformación [Fuente: Entrevista]."
+    ],
+    "logros_calibrados": [
+      {
+        "problema": "Ineficiencia en la entrega de última milla.",
+        "accion": "Implementación de un nuevo ruteador inteligente.",
+        "resultado": "Reducción del tiempo de entrega de última milla.",
+        "metrica": "20%",
+        "fuente": "CV – Experiencia, Director de Logística"
+      },
+      {
+        "problema": "Altos costos operativos.",
+        "accion": "Renegociación de contratos de transporte.",
+        "resultado": "Optimización de costos operativos.",
+        "metrica": "12% durante 2022",
+        "fuente": "CV – Experiencia, Director de Logística"
+      },
+      {
+        "problema": "Crisis de suministro durante la pandemia.",
+        "accion": "Liderazgo de la operación logística de 4 almacenes.",
+        "resultado": "Superación de la crisis sin roturas de stock críticas.",
+        "metrica": "Ausencia de roturas de stock críticas",
+        "fuente": "CV – Experiencia, Director de Logística"
+      },
+      {
+        "problema": "Desorganización y resistencia al cambio en la operación de GlobalShop.",
+        "accion": "Reestructuración del equipo de gerencia.",
+        "resultado": "Adaptación del equipo al nuevo ritmo de trabajo.",
+        "metrica": "Cambio de dos gerentes",
+        "fuente": "Entrevista"
+      },
+      {
+        "problema": "Falta de un sistema de gestión de almacenes (WMS).",
+        "accion": "Implementación del primer WMS de la compañía.",
+        "resultado": "Mejora en la gestión y eficiencia del inventario.",
+        "metrica": "Implementación exitosa del sistema",
+        "fuente": "CV – Experiencia, Gerente de Almacén"
+      },
+      {
+        "problema": "Alta merma de inventario.",
+        "accion": "Supervisión y gestión de operaciones de almacén.",
+        "resultado": "Reducción de la merma de inventario.",
+        "metrica": "Del 3% al 0.5% en dos años",
+        "fuente": "CV – Experiencia, Gerente de Almacén"
+      }
+    ],
+    "senales_de_riesgo": [
+      "Experiencia limitada en la apertura de centros de distribución desde cero a gran escala, habiendo abierto 'solo uno pequeño en 2018', lo cual contrasta con la necesidad de operacionalizar 2 nuevos CDDs [Fuente: Entrevista; Notas kick-off].",
+      "Reacio a hablar sobre fracasos, mencionando un 'error con un proveedor en 2017' pero minimizando su impacto, lo que podría indicar una falta de autocrítica o dificultad para aprender de errores [Fuente: Entrevista].",
+      "Vacío temporal no explicado: No se identifican vacíos temporales mayores a 3 meses en la trayectoria profesional del candidato."
+    ],
+    "vacios_e_inconsistencias": [
+      {
+        "que_falta": "Detalle sobre la experiencia en la apertura y escalamiento de centros de distribución de gran tamaño o complejidad.",
+        "como_validarlo": "Preguntar por el alcance, tamaño, presupuesto y equipo involucrado en la apertura del CDD de 2018. Indagar sobre su metodología para escalar operaciones desde cero y su visión para los 2 nuevos CDDs del rol. [Hipótesis no validada – requiere verificación]"
+      },
+      {
+        "que_falta": "Evidencia concreta de gestión de cambio cultural y mejora de productividad/compromiso en equipos de más de 200 personas.",
+        "como_validarlo": "Solicitar ejemplos específicos de cómo ha gestionado la resistencia al cambio en equipos grandes, cómo ha mejorado la productividad y el compromiso de equipos de más de 200 personas, y cómo ha establecido una cultura orientada a resultados. [Hipótesis no validada – requiere verificación]"
+      },
+      {
+        "que_falta": "Mayor profundidad sobre el 'error con un proveedor en 2017', incluyendo el impacto real, los aprendizajes y las acciones correctivas.",
+        "como_validarlo": "Profundizar en este evento en una entrevista posterior o a través de referencias para evaluar su capacidad de autocrítica y resiliencia. [Hipótesis no validada – requiere verificación]"
+      },
+      {
+        "que_falta": "Evidencia de habilidades analíticas y financieras sólidas más allá del conocimiento de KPIs básicos, como modelado de costos complejos o análisis de rentabilidad de proyectos de inversión en tecnología.",
+        "como_validarlo": "Pedir ejemplos de análisis de rentabilidad de rutas, proyectos de inversión en tecnología con ROI, o gestión de presupuestos complejos para optimizar la cadena de suministro. [Hipótesis no validada – requiere verificación]"
+      }
+    ]
+  }
+}
+```
+
+# Reporte Ejecutivo – GEM 1: Trayectoria y Logros
+
+## 1) Resumen ejecutivo
+Martín Gómez es un líder de operaciones con 12 años de experiencia en supply chain y e-commerce, con un historial comprobado en reducción de costos y optimización logística. Ha demostrado capacidad para liderar equipos y gestionar transformaciones operativas, aunque su experiencia en la apertura de grandes centros de distribución y la gestión de cambios culturales a gran escala requiere mayor validación.
+
+## 2) Trayectoria: coherencia y progresión
+*   12 años de experiencia en supply chain y e-commerce, con una progresión clara desde Gerente de Almacén a Director de Logística, gestionando equipos y operaciones de creciente complejidad [Fuente: CV – Perfil; Experiencia].
+*   Especialización en escalar operaciones y reducir costos, directamente alineada con los problemas y éxitos esperados del rol [Fuente: CV – Perfil; Brief/JD].
+*   Experiencia en sectores de retail y e-commerce (GlobalShop, FastRetail) que se alinea con el requisito de experiencia específica del sector [Fuente: CV – Experiencia; Brief/JD].
+*   Obtención de un MBA Ejecutivo (IPADE, 2021) que demuestra un compromiso con el desarrollo de liderazgo y visión estratégica [Fuente: CV – Educación].
+*   Estilo de liderazgo 'ejecutor y pragmático', con comunicación directa, que puede ser efectivo para la transformación cultural requerida [Fuente: Entrevista; Notas kick-off].
+*   Interés explícito en un puesto 'C-level' que indica ambición y disposición para asumir un rol de alto impacto y transformación [Fuente: Entrevista].
+
+## 3) Logros calibrados
+
+| Problema                                                | Acción                                                              | Resultado                                                              | Métrica                                    | Fuente                                            |
+| :------------------------------------------------------ | :------------------------------------------------------------------ | :--------------------------------------------------------------------- | :----------------------------------------- | :------------------------------------------------ |
+| Ineficiencia en la entrega de última milla.             | Implementación de un nuevo ruteador inteligente.                   | Reducción del tiempo de entrega de última milla.                       | 20%                                        | CV – Experiencia, Director de Logística           |
+| Altos costos operativos.                                | Renegociación de contratos de transporte.                           | Optimización de costos operativos.                                     | 12% durante 2022                           | CV – Experiencia, Director de Logística           |
+| Crisis de suministro durante la pandemia.               | Liderazgo de la operación logística de 4 almacenes.                 | Superación de la crisis sin roturas de stock críticas.                 | Ausencia de roturas de stock críticas      | CV – Experiencia, Director de Logística           |
+| Desorganización y resistencia al cambio en GlobalShop.  | Reestructuración del equipo de gerencia.                            | Adaptación del equipo al nuevo ritmo de trabajo.                       | Cambio de dos gerentes                     | Entrevista                                        |
+| Falta de un sistema de gestión de almacenes (WMS).      | Implementación del primer WMS de la compañía.                       | Mejora en la gestión y eficiencia del inventario.                      | Implementación exitosa del sistema         | CV – Experiencia, Gerente de Almacén              |
+| Alta merma de inventario.                               | Supervisión y gestión de operaciones de almacén.                    | Reducción de la merma de inventario.                                   | Del 3% al 0.5% en dos años                 | CV – Experiencia, Gerente de Almacén              |
+
+## 4) Señales de riesgo
+*   Experiencia limitada en la apertura de centros de distribución desde cero a gran escala, habiendo abierto 'solo uno pequeño en 2018', lo cual contrasta con la necesidad de operacionalizar 2 nuevos CDDs [Fuente: Entrevista; Notas kick-off].
+*   Reacio a hablar sobre fracasos, mencionando un 'error con un proveedor en 2017' pero minimizando su impacto, lo que podría indicar una falta de autocrítica o dificultad para aprender de errores [Fuente: Entrevista].
+*   Vacío temporal no explicado: No se identifican vacíos temporales
