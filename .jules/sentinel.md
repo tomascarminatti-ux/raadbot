@@ -1,0 +1,4 @@
+## 2025-05-22 - Path Traversal in API Endpoints
+**Vulnerability:** API endpoints (`/api/v1/run`, `/api/v1/search/setup`, `/api/v1/gems/refine`) were vulnerable to path traversal because `search_id` and `gem_id` were used to construct filesystem paths without validation. An attacker could use `../` sequences to read or overwrite files outside the intended directories (e.g., overwriting prompt files or creating directories anywhere the process has write access).
+**Learning:** Pydantic models without explicit pattern validation or whitelisting on string fields can be exploited if those strings are later used in `os.path.join` or similar filesystem operations.
+**Prevention:** Use `Field(pattern=...)` in Pydantic models to enforce a strict regex (e.g., `^[a-zA-Z0-9_-]+$`) for any identifier used in path construction. For critical file access like prompt modification, implement an explicit whitelist of allowed identifiers.
