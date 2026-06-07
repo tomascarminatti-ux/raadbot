@@ -12,6 +12,7 @@
         .gem-card { transition: all 0.3s ease; }
         .gem-card:hover { transform: translateY(-2px); border-color: #3b82f6; }
         .active-gem { border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, 0.1); }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
@@ -26,7 +27,7 @@
             </h1>
             <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest font-semibold">Industrial Orchestrator</p>
         </div>
-        <nav class="flex-1 p-4 space-y-2 overflow-y-auto" id="gem-nav">
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto focus-visible:outline-none" id="gem-nav" aria-label="Módulos GEM">
             <!-- GEMS will be loaded here -->
             <div class="animate-pulse space-y-2">
                 <div class="h-10 bg-slate-800 rounded"></div>
@@ -74,8 +75,9 @@
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
-                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <label for="refine-input" class="sr-only">Instrucciones de refinamiento</label>
+                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 outline-none disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                         <span>🚀</span> Refinar Prompt
                     </button>
                 </div>
@@ -83,11 +85,31 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <div id="live-logs" class="fixed bottom-5 right-5 w-96 glass border-2 border-green-500/50 rounded-xl z-[1000] flex flex-col transition-all duration-300 shadow-2xl overflow-hidden">
+        <button onclick="toggleLogs()" id="log-toggle-btn" aria-expanded="true" aria-controls="logs-content" aria-label="Contraer logs" class="w-full flex items-center justify-between p-3 border-b border-green-500/30 hover:bg-green-500/10 transition-colors group outline-none focus-visible:ring-2 ring-green-500 ring-inset">
+            <div class="flex items-center gap-2 font-bold text-xs text-green-400 font-mono uppercase tracking-wider">
+                <span class="animate-pulse">🚀</span> Raadbot Live
+            </div>
+            <span id="log-toggle-icon" class="text-green-500 transition-transform duration-300">▼</span>
+        </button>
+        <div id="logs-content" class="h-64 overflow-y-auto p-3 font-mono text-[10px] bg-black/40">
+            <div id="logs-container" role="log" aria-live="polite"></div>
+        </div>
     </div>
+
     <script>
+        function toggleLogs() {
+            const content = document.getElementById('logs-content');
+            const icon = document.getElementById('log-toggle-icon');
+            const btn = document.getElementById('log-toggle-btn');
+            const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+
+            content.classList.toggle('hidden');
+            icon.style.transform = isExpanded ? 'rotate(-90deg)' : 'rotate(0deg)';
+            btn.setAttribute('aria-expanded', !isExpanded);
+            btn.setAttribute('aria-label', isExpanded ? 'Expandir logs' : 'Contraer logs');
+        }
+
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws/logs`);
@@ -116,9 +138,9 @@
         function renderNav() {
             const nav = document.getElementById('gem-nav');
             nav.innerHTML = gems.map(gem => `
-                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
+                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 focus-visible:bg-white/10 focus-visible:ring-2 focus-visible:ring-blue-500/50 outline-none flex items-center justify-between group">
                     <span>${gem.name}</span>
-                    <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
+                    <span class="opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity text-blue-400">➔</span>
                 </button>
             `).join('');
         }
