@@ -35,17 +35,13 @@ class TestSecurity(unittest.TestCase):
                 )
 
                 # Should return 422 Unprocessable Entity because of pattern validation
-                print(f"Refine response status: {response.status_code}")
                 self.assertEqual(response.status_code, 422)
 
                 # Check if the file was NOT overwritten
                 if os.path.exists("test_traversal.md"):
                     with open("test_traversal.md", "r") as f:
                         content = f.read()
-                    if "PWNED" in content:
-                        print("Vulnerability STILL PRESENT: Path traversal in /api/v1/gems/refine")
-                    else:
-                        print("Vulnerability FIXED: File not overwritten in /api/v1/gems/refine")
+                    self.assertNotIn("PWNED", content)
             finally:
                 if os.path.exists("test_traversal.md"):
                     os.remove("test_traversal.md")
@@ -64,7 +60,6 @@ class TestSecurity(unittest.TestCase):
                     "instruction": "ignore"
                 }
             )
-            print(f"Whitelist response status: {response.status_code}")
             # Should return 403 Forbidden
             self.assertEqual(response.status_code, 403)
         finally:
@@ -92,16 +87,10 @@ class TestSecurity(unittest.TestCase):
                 }
             )
 
-            print(f"Search setup response status: {response.status_code}")
             # Should return 422 Unprocessable Entity
             self.assertEqual(response.status_code, 422)
 
-            if os.path.exists("traversal_test/outputs"):
-                print("Vulnerability STILL PRESENT: Path traversal in /api/v1/search/setup")
-                import shutil
-                shutil.rmtree("traversal_test")
-            else:
-                print("Vulnerability FIXED: Dir not created in /api/v1/search/setup")
+            self.assertFalse(os.path.exists("traversal_test/outputs"))
 
 if __name__ == "__main__":
     unittest.main()
