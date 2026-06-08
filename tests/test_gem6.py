@@ -43,6 +43,7 @@ async def test_gem6_flow():
 
     except Exception as e:
         print(f"\n❌ Error en el test: {e}")
+        raise e
 
 
 if __name__ == "__main__":
