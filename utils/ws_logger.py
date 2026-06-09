@@ -1,12 +1,13 @@
+from typing import List
 import asyncio
 import json
 import os
 from datetime import datetime
-from typing import List
 from fastapi import WebSocket
 
 active_connections: List[WebSocket] = []
 state_lock = asyncio.Lock()
+
 
 async def broadcast_log(data: dict):
     """
