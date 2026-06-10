@@ -1,10 +1,9 @@
-import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch, mock_open
 from api import app
-import config
 
 client = TestClient(app)
+
 
 def test_pipeline_request_path_traversal():
     """Verify that search_id is validated against path traversal patterns."""
@@ -19,6 +18,7 @@ def test_pipeline_request_path_traversal():
     assert response.status_code == 422
     assert "string_pattern_mismatch" in response.text
 
+
 def test_setup_search_path_traversal():
     """Verify that search_id in setup is validated."""
     response = client.post(
@@ -31,6 +31,7 @@ def test_setup_search_path_traversal():
     )
     assert response.status_code == 422
 
+
 def test_refine_gem_path_traversal():
     """Verify that gem_id in refine is validated by pattern."""
     response = client.post(
@@ -41,6 +42,7 @@ def test_refine_gem_path_traversal():
         }
     )
     assert response.status_code == 422
+
 
 def test_refine_gem_whitelist():
     """Verify that gem_id must be in the ALLOWED_GEMS whitelist."""
@@ -54,6 +56,7 @@ def test_refine_gem_whitelist():
     )
     assert response.status_code == 403
     assert "GEM not allowed for refinement" in response.text
+
 
 @patch("api.GeminiClient")
 @patch("os.path.exists")
@@ -80,6 +83,7 @@ def test_refine_gem_success(mock_file, mock_exists, mock_gemini):
 
     # Verify file was written
     mock_file().write.assert_called_with("new refined prompt")
+
 
 def test_pipeline_error_leakage():
     """Verify that internal errors don't leak details."""
