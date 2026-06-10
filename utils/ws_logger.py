@@ -1,10 +1,13 @@
 import asyncio
 import json
+import os
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from fastapi import WebSocket
 
 active_connections: List[WebSocket] = []
+state_lock: Optional[asyncio.Lock] = None
+
 
 async def broadcast_log(data: dict):
     """
@@ -29,20 +32,31 @@ async def broadcast_log(data: dict):
             active_connections.remove(d)
 
     # Update pipeline_state.json for Streamlit compatibility
-    try:
-        state_file = "pipeline_state.json"
-        state = {"steps": []}
+    # Use lock and to_thread to ensure thread-safety and non-blocking I/O
+    global state_lock
+    if state_lock is None:
+        state_lock = asyncio.Lock()
+
+    async with state_lock:
         try:
-            with open(state_file, "r", encoding="utf-8") as f:
-                state = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            pass
+            state_file = "pipeline_state.json"
 
-        state["steps"].append(message)
-        # Keep only last 50 steps to avoid file bloat
-        state["steps"] = state["steps"][-50:]
+            def update_file():
+                state = {"steps": []}
+                try:
+                    if os.path.exists(state_file):
+                        with open(state_file, "r", encoding="utf-8") as f:
+                            state = json.load(f)
+                except (FileNotFoundError, json.JSONDecodeError):
+                    pass
 
-        with open(state_file, "w", encoding="utf-8") as f:
-            json.dump(state, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        print(f"Error updating pipeline_state.json: {e}")
+                state["steps"].append(message)
+                # Keep only last 50 steps to avoid file bloat
+                state["steps"] = state["steps"][-50:]
+
+                with open(state_file, "w", encoding="utf-8") as f:
+                    json.dump(state, f, indent=2, ensure_ascii=False)
+
+            await asyncio.to_thread(update_file)
+        except Exception as e:
+            print(f"Error updating pipeline_state.json: {e}")
