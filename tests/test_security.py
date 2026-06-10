@@ -19,6 +19,19 @@ def test_pipeline_request_path_traversal():
     assert "string_pattern_mismatch" in response.text
 
 
+def test_pipeline_local_dir_path_traversal():
+    """Verify that local_dir is validated against path traversal patterns."""
+    response = client.post(
+        "/api/v1/run",
+        json={
+            "search_id": "valid-id",
+            "local_dir": "../etc/passwd"
+        }
+    )
+    assert response.status_code == 422
+    assert "Path traversal detected" in response.text
+
+
 def test_setup_search_path_traversal():
     """Verify that search_id in setup is validated."""
     response = client.post(

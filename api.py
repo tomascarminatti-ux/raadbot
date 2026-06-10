@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 import httpx
 import asyncio
 
@@ -41,6 +41,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://raadbot.netlify.app",
+        "https://raadbotchat.netlify.app",
         "http://localhost:3000",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
@@ -56,6 +57,13 @@ class PipelineRequest(BaseModel):
     drive_folder: Optional[str] = None
     local_dir: Optional[str] = None
     candidate_id: Optional[str] = Field(None, pattern=config.ID_PATTERN)  # Si se quiere procesar solo uno
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        if v and (".." in v or v.startswith("/") or v.startswith("\\")):
+            raise ValueError("Path traversal detected in local_dir")
+        return v
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
 
