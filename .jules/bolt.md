@@ -1,0 +1,3 @@
+## 2026-06-10 - [Parallel Candidate Orchestration]
+**Learning:** Sequential processing of candidates in an LLM-based orchestration pipeline is a major bottleneck due to network-bound I/O. Using `asyncio.gather` for parallelization and `asyncio.to_thread` for synchronous LLM client calls significantly improves throughput. Additionally, when parallelizing tasks that write to shared state files, a lazy-initialized `asyncio.Lock` is necessary to ensure thread-safety without causing `RuntimeError` at import time in Python 3.10+.
+**Action:** Always look for sequential loops containing I/O (API calls, file writes) and parallelize them. Ensure any shared state access is protected by locks initialized within the event loop.
