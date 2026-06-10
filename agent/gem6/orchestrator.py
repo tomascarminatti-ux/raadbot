@@ -39,17 +39,20 @@ class GEM6Orchestrator:
         completed_results = await asyncio.gather(*tasks)
         results = dict(completed_results)
 
-        # Save summary
+        # Save summary (Offloaded to thread to avoid blocking event loop)
         if self.output_dir:
-            os.makedirs(self.output_dir, exist_ok=True)
-            summary_path = os.path.join(self.output_dir, "pipeline_summary.json")
-            summary = {
-                "search_id": self.search_id,
-                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "candidates": results
-            }
-            with open(summary_path, "w") as f:
-                json.dump(summary, f, indent=2)
+            def save_summary():
+                os.makedirs(self.output_dir, exist_ok=True)
+                summary_path = os.path.join(self.output_dir, "pipeline_summary.json")
+                summary = {
+                    "search_id": self.search_id,
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "candidates": results
+                }
+                with open(summary_path, "w") as f:
+                    json.dump(summary, f, indent=2)
+
+            await asyncio.to_thread(save_summary)
 
         return results
 
