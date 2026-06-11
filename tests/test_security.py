@@ -1,10 +1,9 @@
-import pytest
 from fastapi.testclient import TestClient
 from api import app
-import config
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 client = TestClient(app)
+
 
 def test_identifier_validation_path_traversal():
     """Verify that identifiers like search_id block path traversal sequences."""
@@ -19,6 +18,7 @@ def test_identifier_validation_path_traversal():
     # Pydantic validation should fail
     assert response.status_code == 422
     assert "search_id" in response.text
+
 
 def test_gem_id_whitelist():
     """Verify that only allowed GEM IDs can be refined."""
@@ -57,6 +57,7 @@ def test_gem_id_whitelist():
     )
     # Should fail pydantic validation first if pattern blocks dots/slashes
     assert response.status_code == 422
+
 
 def test_secure_error_messages():
     """Verify that trigger_pipeline returns generic error messages."""
