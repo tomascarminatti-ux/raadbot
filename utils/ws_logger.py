@@ -5,6 +5,8 @@ from typing import List
 from fastapi import WebSocket
 
 active_connections: List[WebSocket] = []
+_lock: asyncio.Lock = None
+
 
 async def broadcast_log(data: dict):
     """
@@ -29,20 +31,29 @@ async def broadcast_log(data: dict):
             active_connections.remove(d)
 
     # Update pipeline_state.json for Streamlit compatibility
-    try:
-        state_file = "pipeline_state.json"
-        state = {"steps": []}
+    global _lock
+    if _lock is None:
+        _lock = asyncio.Lock()
+
+    async with _lock:
         try:
-            with open(state_file, "r", encoding="utf-8") as f:
-                state = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            pass
+            state_file = "pipeline_state.json"
 
-        state["steps"].append(message)
-        # Keep only last 50 steps to avoid file bloat
-        state["steps"] = state["steps"][-50:]
+            def update_file():
+                state = {"steps": []}
+                try:
+                    with open(state_file, "r", encoding="utf-8") as f:
+                        state = json.load(f)
+                except (FileNotFoundError, json.JSONDecodeError):
+                    pass
 
-        with open(state_file, "w", encoding="utf-8") as f:
-            json.dump(state, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        print(f"Error updating pipeline_state.json: {e}")
+                state["steps"].append(message)
+                # Keep only last 50 steps to avoid file bloat
+                state["steps"] = state["steps"][-50:]
+
+                with open(state_file, "w", encoding="utf-8") as f:
+                    json.dump(state, f, indent=2, ensure_ascii=False)
+
+            await asyncio.to_thread(update_file)
+        except Exception as e:
+            print(f"Error updating pipeline_state.json: {e}")
