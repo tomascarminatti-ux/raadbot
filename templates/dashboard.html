@@ -83,21 +83,55 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
-        <div id="logs-container"></div>
+    <div id="live-logs" class="fixed bottom-6 right-6 w-96 glass rounded-xl overflow-hidden z-50 transition-all duration-300 flex flex-col" style="max-height: 400px;">
+        <div class="p-3 border-b border-white/10 flex justify-between items-center bg-black/40">
+            <h3 class="text-xs font-bold text-green-400 flex items-center gap-2">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                LIVE STREAM
+            </h3>
+            <button onclick="toggleLogs()" id="toggle-logs-btn" aria-label="Colapsar logs" aria-expanded="true" class="text-slate-400 hover:text-white transition-transform duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+        </div>
+        <div id="logs-content" class="flex-1 overflow-hidden flex flex-col">
+            <div id="logs-container" role="log" aria-live="polite" class="flex-1 p-4 space-y-2 font-mono text-[10px] overflow-y-auto bg-black/20"></div>
+        </div>
     </div>
     <script>
+        function toggleLogs() {
+            const content = document.getElementById('logs-content');
+            const btn = document.getElementById('toggle-logs-btn');
+            const isCollapsed = content.classList.contains('hidden');
+            if (isCollapsed) {
+                content.classList.remove('hidden');
+                btn.style.transform = 'rotate(0deg)';
+                btn.setAttribute('aria-expanded', 'true');
+                btn.setAttribute('aria-label', 'Colapsar logs');
+            } else {
+                content.classList.add('hidden');
+                btn.style.transform = 'rotate(180deg)';
+                btn.setAttribute('aria-expanded', 'false');
+                btn.setAttribute('aria-label', 'Expandir logs');
+            }
+        }
+
         const logsContainer = document.getElementById('logs-container');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(`${protocol}//${window.location.host}/ws/logs`);
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
             const logEntry = document.createElement('div');
-            logEntry.style.marginBottom = '5px';
+            logEntry.className = 'border-l-2 border-white/5 pl-2 py-1 hover:bg-white/5 transition-colors';
             const time = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
-            logEntry.innerHTML = `[${time}] <span style="color:#3b82f6">${data.gem}</span>: ${data.action} - <span style="color:${data.status === 'OK' ? '#4ade80' : '#f87171'}">${data.status}</span> (Score: ${data.score || 'N/A'})`;
+            const s = (txt, cls) => { const e = document.createElement('span'); e.textContent = txt; if(cls) e.className = cls; return e; };
+            logEntry.append(s(`[${time}] `, 'text-slate-500'), s(data.gem, 'text-blue-400 font-bold'), ` ${data.action} - `, s(data.status, data.status === 'OK' ? 'text-green-400' : 'text-red-400'), ` (Score: ${data.score || 'N/A'})`);
             logsContainer.prepend(logEntry);
+            if (logsContainer.childElementCount > 100) logsContainer.removeChild(logsContainer.lastChild);
         };
 
         let gems = [];
