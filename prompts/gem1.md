@@ -185,4 +185,3 @@ Q3: site:twitter.com "PM" AND "fintech" AND ("Chile" OR "Santiago") AND "product
 - **Max Tokens**: 4000
 - **Herramientas**: SerpAPI/Google Custom Search, BeautifulSoup/Scrapy, pandas, gspread/openpyxl
 - **Output**: JSON estructurado + archivo Excel/Sheets generado
-
