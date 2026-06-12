@@ -1,10 +1,9 @@
-import pytest
 from fastapi.testclient import TestClient
 from api import app
-import config
 from unittest.mock import patch
 
 client = TestClient(app)
+
 
 def test_id_validation_patterns():
     # Test invalid search_id in /api/v1/run
@@ -12,7 +11,7 @@ def test_id_validation_patterns():
         "search_id": "invalid;path",
         "local_dir": "test"
     })
-    assert response.status_code == 422 # Pydantic validation error
+    assert response.status_code == 422  # Pydantic validation error
 
     # Test path traversal in search_id
     response = client.post("/api/v1/run", json={
@@ -20,6 +19,7 @@ def test_id_validation_patterns():
         "local_dir": "test"
     })
     assert response.status_code == 422
+
 
 def test_refine_gem_security():
     # Test valid GEM (whitelisted)
@@ -48,6 +48,7 @@ def test_refine_gem_security():
     })
     # Pydantic pattern should catch this first with 422
     assert response.status_code == 422
+
 
 def test_error_leakage():
     # Trigger an error in /api/v1/run (missing GEMINI_API_KEY or other)
