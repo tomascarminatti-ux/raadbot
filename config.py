@@ -27,6 +27,10 @@ THRESHOLDS = {
 # Max retries for validation/JSON failures
 MAX_RETRIES_ON_BLOCK = int(os.getenv("MAX_RETRIES_ON_BLOCK", "2"))
 
+# Security Settings
+ID_PATTERN = r'^[a-zA-Z0-9_-]+$'
+ALLOWED_GEMS = ["gem1", "gem2", "gem3", "gem4", "gem5", "gem6", "00_prompt_maestro"]
+
 # Gemini Pricing (per 1M tokens) - Update as needed
 # Prices for Gemini 2.0 Flash (current as of late 2024/early 2025)
 PRICE_PROMPT_1M = 0.10  # Example price, adjust to reality
