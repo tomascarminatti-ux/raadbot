@@ -1,0 +1,4 @@
+## 2025-05-22 - Path Traversal in API endpoints
+**Vulnerability:** API endpoints (`/api/v1/search/setup`, `/api/v1/run`, `/api/v1/gems/refine`) were using user-provided identifiers (`search_id`, `candidate_id`, `gem_id`) directly in file system paths without validation, allowing directory traversal (e.g., `../../`).
+**Learning:** Even when using `os.path.join`, user input must be validated against a strict pattern to prevent traversal sequences and restricted characters. The `/api/v1/gems/refine` endpoint specifically needed a whitelist because it modifies prompt files.
+**Prevention:** Use Pydantic's `Field(pattern=...)` to enforce strict alphanumeric identifiers for all inputs that interact with the filesystem. Implement whitelisting for endpoints that modify sensitive configuration or template files.
