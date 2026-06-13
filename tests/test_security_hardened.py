@@ -29,14 +29,16 @@ from unittest.mock import patch
 def test_refine_gem_valid_id():
     # Valid ID and in whitelist.
     # Mocking run_gem to avoid connection errors.
+    # Also mocking 'open' to avoid overwriting the actual prompt file during tests.
     with patch("agent.gemini_client.GeminiClient.run_gem") as mock_run:
         mock_run.return_value = {"markdown": "new prompt", "json": {}}
-        response = client.post(
-            "/api/v1/gems/refine",
-            json={"gem_id": "gem1", "instruction": "make it better"}
-        )
-        assert response.status_code == 200
-        assert response.json()["status"] == "success"
+        with patch("api.open", create=True) as mock_open:
+            response = client.post(
+                "/api/v1/gems/refine",
+                json={"gem_id": "gem1", "instruction": "make it better"}
+            )
+            assert response.status_code == 200
+            assert response.json()["status"] == "success"
 
 def test_refine_gem_invalid_pattern():
     # Invalid pattern (e.g. including dots)
