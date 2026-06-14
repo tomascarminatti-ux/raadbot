@@ -1,11 +1,10 @@
 
-import pytest
 from fastapi.testclient import TestClient
 from api import app
-import config
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 client = TestClient(app)
+
 
 def test_refine_gem_path_traversal():
     """Verify that path traversal in gem_id is rejected by Pydantic pattern or logic."""
@@ -16,6 +15,7 @@ def test_refine_gem_path_traversal():
     })
     # Pydantic Field(pattern=...) should catch this if it contains dots or slashes
     assert response.status_code == 422  # Unprocessable Entity (Validation Error)
+
 
 def test_refine_gem_unauthorized_whitelist():
     """Verify that valid IDs not in whitelist are rejected."""
@@ -28,6 +28,7 @@ def test_refine_gem_unauthorized_whitelist():
         assert response.status_code == 403
         assert response.json()["detail"] == "Unauthorized GEM access"
 
+
 def test_pipeline_run_path_traversal():
     """Verify that path traversal in search_id is rejected."""
     response = client.post("/api/v1/run", json={
@@ -35,6 +36,7 @@ def test_pipeline_run_path_traversal():
         "local_dir": "test"
     })
     assert response.status_code == 422
+
 
 def test_setup_search_path_traversal():
     """Verify that path traversal in search_id is rejected in setup."""
@@ -44,6 +46,7 @@ def test_setup_search_path_traversal():
         "jd_content": "jd"
     })
     assert response.status_code == 422
+
 
 @patch("api.run_pipeline")
 def test_pipeline_error_no_leak(mock_run):
@@ -56,6 +59,7 @@ def test_pipeline_error_no_leak(mock_run):
     assert response.status_code == 500
     assert response.json()["detail"] == "Internal server error during pipeline execution"
     assert "Sensitive" not in response.text
+
 
 def test_list_gems_uses_whitelist():
     """Verify list_gems only returns what is allowed."""
