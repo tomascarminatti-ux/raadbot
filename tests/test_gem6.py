@@ -1,9 +1,11 @@
 from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.gemini_client import GeminiClient
+from utils.gem_core import GEMClient
 import asyncio
 import os
 import sys
 from datetime import datetime, timezone
+from unittest.mock import patch, MagicMock
 
 # Asegurar que el path incluya la raíz del proyecto
 sys.path.append(os.getcwd())
@@ -30,12 +32,28 @@ async def test_gem6_flow():
         }
     }
 
-    # Nota: En un test real sin API Key de verdad, gemini.run_gem fallará o devolverá error.
-    # Aquí probamos la estructura de la orquestación.
-    result = await orchestrator.run_pipeline(search_inputs, candidates)
+    # Mock behavior of Gemini and GEMClient to avoid network calls during testing
+    with patch.object(gemini, 'run_gem') as mock_run_gem, \
+         patch.object(GEMClient, 'upsert_entity', return_value=asyncio.Future()) as mock_upsert, \
+         patch.object(GEMClient, 'log_execution', return_value=asyncio.Future()) as mock_log:
 
-    print("\n✅ Pipeline Ejecutado!")
-    print(f"Status: {result['CAND-001']['status']}")
+        mock_run_gem.return_value = {
+            "json": {"action": "finalize", "status": "SUCCESS", "thought": "Mocked success"},
+            "markdown": "Mocked success",
+            "raw": '{"action": "finalize", "status": "SUCCESS"}',
+            "usage": {"prompt_tokens": 0, "candidates_tokens": 0, "total_tokens": 0, "finish_reason": "STOP"}
+        }
+
+        # Set resolved value for async futures
+        mock_upsert.return_value.set_result({"status": "ok"})
+        mock_log.return_value.set_result({"status": "ok"})
+
+        # Nota: En un test real sin API Key de verdad, gemini.run_gem fallará o devolverá error.
+        # Aquí probamos la estructura de la orquestación con el mock.
+        result = await orchestrator.run_pipeline(search_inputs, candidates)
+
+        print("\n✅ Pipeline Ejecutado!")
+        print(f"Status: {result['CAND-001']['status']}")
 
 if __name__ == "__main__":
     if not os.getenv("GEMINI_API_KEY"):
