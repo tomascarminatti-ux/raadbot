@@ -8,11 +8,13 @@ from fastapi import WebSocket
 active_connections: List[WebSocket] = []
 _lock = None
 
+
 def get_lock():
     global _lock
     if _lock is None:
         _lock = asyncio.Lock()
     return _lock
+
 
 async def broadcast_log(data: dict):
     """
@@ -43,6 +45,7 @@ async def broadcast_log(data: dict):
             await asyncio.to_thread(_update_state_file, message)
         except Exception as e:
             print(f"Error updating pipeline_state.json: {e}")
+
 
 def _update_state_file(message: dict):
     """Synchronous helper to update the pipeline state file."""
