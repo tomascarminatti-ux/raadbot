@@ -61,8 +61,13 @@ class Pipeline:
     async def _save_state(self):
         """Guarda el estado actual en disco (con lock para concurrencia)."""
         async with self._lock:
-            with open(self.state_file, "w", encoding="utf-8") as f:
-                json.dump(self.state, f, ensure_ascii=False, indent=2)
+            # Offload synchronous file I/O to a separate thread
+            await asyncio.to_thread(self._write_state_to_disk)
+
+    def _write_state_to_disk(self):
+        """Escritura sincrónica de estado."""
+        with open(self.state_file, "w", encoding="utf-8") as f:
+            json.dump(self.state, f, ensure_ascii=False, indent=2)
 
     async def _track_usage(self, usage: dict):
         """Suma tokens y calcula costo acumulado."""
@@ -113,24 +118,29 @@ class Pipeline:
 
         await self._save_state()
 
-        # Files
+        # Files - Offload synchronous file I/O to a separate thread
         json_path = os.path.join(base, f"{prefix}.json")
+        md_path = os.path.join(base, f"{prefix}.md")
+        raw_path = os.path.join(base, f"{prefix}.raw.txt")
+
+        await asyncio.to_thread(self._write_output_files, json_path, md_path, raw_path, result)
+
+        return json_path, md_path
+
+    def _write_output_files(self, json_path, md_path, raw_path, result):
+        """Escritura sincrónica de archivos de salida."""
         if result.get("json"):
             with open(json_path, "w", encoding="utf-8") as f:
                 json.dump(result["json"], f, ensure_ascii=False, indent=2)
 
-        md_path = os.path.join(base, f"{prefix}.md")
         with open(md_path, "w", encoding="utf-8") as f:
             md_content = result.get("markdown")
             if md_content is None:
                 md_content = result.get("raw", "")
             f.write(str(md_content))
 
-        raw_path = os.path.join(base, f"{prefix}.raw.txt")
         with open(raw_path, "w", encoding="utf-8") as f:
             f.write(result.get("raw", ""))
-
-        return json_path, md_path
 
     def _validate_output(self, json_data: dict, gem_name: str) -> bool:
         if not self.schema or not json_data:
@@ -426,13 +436,17 @@ class Pipeline:
             },
         }
         async with self._lock:
-            with open(summary_path, "w", encoding="utf-8") as f:
-                json.dump(summary, f, ensure_ascii=False, indent=2)
+            await asyncio.to_thread(self._write_summary_to_disk, summary_path, summary)
 
         # 4. Imprimir Tabla Final Resumen Nivel Psicopata
         self._print_summary(all_results)
 
         return all_results
+
+    def _write_summary_to_disk(self, summary_path, summary):
+        """Escritura sincrónica de resumen."""
+        with open(summary_path, "w", encoding="utf-8") as f:
+            json.dump(summary, f, ensure_ascii=False, indent=2)
 
     def _print_summary(self, results: dict):
         console.print("\n")
