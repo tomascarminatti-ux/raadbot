@@ -1,0 +1,3 @@
+## 2024-06-15 - [GEM6 Parallelization]
+**Learning:** Sequential processing of multiple candidates in the `GEM6Orchestrator` was a major bottleneck, especially as each candidate involves multiple synchronous LLM calls. Transitioning to `asyncio.gather` for candidate processing and using `asyncio.to_thread` for synchronous LLM and file I/O operations provides a nearly linear speedup (relative to the number of candidates) without changing the core reasoning logic.
+**Action:** Always check for loops containing I/O-bound or LLM-bound operations and consider parallelization using `asyncio.gather`. Ensure synchronous library calls (like `run_gem` or standard `os` / `open`) are offloaded with `asyncio.to_thread` to keep the event loop responsive.
