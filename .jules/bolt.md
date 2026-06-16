@@ -1,0 +1,3 @@
+## 2025-05-22 - [Template Caching and Regex Substitution]
+**Learning:** Disk I/O in hot paths (like repeated prompt template loading) is a major anti-pattern; caching static templates in memory using lru_cache provides significant speedups. Additionally, for high-frequency string template injection, a single-pass regex substitution with a callback function is significantly more efficient than multiple sequential str.replace() calls, reducing complexity from O(V*N) to O(N).
+**Action:** Always implement tiered template caching (lru_cache) and prefer single-pass regex substitution for any string building logic involving multiple placeholders.
