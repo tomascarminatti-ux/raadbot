@@ -24,9 +24,8 @@ def load_prompt(gem_name: str) -> str:
         return f.read()
 
 
-@lru_cache(maxsize=1)
 def load_maestro() -> str:
-    """Carga el prompt maestro con cache."""
+    """Carga el prompt maestro (resultado cacheado por load_prompt)."""
     return load_prompt("00_prompt_maestro")
 
 
