@@ -1,0 +1,20 @@
+{
+  "steps": [
+    {
+      "timestamp": "2026-06-17T08:26:43.766183",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-001",
+      "thought": "No thought provided."
+    },
+    {
+      "timestamp": "2026-06-17T08:27:36.530399",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-001",
+      "thought": "No thought provided."
+    }
+  ]
+}
