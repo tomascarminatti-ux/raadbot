@@ -47,4 +47,4 @@ DRIVE_TOKEN_FILE = "token.json"
 
 # Security Settings
 ID_PATTERN = r"^[a-zA-Z0-9_-]+$"
-ALLOWED_GEMS = list(GEM_CONFIGS.keys()) + ["gem6"]  # gem6 is the orchestrator
+ALLOWED_GEMS = list(GEM_CONFIGS.keys()) + ["gem6"] # gem6 is the orchestrator
