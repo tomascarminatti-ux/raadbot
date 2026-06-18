@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
@@ -21,30 +22,39 @@ class GEM6Orchestrator:
         self.search_id = kwargs.get("search_id", self.config.get("search_id"))
 
     async def run_pipeline(self, search_inputs: Dict[str, Any], candidates: Dict[str, Any]):
-        """Entry point to process all candidates"""
-        results = {}
-        for candidate_id, candidate_data in candidates.items():
+        """Entry point to process all candidates in parallel"""
+        tasks = []
+        candidate_ids = list(candidates.keys())
+
+        for candidate_id in candidate_ids:
             context = {
                 "search_inputs": search_inputs,
                 "candidate_id": candidate_id,
-                "candidate_data": candidate_data,
+                "candidate_data": candidates[candidate_id],
                 "entity_id": candidate_id
             }
-            results[candidate_id] = await self.process_context(context)
-        
-        # Save summary
+            tasks.append(self.process_context(context))
+
+        # Run all candidates in parallel
+        results_list = await asyncio.gather(*tasks)
+        results = dict(zip(candidate_ids, results_list))
+
+        # Save summary (offload I/O to thread)
         if self.output_dir:
-            os.makedirs(self.output_dir, exist_ok=True)
-            summary_path = os.path.join(self.output_dir, "pipeline_summary.json")
-            summary = {
-                "search_id": self.search_id,
-                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "candidates": results
-            }
-            with open(summary_path, "w") as f:
-                json.dump(summary, f, indent=2)
-        
+            await asyncio.to_thread(self._save_summary, results)
+
         return results
+
+    def _save_summary(self, results: Dict[str, Any]):
+        os.makedirs(self.output_dir, exist_ok=True)
+        summary_path = os.path.join(self.output_dir, "pipeline_summary.json")
+        summary = {
+            "search_id": self.search_id,
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "candidates": results
+        }
+        with open(summary_path, "w") as f:
+            json.dump(summary, f, indent=2)
 
     async def process_context(self, context_data: Dict[str, Any]):
         trace_id = str(uuid.uuid4())
@@ -77,8 +87,8 @@ class GEM6Orchestrator:
                 }
             })
 
-            # 2. Call GEM 6 for reasoning
-            result = self.gemini.run_gem(prompt, gem_name="gem6")
+            # 2. Call GEM 6 for reasoning (Offload blocking LLM call)
+            result = await asyncio.to_thread(self.gemini.run_gem, prompt, gem_name="gem6")
             gem6_decision = result.get("json", {})
 
             if not gem6_decision:
@@ -185,7 +195,8 @@ class GEM6Orchestrator:
                 # Use prompt_builder for consistent templating
                 full_prompt = build_agent_prompt(agent_id, payload)
 
-                result = self.gemini.run_gem(full_prompt, gem_name=agent_id)
+                # Offload blocking LLM call
+                result = await asyncio.to_thread(self.gemini.run_gem, full_prompt, gem_name=agent_id)
                 return result.get("json", {}) or {}
             except Exception as e:
                 logger.error(f"Error calling Gemini for {agent_id}: {e}")
@@ -204,11 +215,13 @@ class GEM6Orchestrator:
         return {}
 
     async def validate_step(self, entity_id, agent_id, output, contract_path, trace_id):
-        if not os.path.exists(contract_path):
+        # Offload file existence check and contract validation to thread
+        exists = await asyncio.to_thread(os.path.exists, contract_path)
+        if not exists:
             logger.warning(f"No contract found for {agent_id} at {contract_path}. Skipping strict validation.")
             return True
 
-        is_ok = validate_contract(output, contract_path)
+        is_ok = await asyncio.to_thread(validate_contract, output, contract_path)
         await self.client.log_execution({
             "entity_id": entity_id,
             "agent_id": agent_id,

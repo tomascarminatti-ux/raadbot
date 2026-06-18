@@ -172,7 +172,7 @@ async def setup_search(request: SetupSearchRequest):
     Crea la estructura de carpetas y guarda el mandato inicial.
     """
     output_dir = os.path.join("runs", request.search_id, "outputs")
-    os.makedirs(output_dir, exist_ok=True)
+    await asyncio.to_thread(os.makedirs, output_dir, exist_ok=True)
     
     # Simular estructura de inputs para GEM 5
     search_inputs = {
@@ -184,14 +184,17 @@ async def setup_search(request: SetupSearchRequest):
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     # Ejecutar GEM 5 directamente
     from agent.prompt_builder import build_gem5_prompt
-    prompt = build_gem5_prompt(search_inputs)
-    result = gemini.run_gem(prompt, gem_name="gem5")
+    prompt = await asyncio.to_thread(build_gem5_prompt, search_inputs)
+    result = await asyncio.to_thread(gemini.run_gem, prompt, gem_name="gem5")
     
     # Guardar resultados
-    with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
-        json.dump(result.get("data", {}), f, indent=4)
-    with open(os.path.join(output_dir, "gem5.md"), "w", encoding="utf-8") as f:
-        f.write(result.get("markdown", ""))
+    def save_results():
+        with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
+            json.dump(result.get("data", {}), f, indent=4)
+        with open(os.path.join(output_dir, "gem5.md"), "w", encoding="utf-8") as f:
+            f.write(result.get("markdown", ""))
+
+    await asyncio.to_thread(save_results)
         
     return {
         "status": "success",
@@ -240,12 +243,20 @@ class RefineRequest(BaseModel):
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
+    # Security/Validity Check
+    if ".." in request.gem_id or "/" in request.gem_id:
+        raise HTTPException(status_code=400, detail="Invalid GEM ID")
+
     prompt_path = f"prompts/{request.gem_id}.md"
-    if not os.path.exists(prompt_path):
+    exists = await asyncio.to_thread(os.path.exists, prompt_path)
+    if not exists:
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
         
-    with open(prompt_path, "r", encoding="utf-8") as f:
-        current_prompt = f.read()
+    def read_prompt():
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            return f.read()
+
+    current_prompt = await asyncio.to_thread(read_prompt)
         
     refinement_prompt = f"""
     Eres un experto en Prompt Engineering. Tu misión es REFINAR el siguiente System Prompt de RAADBOT v2.0.
@@ -264,12 +275,20 @@ async def refine_gem(request: RefineRequest):
     """
     
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
-    result = gemini.run_gem(refinement_prompt)
+    result = await asyncio.to_thread(gemini.run_gem, refinement_prompt)
     new_prompt = result.get("markdown", "") or result.get("raw", "")
     
     if new_prompt:
-        with open(prompt_path, "w", encoding="utf-8") as f:
-            f.write(new_prompt)
+        def write_prompt():
+            with open(prompt_path, "w", encoding="utf-8") as f:
+                f.write(new_prompt)
+
+        await asyncio.to_thread(write_prompt)
+
+        # Clear prompt cache after refinement
+        from agent.prompt_builder import clear_prompt_cache
+        clear_prompt_cache()
+
         return {"status": "success", "new_prompt": new_prompt}
     
     return {"status": "error", "message": "Failed to generate new prompt"}
