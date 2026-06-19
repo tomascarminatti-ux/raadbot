@@ -56,7 +56,12 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-2">
+                            <button id="copy-btn" onclick="copyPrompt()" class="text-xs text-slate-400 hover:text-white hover:bg-white/5 px-2 py-1 glass rounded-lg transition-all flex items-center gap-1 focus-visible:ring-2 outline-none" aria-label="Copiar prompt al portapapeles">
+                                <span>📋</span> <span id="copy-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        </div>
                     </div>
                     <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
@@ -102,6 +107,30 @@
 
         let gems = [];
         let activeGem = null;
+
+        let copyTimeout = null;
+        async function copyPrompt() {
+            const content = document.getElementById('prompt-content').innerText;
+            const btn = document.getElementById('copy-btn');
+            const text = document.getElementById('copy-text');
+
+            try {
+                await navigator.clipboard.writeText(content);
+
+                if (copyTimeout) clearTimeout(copyTimeout);
+
+                text.innerText = '¡Copiado!';
+                btn.classList.add('text-green-400', 'border-green-500/50');
+
+                copyTimeout = setTimeout(() => {
+                    text.innerText = 'Copiar';
+                    btn.classList.remove('text-green-400', 'border-green-500/50');
+                    copyTimeout = null;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+            }
+        }
 
         async function loadGems() {
             try {
