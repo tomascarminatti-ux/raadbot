@@ -1,0 +1,3 @@
+## 2025-01-24 - Parallelization and Caching
+**Learning:** Disk I/O in hot paths (like repeated prompt template loading) is a major anti-pattern; caching static templates in memory provides significant speedups. Additionally, sequential processing of independent tasks (like candidate evaluation) is a primary bottleneck in LLM pipelines; offloading blocking I/O to threads and using `asyncio.gather` for parallel execution is essential.
+**Action:** Use `functools.lru_cache` for static template loading and ensure independent agent tasks are parallelized with `asyncio.gather` and `asyncio.to_thread`.
