@@ -240,6 +240,7 @@ class RefineRequest(BaseModel):
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
+    from agent.prompt_builder import clear_prompt_cache
     prompt_path = f"prompts/{request.gem_id}.md"
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
@@ -270,6 +271,7 @@ async def refine_gem(request: RefineRequest):
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write(new_prompt)
+        clear_prompt_cache()
         return {"status": "success", "new_prompt": new_prompt}
     
     return {"status": "error", "message": "Failed to generate new prompt"}
