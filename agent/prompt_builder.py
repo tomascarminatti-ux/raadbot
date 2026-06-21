@@ -70,10 +70,10 @@ def build_prompt(gem_name: str, variables: dict) -> str:
             return str(val)
         return match.group(0)
 
-    prompt = re.sub(r"\{\{(\w+)\}\}", replace_var, prompt)
+    prompt = re.sub(r"\{\{([a-zA-Z0-9_-]+)\}\}", replace_var, prompt)
 
     # Validar que no queden variables sin reemplazar (excluyendo VERSION)
-    remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
+    remaining = re.findall(r"\{\{([a-zA-Z0-9_-]+)\}\}", prompt)
     if remaining:
         remaining = [v for v in remaining if v != "VERSION"]
         if remaining:
