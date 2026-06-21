@@ -10,6 +10,7 @@ SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
 SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "config/service_account.json")
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
+
 def get_db_data():
     conn = sqlite3.connect(DB_PATH)
     query = """
@@ -28,6 +29,7 @@ def get_db_data():
     conn.close()
     return df
 
+
 def sync_to_sheets():
     if not SPREADSHEET_ID or not os.path.exists(SERVICE_ACCOUNT_FILE):
         print("Missing Sheets config. Skipping sync.")
@@ -43,17 +45,18 @@ def sync_to_sheets():
     body = {
         'values': values
     }
-    
+
     # Clear and update (Production mode: Overwrite whole sheet as dashboard)
     range_name = 'Dashboard!A1'
     service.spreadsheets().values().clear(
         spreadsheetId=SPREADSHEET_ID, range='Dashboard!A:Z').execute()
-    
+
     result = service.spreadsheets().values().update(
         spreadsheetId=SPREADSHEET_ID, range=range_name,
         valueInputOption='RAW', body=body).execute()
-    
+
     print(f"{result.get('updatedCells')} cells updated in Google Sheets.")
+
 
 if __name__ == "__main__":
     sync_to_sheets()

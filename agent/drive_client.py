@@ -45,7 +45,7 @@ class DriveClient:
                     creds.refresh(Request())
                 except Exception:
                     creds = None
-            
+
             if not creds:
                 if not os.path.exists(self.credentials_path):
                     raise FileNotFoundError(
@@ -55,7 +55,7 @@ class DriveClient:
                 flow = InstalledAppFlow.from_client_secrets_file(
                     self.credentials_path, SCOPES
                 )
-                # Nota: run_local_server requiere navegador. 
+                # Nota: run_local_server requiere navegador.
                 # En servidores headless se debe proveer el token.json previamente.
                 creds = flow.run_local_server(port=0)
 
@@ -149,8 +149,9 @@ class DriveClient:
                     safe_name += ".txt"
             else:
                 if mime == "application/pdf" or "wordprocessing" in mime:
-                    console.print(f"[yellow]  ⚠️  Aviso: '{name}' es binario ({mime}). El contenido podría estar corrupto para el LLM.[/yellow]")
-                
+                    console.print(
+                        f"[yellow]  ⚠️  Aviso: '{name}' es binario ({mime}). El contenido podría estar corrupto para el LLM.[/yellow]")
+
                 if not safe_name.endswith(".txt") and mime.startswith("text/"):
                     safe_name += ".txt"
 

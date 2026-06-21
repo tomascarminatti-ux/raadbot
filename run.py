@@ -27,6 +27,7 @@ from agent.drive_client import DriveClient
 
 console = Console()
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="RAAD GEM Pipeline – Evaluación de candidatos ejecutivos",
@@ -83,7 +84,7 @@ Ejemplos:
         from rich.console import Console as RichConsole
         non_rich_console = RichConsole(file=io.StringIO())
         # Global console override would be better but this is a quick fix
-    
+
     # --- API Key check ---
     api_key = config.GEMINI_API_KEY
     if not api_key:
