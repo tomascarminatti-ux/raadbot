@@ -3,6 +3,7 @@ from rich.console import Console
 
 console = Console()
 
+
 def load_local_inputs(local_dir: str) -> tuple[dict, dict]:
     """
     Lee inputs desde carpeta local de forma resiliente.
