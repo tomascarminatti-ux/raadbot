@@ -55,7 +55,14 @@
             <section class="flex-1 p-8 overflow-y-auto space-y-6">
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
+                        <div class="flex items-center gap-3">
+                            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
+                            <button id="copy-btn" onclick="copyPrompt()" aria-label="Copiar prompt al portapapeles" class="text-slate-500 hover:text-blue-400 transition-colors p-1 rounded-md focus-visible:ring-2 focus-visible:ring-blue-500 outline-none" title="Copiar prompt">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                            </button>
+                        </div>
                         <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
                     </div>
                     <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
@@ -74,8 +81,8 @@
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
-                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">
                         <span>🚀</span> Refinar Prompt
                     </button>
                 </div>
@@ -102,6 +109,24 @@
 
         let gems = [];
         let activeGem = null;
+        let copyTimeout;
+
+        function copyPrompt() {
+            const content = document.getElementById('prompt-content').innerText;
+            if (activeGem && content) {
+                navigator.clipboard.writeText(content).then(() => {
+                    const btn = document.getElementById('copy-btn');
+                    const originalHTML = btn.innerHTML;
+                    btn.innerHTML = '<span class="text-[10px] font-bold text-green-400">¡COPIADO!</span>';
+                    clearTimeout(copyTimeout);
+                    copyTimeout = setTimeout(() => {
+                        btn.innerHTML = originalHTML;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Error al copiar:', err);
+                });
+            }
+        }
 
         async function loadGems() {
             try {
@@ -116,7 +141,7 @@
         function renderNav() {
             const nav = document.getElementById('gem-nav');
             nav.innerHTML = gems.map(gem => `
-                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
+                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">
                     <span>${gem.name}</span>
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
                 </button>
