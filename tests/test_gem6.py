@@ -1,7 +1,6 @@
 import asyncio
 import os
 import sys
-from datetime import datetime, timezone
 
 # Asegurar que el path incluya la raíz del proyecto
 sys.path.append(os.getcwd())
@@ -34,9 +33,13 @@ async def test_gem6_flow():
         # En un test real sin API Key de verdad, gemini.run_gem fallará o devolverá error.
         # Aquí probamos la estructura de la orquestación.
         result = await orchestrator.run_pipeline(search_inputs, candidates)
+
+        # In a CI environment without Ollama/Gemini, this might fail or return a partial result
+        # We check if CAND-001 is in the result keys as a proxy for success in the pipeline execution
+        status = "SUCCESS" if "CAND-001" in result else "FAILED"
         
         print("\n✅ Pipeline Ejecutado!")
-        print(f"Status: SUCCESS")
+        print(f"Status: {status}")
         print(f"Results: {result}")
         
     except Exception as e:
