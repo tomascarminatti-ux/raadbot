@@ -4,13 +4,16 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import functools
+import json
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
 
+@functools.lru_cache(maxsize=32)
 def load_prompt(gem_name: str) -> str:
-    """Carga un prompt desde el directorio de prompts."""
+    """Carga un prompt desde el directorio de prompts (con caché)."""
     filename = f"{gem_name}.md"
     filepath = os.path.join(PROMPTS_DIR, filename)
 
@@ -21,9 +24,16 @@ def load_prompt(gem_name: str) -> str:
         return f.read()
 
 
+@functools.lru_cache(maxsize=1)
 def load_maestro() -> str:
-    """Carga el prompt maestro."""
+    """Carga el prompt maestro (con caché)."""
     return load_prompt("00_prompt_maestro")
+
+
+def clear_prompt_cache():
+    """Limpia el caché de los prompts cargados."""
+    load_prompt.cache_clear()
+    load_maestro.cache_clear()
 
 
 def build_prompt(gem_name: str, variables: dict) -> str:
@@ -32,7 +42,7 @@ def build_prompt(gem_name: str, variables: dict) -> str:
 
     1. Carga el prompt del GEM
     2. Inyecta {{PROMPT_MAESTRO}}
-    3. Reemplaza todas las {{variables}}
+    3. Reemplaza todas las {{variables}} en una sola pasada (O(N))
     4. Valida que no queden variables sin reemplazar
 
     Args:
@@ -42,27 +52,32 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     Returns:
         str con el prompt listo para enviar al modelo
     """
-    # Cargar prompt maestro y del GEM
+    # Cargar prompt maestro y del GEM (desde caché si es posible)
     maestro = load_maestro()
     prompt = load_prompt(gem_name)
 
-    # Inyectar prompt maestro
+    # Inyectar prompt maestro primero para permitir variables dentro de él
     prompt = prompt.replace("{{PROMPT_MAESTRO}}", maestro)
 
-    # Inyectar variables
-    for key, value in variables.items():
-        placeholder = "{{" + key + "}}"
-        if isinstance(value, dict):
-            import json
+    # Optimización: Reemplazo en una sola pasada usando regex callback (O(N))
+    # En lugar de múltiples .replace() que recorren el string cada vez (O(N*M))
+    def replace_func(match):
+        key = match.group(1)
+        if key in variables:
+            value = variables[key]
+            if isinstance(value, dict):
+                return json.dumps(value, ensure_ascii=False, indent=2)
+            return str(value)
+        return match.group(0)  # Mantener {{key}} si no está en variables
 
-            value = json.dumps(value, ensure_ascii=False, indent=2)
-        prompt = prompt.replace(placeholder, str(value))
+    prompt = re.sub(r"\{\{([a-zA-Z0-9_-]+)\}\}", replace_func, prompt)
 
     # Validar que no queden variables sin reemplazar
-    remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
+    remaining = re.findall(r"\{\{([a-zA-Z0-9_-]+)\}\}", prompt)
     if remaining:
         # Filtrar VERSION que es metadata, no un input
-        remaining = [v for v in remaining if v != "VERSION"]
+        # PROMPT_MAESTRO ya fue reemplazado arriba si existía
+        remaining = [v for v in remaining if v not in ("VERSION", "PROMPT_MAESTRO")]
         if remaining:
             print(f"  ⚠️  Variables sin reemplazar: {remaining}")
 
@@ -77,7 +92,7 @@ def get_required_variables(gem_name: str) -> list[str]:
         Lista de nombres de variables (sin {{ }})
     """
     prompt = load_prompt(gem_name)
-    variables = re.findall(r"\{\{(\w+)\}\}", prompt)
+    variables = re.findall(r"\{\{([a-zA-Z0-9_-]+)\}\}", prompt)
     # Filtrar las que se resuelven automáticamente
     auto_resolved = {"PROMPT_MAESTRO", "VERSION"}
     return [v for v in set(variables) if v not in auto_resolved]
@@ -96,7 +111,6 @@ def build_agent_prompt(gem_id: str, payload: dict) -> str:
 
     # Si no se encontró ningún placeholder de datos en el prompt original, los anexamos al final
     if "{{input}}" not in base_prompt and "{{context}}" not in base_prompt:
-        import json
         prompt += f"\n\n### DATA INPUT:\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
 
     return prompt
