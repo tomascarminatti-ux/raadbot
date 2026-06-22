@@ -42,7 +42,7 @@ def server():
     proc.terminate()
 
 @pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="Playwright not installed")
-def test_dashboard_copy_button(page: Page):
+def test_dashboard_copy_button(page):
     # Navigate to dashboard
     page.goto("http://127.0.0.1:8001/dashboard")
 
@@ -79,7 +79,7 @@ def test_dashboard_copy_button(page: Page):
     expect(page.locator("#copy-icon")).to_have_text("📋")
 
 @pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="Playwright not installed")
-def test_accessibility_attributes(page: Page):
+def test_accessibility_attributes(page):
     page.goto("http://127.0.0.1:8001/dashboard")
 
     # Check ARIA labels
