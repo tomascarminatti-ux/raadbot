@@ -82,11 +82,13 @@ async def run_pipeline(request: PipelineRequest) -> dict:
 
     if request.drive_folder:
         drive = DriveClient(credentials_path=config.DRIVE_CREDENTIALS_PATH)
-        structure = drive.discover_search_structure(request.drive_folder)
+        # Offload blocking discovery call
+        structure = await asyncio.to_thread(drive.discover_search_structure, request.drive_folder)
         search_inputs = structure["search_inputs"]
         candidates = structure["candidates"]
     else:
-        search_inputs, candidates = load_local_inputs(request.local_dir)
+        # Offload blocking I/O call
+        search_inputs, candidates = await asyncio.to_thread(load_local_inputs, request.local_dir)
 
     if request.candidate_id:
         if request.candidate_id not in candidates:
@@ -186,7 +188,8 @@ async def setup_search(request: SetupSearchRequest):
     # Ejecutar GEM 5 directamente
     from agent.prompt_builder import build_gem5_prompt
     prompt = build_gem5_prompt(search_inputs)
-    result = gemini.run_gem(prompt, gem_name="gem5")
+    # Offload blocking LLM call
+    result = await asyncio.to_thread(gemini.run_gem, prompt, gem_name="gem5")
 
     # Guardar resultados
     with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
@@ -265,7 +268,8 @@ async def refine_gem(request: RefineRequest):
     """
 
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
-    result = gemini.run_gem(refinement_prompt)
+    # Offload blocking LLM call
+    result = await asyncio.to_thread(gemini.run_gem, refinement_prompt)
     new_prompt = result.get("markdown", "") or result.get("raw", "")
 
     if new_prompt:
