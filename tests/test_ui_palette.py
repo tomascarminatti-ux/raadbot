@@ -3,7 +3,11 @@ import multiprocessing
 import time
 import uvicorn
 import httpx
-from playwright.sync_api import Page, expect
+try:
+    from playwright.sync_api import Page, expect
+    HAS_PLAYWRIGHT = True
+except ImportError:
+    HAS_PLAYWRIGHT = False
 
 def run_server():
     from api import app
@@ -37,6 +41,7 @@ def server():
     yield
     proc.terminate()
 
+@pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="Playwright not installed")
 def test_dashboard_copy_button(page: Page):
     # Navigate to dashboard
     page.goto("http://127.0.0.1:8001/dashboard")
@@ -73,6 +78,7 @@ def test_dashboard_copy_button(page: Page):
     expect(page.locator("#copy-text")).to_have_text("Copiar")
     expect(page.locator("#copy-icon")).to_have_text("📋")
 
+@pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="Playwright not installed")
 def test_accessibility_attributes(page: Page):
     page.goto("http://127.0.0.1:8001/dashboard")
 
