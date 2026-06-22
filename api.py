@@ -14,6 +14,7 @@ import config
 from agent.gemini_client import GeminiClient
 from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
+from agent.prompt_builder import clear_prompt_cache
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
 
@@ -81,11 +82,13 @@ async def run_pipeline(request: PipelineRequest) -> dict:
 
     if request.drive_folder:
         drive = DriveClient(credentials_path=config.DRIVE_CREDENTIALS_PATH)
-        structure = drive.discover_search_structure(request.drive_folder)
+        # Offload blocking discovery call
+        structure = await asyncio.to_thread(drive.discover_search_structure, request.drive_folder)
         search_inputs = structure["search_inputs"]
         candidates = structure["candidates"]
     else:
-        search_inputs, candidates = load_local_inputs(request.local_dir)
+        # Offload blocking I/O call
+        search_inputs, candidates = await asyncio.to_thread(load_local_inputs, request.local_dir)
 
     if request.candidate_id:
         if request.candidate_id not in candidates:
@@ -129,8 +132,8 @@ async def background_run_pipeline(request: PipelineRequest):
                     await client.post(
                         request.webhook_url,
                         json={
-                            "status": "error", 
-                            "search_id": request.search_id, 
+                            "status": "error",
+                            "search_id": request.search_id,
                             "message": str(e)
                         },
                         timeout=30.0,
@@ -173,26 +176,27 @@ async def setup_search(request: SetupSearchRequest):
     """
     output_dir = os.path.join("runs", request.search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Simular estructura de inputs para GEM 5
     search_inputs = {
         "kickoff_notes": request.brief_notes,
         "brief_jd": request.jd_content,
         "company_context": request.company_context or ""
     }
-    
+
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     # Ejecutar GEM 5 directamente
     from agent.prompt_builder import build_gem5_prompt
     prompt = build_gem5_prompt(search_inputs)
-    result = gemini.run_gem(prompt, gem_name="gem5")
-    
+    # Offload blocking LLM call
+    result = await asyncio.to_thread(gemini.run_gem, prompt, gem_name="gem5")
+
     # Guardar resultados
     with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
         json.dump(result.get("data", {}), f, indent=4)
     with open(os.path.join(output_dir, "gem5.md"), "w", encoding="utf-8") as f:
         f.write(result.get("markdown", ""))
-        
+
     return {
         "status": "success",
         "search_id": request.search_id,
@@ -216,21 +220,21 @@ async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
     gems = []
     gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
-    
+
     for g in gem_list:
         prompt_path = f"prompts/{g}.md"
         prompt_content = ""
         if os.path.exists(prompt_path):
             with open(prompt_path, "r", encoding="utf-8") as f:
                 prompt_content = f.read()
-        
+
         gems.append({
             "id": g,
             "name": g.upper(),
             "prompt": prompt_content,
             "config": config.GEM_CONFIGS.get(g, {})
         })
-    
+
     return gems
 
 class RefineRequest(BaseModel):
@@ -243,35 +247,38 @@ async def refine_gem(request: RefineRequest):
     prompt_path = f"prompts/{request.gem_id}.md"
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
-        
+
     with open(prompt_path, "r", encoding="utf-8") as f:
         current_prompt = f.read()
-        
+
     refinement_prompt = f"""
     Eres un experto en Prompt Engineering. Tu misión es REFINAR el siguiente System Prompt de RAADBOT v2.0.
-    
+
     ESTRUCTURA ACTUAL:
     {current_prompt}
-    
+
     INSTRUCCIÓN DEL USUARIO:
     {request.instruction}
-    
+
     REGLAS:
     1. Mantén la estructura de secciones (ROL, CONTEXTO, INSTRUCCIONES CORE, etc.).
     2. Aplica la instrucción del usuario de forma profesional y precisa.
     3. Devuelve el prompt REFINADO completo en formato Markdown.
     4. NO agregues explicaciones, solo el contenido del nuevo prompt.
     """
-    
+
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
-    result = gemini.run_gem(refinement_prompt)
+    # Offload blocking LLM call
+    result = await asyncio.to_thread(gemini.run_gem, refinement_prompt)
     new_prompt = result.get("markdown", "") or result.get("raw", "")
-    
+
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write(new_prompt)
+        # Limpiar caché de prompts para asegurar que los cambios se reflejen de inmediato
+        clear_prompt_cache()
         return {"status": "success", "new_prompt": new_prompt}
-    
+
     return {"status": "error", "message": "Failed to generate new prompt"}
 
 @app.websocket("/ws/logs")
@@ -289,8 +296,8 @@ async def websocket_logs(websocket: WebSocket):
 @app.get("/health")
 def health_check():
     return {
-        "status": "ok", 
-        "agent": "raadbot", 
+        "status": "ok",
+        "agent": "raadbot",
         "version": "3.0.0",
         "model": config.DEFAULT_MODEL,
         "provider": config.LLM_PROVIDER

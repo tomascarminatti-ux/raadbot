@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
@@ -19,10 +20,11 @@ class GEM6Orchestrator:
         self.output_dir = kwargs.get("output_dir") or (args[1] if len(args) > 1 else None)
         self.config = kwargs.get("config") or (args[2] if len(args) > 2 else {})
         self.search_id = kwargs.get("search_id", self.config.get("search_id"))
+        self.semaphore = asyncio.Semaphore(5)  # Control parallelism
 
     async def run_pipeline(self, search_inputs: Dict[str, Any], candidates: Dict[str, Any]):
-        """Entry point to process all candidates"""
-        results = {}
+        """Entry point to process all candidates concurrently."""
+        tasks = []
         for candidate_id, candidate_data in candidates.items():
             context = {
                 "search_inputs": search_inputs,
@@ -30,7 +32,11 @@ class GEM6Orchestrator:
                 "candidate_data": candidate_data,
                 "entity_id": candidate_id
             }
-            results[candidate_id] = await self.process_context(context)
+            tasks.append(self._process_with_semaphore(context))
+
+        # Parallelize execution
+        results_list = await asyncio.gather(*tasks)
+        results = dict(zip(candidates.keys(), results_list))
         
         # Save summary
         if self.output_dir:
@@ -45,6 +51,10 @@ class GEM6Orchestrator:
                 json.dump(summary, f, indent=2)
         
         return results
+
+    async def _process_with_semaphore(self, context: Dict[str, Any]):
+        async with self.semaphore:
+            return await self.process_context(context)
 
     async def process_context(self, context_data: Dict[str, Any]):
         trace_id = str(uuid.uuid4())
@@ -77,8 +87,8 @@ class GEM6Orchestrator:
                 }
             })
 
-            # 2. Call GEM 6 for reasoning
-            result = self.gemini.run_gem(prompt, gem_name="gem6")
+            # 2. Call GEM 6 for reasoning (offload blocking LLM call)
+            result = await asyncio.to_thread(self.gemini.run_gem, prompt, gem_name="gem6")
             gem6_decision = result.get("json", {})
 
             if not gem6_decision:
@@ -177,7 +187,7 @@ class GEM6Orchestrator:
         return {"status": "FAILED", "reason": "MAX_STEPS_REACHED"}
 
     async def call_agent(self, agent_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """Calls the agent using GeminiClient or fallback to mock if client missing"""
+        """Calls the agent using GeminiClient (offloaded to thread)"""
         logger.info(f"Calling agent {agent_id}")
         
         if self.gemini:
@@ -185,7 +195,8 @@ class GEM6Orchestrator:
                 # Use prompt_builder for consistent templating
                 full_prompt = build_agent_prompt(agent_id, payload)
 
-                result = self.gemini.run_gem(full_prompt, gem_name=agent_id)
+                # Offload blocking LLM call
+                result = await asyncio.to_thread(self.gemini.run_gem, full_prompt, gem_name=agent_id)
                 return result.get("json", {}) or {}
             except Exception as e:
                 logger.error(f"Error calling Gemini for {agent_id}: {e}")
@@ -208,6 +219,7 @@ class GEM6Orchestrator:
             logger.warning(f"No contract found for {agent_id} at {contract_path}. Skipping strict validation.")
             return True
 
+        # Offload file I/O and validation if complex
         is_ok = validate_contract(output, contract_path)
         await self.client.log_execution({
             "entity_id": entity_id,
