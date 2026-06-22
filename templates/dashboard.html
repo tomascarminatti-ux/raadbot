@@ -26,12 +26,12 @@
             </h1>
             <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest font-semibold">Industrial Orchestrator</p>
         </div>
-        <nav class="flex-1 p-4 space-y-2 overflow-y-auto" id="gem-nav">
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto focus:outline-none" id="gem-nav" tabindex="0" aria-label="Navegación de módulos GEM">
             <!-- GEMS will be loaded here -->
             <div class="animate-pulse space-y-2">
-                <div class="h-10 bg-slate-800 rounded"></div>
-                <div class="h-10 bg-slate-800 rounded"></div>
-                <div class="h-10 bg-slate-800 rounded"></div>
+                <div class="h-10 bg-slate-800/50 rounded"></div>
+                <div class="h-10 bg-slate-800/50 rounded"></div>
+                <div class="h-10 bg-slate-800/50 rounded"></div>
             </div>
         </nav>
         <div class="p-4 border-t border-white/10 text-xs text-slate-500">
@@ -56,9 +56,14 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-2">
+                            <button id="copy-btn" onclick="copyPrompt()" style="display: none;" class="text-xs text-slate-400 hover:text-white px-2 py-1 border border-white/10 rounded transition-all flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none" aria-label="Copiar prompt al portapapeles">
+                                <span id="copy-icon">📋</span> <span id="copy-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        </div>
                     </div>
-                    <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
+                    <pre id="prompt-content" tabindex="0" aria-label="Contenido del prompt" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
             </section>
 
@@ -69,13 +74,13 @@
                     <p class="text-xs text-slate-500">Dale instrucciones al orquestador para ajustar el comportamiento de este GEM.</p>
                 </div>
 
-                <div class="flex-1 bg-black/20 rounded-xl p-4 border border-white/5 overflow-y-auto" id="chat-history">
+                <div class="flex-1 bg-black/20 rounded-xl p-4 border border-white/5 overflow-y-auto focus:outline-none" id="chat-history" tabindex="0" aria-label="Historial de refinamiento">
                     <div class="text-xs text-slate-500 italic">Chat disponible al seleccionar un GEM...</div>
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
-                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <textarea id="refine-input" aria-label="Instrucciones de refinamiento" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                    <button onclick="refineGem()" id="send-btn" disabled aria-label="Enviar refinamiento" class="w-full bg-blue-600 hover:bg-blue-500 focus-visible:ring-2 focus-visible:ring-blue-400 outline-none disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                         <span>🚀</span> Refinar Prompt
                     </button>
                 </div>
@@ -116,7 +121,7 @@
         function renderNav() {
             const nav = document.getElementById('gem-nav');
             nav.innerHTML = gems.map(gem => `
-                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
+                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group focus-visible:ring-2 focus-visible:ring-blue-500 outline-none" aria-label="Seleccionar ${gem.name}">
                     <span>${gem.name}</span>
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
                 </button>
@@ -133,12 +138,41 @@
             document.getElementById('current-gem-title').innerText = `${activeGem.name} - ${id}`;
             document.getElementById('prompt-content').innerText = activeGem.prompt;
             document.getElementById('send-btn').disabled = false;
+            document.getElementById('copy-btn').style.display = 'flex';
             
             document.getElementById('chat-history').innerHTML = `
                 <div class="bg-blue-600/10 border border-blue-500/30 p-3 rounded-lg text-xs leading-relaxed text-blue-200">
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?
                 </div>
             `;
+        }
+
+        let copyTimeout;
+        function copyPrompt() {
+            const content = document.getElementById('prompt-content').innerText;
+            if (!content || content.startsWith('Selecciona')) return;
+
+            navigator.clipboard.writeText(content).then(() => {
+                const btn = document.getElementById('copy-btn');
+                const text = document.getElementById('copy-text');
+                const icon = document.getElementById('copy-icon');
+
+                const oldText = text.innerText;
+                const oldIcon = icon.innerText;
+
+                text.innerText = '¡Copiado!';
+                icon.innerText = '✅';
+                btn.classList.add('border-green-500', 'text-green-400');
+
+                if (copyTimeout) clearTimeout(copyTimeout);
+                copyTimeout = setTimeout(() => {
+                    text.innerText = oldText;
+                    icon.innerText = oldIcon;
+                    btn.classList.remove('border-green-500', 'text-green-400');
+                }, 2000);
+            }).catch(err => {
+                console.error('Error al copiar:', err);
+            });
         }
 
         async function refineGem() {
