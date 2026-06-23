@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import httpx
 import asyncio
 
@@ -52,17 +52,18 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    # Regex validation to prevent path traversal
+    search_id: str = Field(..., pattern=config.ID_PATTERN)
     drive_folder: Optional[str] = None
     local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    candidate_id: Optional[str] = Field(None, pattern=config.ID_PATTERN)  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
 
 
 class PipelineResponse(BaseModel):
     status: str
-    search_id: str
+    search_id: str = Field(..., pattern=config.ID_PATTERN)
     output_dir: str
     summary: dict
 
@@ -160,10 +161,12 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    # Regex validation to prevent path traversal
+    search_id: str = Field(..., pattern=config.ID_PATTERN)
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
+
 
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
@@ -234,12 +237,18 @@ async def list_gems():
     return gems
 
 class RefineRequest(BaseModel):
-    gem_id: str
+    # Regex validation to prevent path traversal
+    gem_id: str = Field(..., pattern=config.ID_PATTERN)
     instruction: str
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
+    # Strict whitelist check for gem_id
+    if request.gem_id not in config.ALLOWED_GEMS:
+        raise HTTPException(status_code=403, detail="Unauthorized GEM ID")
+
     prompt_path = f"prompts/{request.gem_id}.md"
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
