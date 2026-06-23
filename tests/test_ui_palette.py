@@ -1,6 +1,5 @@
 import pytest
 import re
-from playwright.sync_api import Page, expect
 import time
 import subprocess
 import os
@@ -20,6 +19,7 @@ def server():
     proc.terminate()
 
 def test_dashboard_copy_button_exists(page):
+    from playwright.sync_api import expect
     page.goto("http://localhost:8001/dashboard")
 
     # Check if Copy button exists and has ARIA label
@@ -35,6 +35,7 @@ def test_dashboard_copy_button_exists(page):
     expect(copy_btn).to_have_attribute("aria-label", "Copiar prompt al portapapeles")
 
 def test_accessibility_attributes(page):
+    from playwright.sync_api import expect
     page.goto("http://localhost:8001/dashboard")
 
     # Check for ARIA labels on other key elements
@@ -45,6 +46,7 @@ def test_accessibility_attributes(page):
     expect(page.locator("#send-btn")).to_have_attribute("aria-label", "Enviar instrucción de refinamiento")
 
 def test_copy_functionality_visual_feedback(page):
+    from playwright.sync_api import expect
     page.goto("http://localhost:8001/dashboard")
 
     # Mocking clipboard as it's often restricted in headless browsers
