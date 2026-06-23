@@ -4,6 +4,13 @@ import time
 import subprocess
 import os
 
+# Try to import playwright, if not available, tests will be skipped
+try:
+    from playwright.sync_api import Page, expect
+    HAS_PLAYWRIGHT = True
+except ImportError:
+    HAS_PLAYWRIGHT = False
+
 # Helper to start/stop the server
 @pytest.fixture(scope="module", autouse=True)
 def server():
@@ -18,13 +25,12 @@ def server():
     yield
     proc.terminate()
 
+@pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="Playwright not installed")
 def test_dashboard_copy_button_exists(page):
-    from playwright.sync_api import expect
     page.goto("http://localhost:8001/dashboard")
 
-    # Check if Copy button exists and has ARIA label
+    # Check if Copy button exists (initially hidden)
     copy_btn = page.locator("#copy-btn")
-    # Initially hidden until GEM is selected
     expect(copy_btn).to_be_hidden()
 
     # Select a GEM
@@ -32,28 +38,26 @@ def test_dashboard_copy_button_exists(page):
     page.locator("#gem-nav button").first.click()
 
     expect(copy_btn).to_be_visible()
-    expect(copy_btn).to_have_attribute("aria-label", "Copiar prompt al portapapeles")
+    expect(copy_btn).to_have_attribute("aria-label", "Copy prompt to clipboard")
 
+@pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="Playwright not installed")
 def test_accessibility_attributes(page):
-    from playwright.sync_api import expect
     page.goto("http://localhost:8001/dashboard")
 
     # Check for ARIA labels on other key elements
-    expect(page.locator("#gem-nav")).to_have_attribute("aria-label", "Navegación de módulos GEM")
-    expect(page.locator("#prompt-content")).to_have_attribute("aria-label", "Contenido del prompt del sistema")
-    expect(page.locator("#chat-history")).to_have_attribute("aria-label", "Historial de refinamiento")
-    expect(page.locator("#refine-input")).to_have_attribute("aria-label", "Instrucciones para refinar el prompt")
-    expect(page.locator("#send-btn")).to_have_attribute("aria-label", "Enviar instrucción de refinamiento")
+    expect(page.locator("#gem-nav")).to_have_attribute("aria-label", "GEM Modules Navigation")
+    expect(page.locator("#prompt-content")).to_have_attribute("aria-label", "System Prompt Content")
+    expect(page.locator("#chat-history")).to_have_attribute("aria-label", "Refinement History")
+    expect(page.locator("#refine-input")).to_have_attribute("aria-label", "Refinement Instructions")
+    expect(page.locator("#send-btn")).to_have_attribute("aria-label", "Send Refinement Instruction")
 
+@pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="Playwright not installed")
 def test_copy_functionality_visual_feedback(page):
-    from playwright.sync_api import expect
     page.goto("http://localhost:8001/dashboard")
 
-    # Mocking clipboard as it's often restricted in headless browsers
+    # Mocking clipboard
     page.evaluate("navigator.clipboard.writeText = () => Promise.resolve()")
 
-    # Select a GEM first to enable functionality (simulated)
-    # We need to wait for GEMS to load
     page.wait_for_selector("#gem-nav button")
     page.locator("#gem-nav button").first.click()
 
@@ -68,7 +72,7 @@ def test_copy_functionality_visual_feedback(page):
     expect(copy_text).to_have_text("¡Copiado!")
     expect(copy_btn).to_have_class(re.compile(r".*bg-green-600.*"))
 
-    # Wait for reset (2 seconds in code, so wait slightly more)
+    # Wait for reset
     time.sleep(2.5)
     expect(copy_text).to_have_text("Copiar")
     expect(copy_btn).to_have_class(re.compile(r".*bg-slate-700.*"))
