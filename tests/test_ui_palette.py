@@ -19,7 +19,7 @@ def server():
     yield
     proc.terminate()
 
-def test_dashboard_copy_button_exists(page: Page):
+def test_dashboard_copy_button_exists(page):
     page.goto("http://localhost:8001/dashboard")
 
     # Check if Copy button exists and has ARIA label
@@ -34,7 +34,7 @@ def test_dashboard_copy_button_exists(page: Page):
     expect(copy_btn).to_be_visible()
     expect(copy_btn).to_have_attribute("aria-label", "Copiar prompt al portapapeles")
 
-def test_accessibility_attributes(page: Page):
+def test_accessibility_attributes(page):
     page.goto("http://localhost:8001/dashboard")
 
     # Check for ARIA labels on other key elements
@@ -44,7 +44,7 @@ def test_accessibility_attributes(page: Page):
     expect(page.locator("#refine-input")).to_have_attribute("aria-label", "Instrucciones para refinar el prompt")
     expect(page.locator("#send-btn")).to_have_attribute("aria-label", "Enviar instrucción de refinamiento")
 
-def test_copy_functionality_visual_feedback(page: Page):
+def test_copy_functionality_visual_feedback(page):
     page.goto("http://localhost:8001/dashboard")
 
     # Mocking clipboard as it's often restricted in headless browsers
