@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
@@ -21,17 +22,27 @@ class GEM6Orchestrator:
         self.search_id = kwargs.get("search_id", self.config.get("search_id"))
 
     async def run_pipeline(self, search_inputs: Dict[str, Any], candidates: Dict[str, Any]):
-        """Entry point to process all candidates"""
-        results = {}
-        for candidate_id, candidate_data in candidates.items():
-            context = {
-                "search_inputs": search_inputs,
-                "candidate_id": candidate_id,
-                "candidate_data": candidate_data,
-                "entity_id": candidate_id
-            }
-            results[candidate_id] = await self.process_context(context)
-        
+        """
+        Entry point to process all candidates.
+        Optimized: Processes candidates in parallel using asyncio.gather and a semaphore to control concurrency.
+        """
+        semaphore = asyncio.Semaphore(5)
+
+        async def _bounded_process(candidate_id, candidate_data):
+            async with semaphore:
+                context = {
+                    "search_inputs": search_inputs,
+                    "candidate_id": candidate_id,
+                    "candidate_data": candidate_data,
+                    "entity_id": candidate_id
+                }
+                return candidate_id, await self.process_context(context)
+
+        # Execute all candidates in parallel
+        tasks = [_bounded_process(cid, cdata) for cid, cdata in candidates.items()]
+        results_list = await asyncio.gather(*tasks)
+        results = dict(results_list)
+
         # Save summary
         if self.output_dir:
             os.makedirs(self.output_dir, exist_ok=True)
@@ -78,7 +89,8 @@ class GEM6Orchestrator:
             })
 
             # 2. Call GEM 6 for reasoning
-            result = self.gemini.run_gem(prompt, gem_name="gem6")
+            # Optimized: Offload blocking LLM call to a worker thread
+            result = await asyncio.to_thread(self.gemini.run_gem, prompt, gem_name="gem6")
             gem6_decision = result.get("json", {})
 
             if not gem6_decision:
@@ -185,7 +197,8 @@ class GEM6Orchestrator:
                 # Use prompt_builder for consistent templating
                 full_prompt = build_agent_prompt(agent_id, payload)
 
-                result = self.gemini.run_gem(full_prompt, gem_name=agent_id)
+                # Optimized: Offload blocking LLM call to a worker thread
+                result = await asyncio.to_thread(self.gemini.run_gem, full_prompt, gem_name=agent_id)
                 return result.get("json", {}) or {}
             except Exception as e:
                 logger.error(f"Error calling Gemini for {agent_id}: {e}")
@@ -221,7 +234,6 @@ class GEM6Orchestrator:
         return is_ok
 
 if __name__ == "__main__":
-    import time
     orch = GEM6Orchestrator()
     # Mock trigger
     asyncio.run(orch.process_context({"entity_id": "TEST-001", "context": "Discovery request"}))
