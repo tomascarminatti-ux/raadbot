@@ -2,12 +2,13 @@ import asyncio
 import time
 import os
 import sys
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock
 
 # Ensure project root is in path
 sys.path.append(os.getcwd())
 
-from agent.gem6.orchestrator import GEM6Orchestrator
+from agent.gem6.orchestrator import GEM6Orchestrator  # noqa: E402
+
 
 class MockGemini:
     def run_gem(self, prompt, gem_name=None):
@@ -23,12 +24,13 @@ class MockGemini:
             }
         }
 
+
 async def benchmark():
     print("--- Starting Benchmark (Optimized) ---")
     gemini = MockGemini()
 
     orch = GEM6Orchestrator(gemini=gemini, output_dir="runs/benchmark", search_id="BENCH-001")
-    orch.client = AsyncMock() # Mock the DB client to avoid network calls
+    orch.client = AsyncMock()  # Mock the DB client to avoid network calls
 
     search_inputs = {"job": "Engineer"}
     candidates = {f"CAND-{i}": {"name": f"Candidate {i}"} for i in range(5)}
@@ -48,6 +50,7 @@ async def benchmark():
 
     print("Benchmark completed successfully and verified results.")
     return total_time
+
 
 if __name__ == "__main__":
     asyncio.run(benchmark())

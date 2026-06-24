@@ -1,7 +1,7 @@
 {
   "steps": [
     {
-      "timestamp": "2026-06-24T08:40:31.534123",
+      "timestamp": "2026-06-24T09:03:48.149294",
       "gem": "GEM6_FINAL",
       "action": "Orquestación finalizada",
       "status": "SUCCESS",
@@ -9,15 +9,7 @@
       "thought": "Mocked thought"
     },
     {
-      "timestamp": "2026-06-24T08:40:31.539204",
-      "gem": "GEM6_FINAL",
-      "action": "Orquestación finalizada",
-      "status": "SUCCESS",
-      "entity_id": "CAND-2",
-      "thought": "Mocked thought"
-    },
-    {
-      "timestamp": "2026-06-24T08:40:31.541159",
+      "timestamp": "2026-06-24T09:03:48.151110",
       "gem": "GEM6_FINAL",
       "action": "Orquestación finalizada",
       "status": "SUCCESS",
@@ -25,7 +17,15 @@
       "thought": "Mocked thought"
     },
     {
-      "timestamp": "2026-06-24T08:40:31.543449",
+      "timestamp": "2026-06-24T09:03:48.151956",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-2",
+      "thought": "Mocked thought"
+    },
+    {
+      "timestamp": "2026-06-24T09:03:48.152878",
       "gem": "GEM6_FINAL",
       "action": "Orquestación finalizada",
       "status": "SUCCESS",
@@ -33,7 +33,7 @@
       "thought": "Mocked thought"
     },
     {
-      "timestamp": "2026-06-24T08:40:31.545496",
+      "timestamp": "2026-06-24T09:03:48.153530",
       "gem": "GEM6_FINAL",
       "action": "Orquestación finalizada",
       "status": "SUCCESS",
