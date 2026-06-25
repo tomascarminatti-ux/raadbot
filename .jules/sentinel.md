@@ -1,0 +1,4 @@
+## 2025-05-14 - Path Traversal in Raadbot API
+**Vulnerability:** Path traversal via identifiers used in file-path construction. Parameters like `search_id`, `local_dir`, and `gem_id` were directly used to construct file system paths without validation, allowing access to files outside intended directories using `../` sequences.
+**Learning:** Appending a fixed file extension (e.g., `.md`) or prefixing a directory is insufficient protection against path traversal if the base identifier can contain relative path components. Modern Pydantic models should be the first line of defense for input validation.
+**Prevention:** Enforce strict regex validation (`r'^[a-zA-Z0-9_-]+$'`) on all identifiers used in file operations via Pydantic `Field(pattern=...)`. Supplement with explicit whitelisting for critical file access (e.g., `ALLOWED_GEMS`) to provide defense-in-depth.
