@@ -8,6 +8,7 @@ from agent.gemini_client import GeminiClient
 from dotenv import load_dotenv
 
 if __name__ == "__main__":
+    # This script requires a valid GEMINI_API_KEY and a local Ollama instance if provider is ollama
     load_dotenv()
     client = GeminiClient(api_key=os.getenv("GEMINI_API_KEY"), model="gemini-2.5-flash")
     prompt = "Escribe un saludo corto de 5 palabras."
