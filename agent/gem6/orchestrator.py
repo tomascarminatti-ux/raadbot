@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
@@ -232,7 +233,6 @@ class GEM6Orchestrator:
 
 
 if __name__ == "__main__":
-    import time
     orch = GEM6Orchestrator()
     # Mock trigger
     asyncio.run(orch.process_context({"entity_id": "TEST-001", "context": "Discovery request"}))
