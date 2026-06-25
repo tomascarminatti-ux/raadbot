@@ -1,10 +1,10 @@
-import pytest
 from fastapi.testclient import TestClient
 from api import app
 from unittest.mock import patch, mock_open
-import config
+
 
 client = TestClient(app)
+
 
 def test_search_id_regex_validation():
     # Attempt with invalid search_id (contains dots and slashes)
@@ -19,6 +19,7 @@ def test_search_id_regex_validation():
     # Pydantic should reject this before it reaches the endpoint logic
     assert response.status_code == 422
 
+
 def test_local_dir_regex_validation():
     response = client.post(
         "/api/v1/run",
@@ -28,6 +29,7 @@ def test_local_dir_regex_validation():
         }
     )
     assert response.status_code == 422
+
 
 def test_candidate_id_regex_validation():
     response = client.post(
@@ -40,6 +42,7 @@ def test_candidate_id_regex_validation():
     )
     assert response.status_code == 422
 
+
 def test_gem_id_regex_validation():
     # Attempt with invalid gem_id in refine endpoint
     response = client.post(
@@ -47,6 +50,7 @@ def test_gem_id_regex_validation():
         json={"gem_id": "gem1; rm -rf /", "instruction": "test"}
     )
     assert response.status_code == 422
+
 
 def test_gem_id_whitelist_validation():
     # Attempt with valid regex but non-whitelisted GEM ID
@@ -57,6 +61,7 @@ def test_gem_id_whitelist_validation():
     # This should be caught by our manual check in the endpoint
     assert response.status_code == 403
     assert response.json()["detail"] == "Access to this GEM is not allowed"
+
 
 def test_refine_gem_valid_whitelisted():
     # Test a valid, whitelisted GEM to ensure it still works (with mocking)
