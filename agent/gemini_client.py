@@ -12,17 +12,20 @@ import config
 
 console = Console()
 
+
 class GeminiUsage(TypedDict):
     prompt_tokens: int
     candidates_tokens: int
     total_tokens: int
     finish_reason: str
 
+
 class GeminiResult(TypedDict):
     json: Optional[dict[str, Any]]
     markdown: str
     raw: str
     usage: GeminiUsage
+
 
 class GeminiClient:
     """Cliente para interactuar con Gemini API u Ollama."""
@@ -41,7 +44,8 @@ class GeminiClient:
     def _run_ollama(self, prompt: str, gem_name: Optional[str], max_retries: int) -> GeminiResult:
         """Envía un prompt a Ollama."""
         url = f"{config.OLLAMA_BASE_URL}/api/generate"
-        cfg = config.GEM_CONFIGS.get(gem_name, {"temperature": 0.3, "top_p": 0.8, "max_tokens": 4096})
+        cfg = config.GEM_CONFIGS.get(
+            gem_name, {"temperature": 0.3, "top_p": 0.8, "max_tokens": 4096})
 
         payload = {
             "model": self.model,
@@ -99,8 +103,9 @@ class GeminiClient:
             GeminiResult con el contenido parseado y metadatos de uso.
         """
         # Cargar configuración específica o usar default
-        cfg = config.GEM_CONFIGS.get(gem_name, {"temperature": 0.3, "top_p": 0.8, "max_tokens": 4096})
-        
+        cfg = config.GEM_CONFIGS.get(
+            gem_name, {"temperature": 0.3, "top_p": 0.8, "max_tokens": 4096})
+
         for attempt in range(max_retries + 1):
             try:
                 response = self.client.models.generate_content(
@@ -114,14 +119,14 @@ class GeminiClient:
                 )
 
                 raw_text = response.text
-                
+
                 usage_dict: GeminiUsage = {
                     "prompt_tokens": 0,
                     "candidates_tokens": 0,
                     "total_tokens": 0,
                     "finish_reason": "UNKNOWN"
                 }
-                
+
                 if hasattr(response, "usage_metadata") and response.usage_metadata:
                     usage_dict["prompt_tokens"] = getattr(
                         response.usage_metadata, "prompt_token_count", 0
@@ -132,12 +137,13 @@ class GeminiClient:
                     usage_dict["total_tokens"] = getattr(
                         response.usage_metadata, "total_token_count", 0
                     )
-                
+
                 if hasattr(response, "candidates") and response.candidates:
-                    usage_dict["finish_reason"] = getattr(response.candidates[0], "finish_reason", "STOP")
-                
+                    usage_dict["finish_reason"] = getattr(
+                        response.candidates[0], "finish_reason", "STOP")
+
                 result_content = self._parse_response(raw_text)
-                
+
                 return {
                     "json": result_content["json"],
                     "markdown": result_content["markdown"],
@@ -148,7 +154,8 @@ class GeminiClient:
             except Exception as e:
                 if attempt < max_retries:
                     wait = 2 ** (attempt + 1)
-                    console.print(f"[yellow]  ⚠️  Error (intento {attempt + 1}/{max_retries + 1}): {e}[/yellow]")
+                    console.print(
+                        f"[yellow]  ⚠️  Error (intento {attempt + 1}/{max_retries + 1}): {e}[/yellow]")
                     console.print(f"[dim]  ⏳ Reintentando en {wait}s...[/dim]")
                     time.sleep(wait)
                 else:
@@ -163,18 +170,19 @@ class GeminiClient:
         markdown = raw_text
 
         # Intentar encontrar bloques de código JSON
-        json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", raw_text, re.DOTALL)
-        
+        json_match = re.search(
+            r"```(?:json)?\s*(\{.*?\})\s*```", raw_text, re.DOTALL)
+
         if not json_match:
             # Intentar encontrar cualquier bloque que empiece con { y termine con }
             json_match = re.search(r"(\{.*\})", raw_text, re.DOTALL)
 
         if json_match:
             json_str = json_match.group(1).strip()
-            
+
             # Limpieza básica de JSON: eliminar comas finales antes de cerrar llaves/corchetes
             json_str = re.sub(r",\s*([\]}])", r"\1", json_str)
-            
+
             try:
                 json_data = json.loads(json_str)
                 # Separar markdown (lo que queda fuera del bloque JSON detectado)
