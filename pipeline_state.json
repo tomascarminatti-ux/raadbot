@@ -1,0 +1,324 @@
+{
+  "steps": [
+    {
+      "timestamp": "2026-06-27T08:05:35.259094",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-0",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:35.760509",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-1",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:36.262263",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-2",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:36.763976",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-3",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:37.265636",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-4",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:37.767584",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-5",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:38.269567",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-6",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:38.772889",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-7",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:39.275177",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-8",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:39.777821",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-9",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:53.530109",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-0",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:54.031735",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-1",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:54.533494",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-2",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:55.035537",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-3",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:55.538363",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-4",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:56.041743",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-5",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:56.544976",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-6",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:57.066594",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-7",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:57.570294",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-8",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:05:58.073207",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-9",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:09:23.174203",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-0",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:09:23.677671",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-1",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:09:24.179793",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-2",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:09:24.681779",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-3",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:09:25.183734",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-4",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:09:25.686514",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-5",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:09:26.188709",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-6",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:09:26.690941",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-7",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:09:27.193073",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-8",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:09:27.695517",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-9",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:11:41.332692",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-0",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:11:41.337174",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-1",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:11:41.339181",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-3",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:11:41.342378",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-4",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:11:41.344200",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-2",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:11:41.838262",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-5",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:11:41.843216",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-6",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:11:41.844629",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-7",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:11:41.847331",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-8",
+      "thought": "Benchmark thought"
+    },
+    {
+      "timestamp": "2026-06-27T08:11:41.848599",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-9",
+      "thought": "Benchmark thought"
+    }
+  ]
+}

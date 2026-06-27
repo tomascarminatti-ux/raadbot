@@ -1,0 +1,6 @@
+## 2026-06-27 - Parallel Candidate Processing in GEM6 Orchestrator
+**Learning:** Sequential LLM calls within an orchestration loop are a significant performance bottleneck. In this codebase, the GEM6 orchestrator was processing candidates one-by-one. Since LLM calls are I/O-bound (and synchronous in the current ), the event loop was being blocked.
+**Action:** Use `asyncio.gather` with `asyncio.Semaphore` to parallelize item processing. Wrap synchronous LLM client calls (`run_gem`) in `asyncio.to_thread` to ensure the event loop remains responsive during heavy I/O. This resulted in a ~4.9x speedup for a batch of 10 candidates.
+## 2026-06-27 - Parallel Candidate Processing in GEM6 Orchestrator
+**Learning:** Sequential LLM calls within an orchestration loop are a significant performance bottleneck. In this codebase, the GEM6 orchestrator was processing candidates one-by-one. Since LLM calls are I/O-bound (and synchronous in the current `GeminiClient`), the event loop was being blocked.
+**Action:** Use `asyncio.gather` with `asyncio.Semaphore` to parallelize item processing. Wrap synchronous LLM client calls (`run_gem`) in `asyncio.to_thread` to ensure the event loop remains responsive during heavy I/O. This resulted in a ~4.9x speedup for a batch of 10 candidates.
