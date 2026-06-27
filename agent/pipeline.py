@@ -17,6 +17,9 @@ from agent.logger import logger
 
 console = Console()
 
+# Global cache for the JSON schema to avoid redundant disk I/O
+_SCHEMA_CACHE = None
+
 
 class Pipeline:
     """Orquestador del pipeline GEM Nivel Psicópata (Stateful & Rich UI)."""
@@ -25,7 +28,7 @@ class Pipeline:
         self.gemini = gemini
         self.search_id = search_id
         self.output_dir = output_dir
-        self.schema = self._load_schema()
+        self.schema = self._get_cached_schema()
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -34,14 +37,17 @@ class Pipeline:
         self.state = self._load_state()
         self._lock = asyncio.Lock()
 
-    def _load_schema(self) -> Optional[dict]:
-        schema_path = os.path.join(
-            os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
-        )
-        if os.path.exists(schema_path):
-            with open(schema_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return None
+    def _get_cached_schema(self) -> Optional[dict]:
+        """Obtiene el schema de la caché global o lo carga si es necesario."""
+        global _SCHEMA_CACHE
+        if _SCHEMA_CACHE is None:
+            schema_path = os.path.join(
+                os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
+            )
+            if os.path.exists(schema_path):
+                with open(schema_path, "r", encoding="utf-8") as f:
+                    _SCHEMA_CACHE = json.load(f)
+        return _SCHEMA_CACHE
 
     def _load_state(self) -> dict:
         """Carga el estado anterior si existe para reanudar."""
@@ -64,7 +70,7 @@ class Pipeline:
             with open(self.state_file, "w", encoding="utf-8") as f:
                 json.dump(self.state, f, ensure_ascii=False, indent=2)
 
-    async def _track_usage(self, usage: dict):
+    async def _track_usage(self, usage: dict, save: bool = True):
         """Suma tokens y calcula costo acumulado."""
         if not usage:
             return
@@ -80,7 +86,8 @@ class Pipeline:
             cost_c = (c_tokens / 1_000_000) * PRICE_COMPLETION_1M
             self.state["usage"]["total_cost_usd"] += cost_p + cost_c
 
-        await self._save_state()
+        if save:
+            await self._save_state()
 
     async def _save_output(
         self, gem_name: str, result: dict, candidate_id: Optional[str] = None
@@ -96,9 +103,9 @@ class Pipeline:
             base = self.output_dir
             state_key = "search"
 
-        # Track usage
+        # Track usage without immediate save to avoid redundant I/O
         if "usage" in result:
-            await self._track_usage(result["usage"])
+            await self._track_usage(result["usage"], save=False)
 
         async with self._lock:
             # Update state cache
