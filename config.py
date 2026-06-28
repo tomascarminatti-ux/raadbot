@@ -6,8 +6,11 @@ load_dotenv()
 # LLM Settings
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini") # gemini or ollama
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if LLM_PROVIDER == "gemini" and not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY not set while using gemini provider")
+
+def validate_config():
+    """Valida configuraciones críticas en tiempo de ejecución."""
+    if LLM_PROVIDER == "gemini" and not GEMINI_API_KEY:
+        raise RuntimeError("GEMINI_API_KEY not set while using gemini provider")
 
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
@@ -44,3 +47,6 @@ GEM_CONFIGS = {
 # Google Drive Settings
 DRIVE_CREDENTIALS_PATH = os.getenv("DRIVE_CREDENTIALS_PATH", "credentials.json")
 DRIVE_TOKEN_FILE = "token.json"
+
+# Security Configurations
+ID_PATTERN = r'^[a-zA-Z0-9_-]+$'
