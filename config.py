@@ -13,6 +13,11 @@ DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.3:70b")
 
+def validate_config():
+    """Valida la configuración crítica en tiempo de ejecución."""
+    if LLM_PROVIDER == "gemini" and not GEMINI_API_KEY:
+        raise RuntimeError("GEMINI_API_KEY no configurada mientras se usa el proveedor 'gemini'")
+
 # Gating Thresholds
 SCORING_CUTOFF = float(os.getenv("SCORING_CUTOFF", "0.4"))
 QA_GATE_CUTOFF = float(os.getenv("QA_GATE_CUTOFF", "0.85"))

@@ -1,7 +1,8 @@
 import httpx
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
+from functools import lru_cache
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -56,10 +57,14 @@ class GEMClient:
             logger.error(f"Failed to log execution: {e}")
             return None
 
+@lru_cache(maxsize=32)
+def _load_schema(contract_path: str) -> Dict[str, Any]:
+    with open(contract_path, "r") as f:
+        return json.load(f)
+
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
-        with open(contract_path, "r") as f:
-            contract = json.load(f)
+        contract = _load_schema(contract_path)
         
         for key in contract:
             if not isinstance(key, str):
