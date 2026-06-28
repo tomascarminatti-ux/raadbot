@@ -1,0 +1,456 @@
+{
+  "steps": [
+    {
+      "timestamp": "2026-06-28T08:48:52.149379",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-7",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:48:52.247868",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-8",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:48:52.250367",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-9",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:48:52.253068",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-7",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:48:52.254752",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-6",
+      "step": 2
+    },
+    {
+      "timestamp": "2026-06-28T08:48:52.354007",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-9",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:48:52.356846",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-6",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:48:52.454076",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-8",
+      "step": 2
+    },
+    {
+      "timestamp": "2026-06-28T08:48:52.657681",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-8",
+      "step": 3
+    },
+    {
+      "timestamp": "2026-06-28T08:48:52.759717",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-8",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:50:11.835210",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-3",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:50:11.935313",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-0",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:50:11.937334",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-1",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:50:11.938686",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-2",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:50:11.940400",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-4",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:50:11.941775",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-5",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.038058",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-0",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.042409",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-4",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.142277",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-2",
+      "step": 2
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.144144",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-1",
+      "step": 2
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.146352",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-6",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.242786",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-7",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.246559",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-1",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.249425",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-8",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.345322",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-7",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.347068",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-2",
+      "step": 3
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.348635",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-9",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.350427",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-6",
+      "step": 2
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.449201",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-2",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.452211",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-6",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.453653",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-8",
+      "step": 2
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.657136",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-8",
+      "step": 3
+    },
+    {
+      "timestamp": "2026-06-28T08:50:12.759829",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-8",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.292244",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-1",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.295017",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-2",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.296930",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-3",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.298658",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-4",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.393636",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-0",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.496163",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-0",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.499159",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-5",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.500967",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-6",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.503140",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-7",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.505255",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-8",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.601904",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-5",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.603869",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-6",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.606061",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-7",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.607378",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-8",
+      "thought": "Finalizing"
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.700504",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-9",
+      "step": 1
+    },
+    {
+      "timestamp": "2026-06-28T08:51:26.904841",
+      "gem": "GEM1",
+      "action": "Procesamiento completado",
+      "score": 0.8,
+      "status": "BLOCKED",
+      "output_preview": "{'score': 0.8}...",
+      "entity_id": "CAND-9",
+      "step": 2
+    },
+    {
+      "timestamp": "2026-06-28T08:51:27.007966",
+      "gem": "GEM6_FINAL",
+      "action": "Orquestación finalizada",
+      "status": "SUCCESS",
+      "entity_id": "CAND-9",
+      "thought": "Finalizing"
+    }
+  ]
+}

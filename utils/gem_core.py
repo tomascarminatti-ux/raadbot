@@ -1,7 +1,7 @@
 import httpx
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from functools import lru_cache
 
 class JsonFormatter(logging.Formatter):

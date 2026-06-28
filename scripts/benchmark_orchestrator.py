@@ -42,17 +42,9 @@ class MockGemini:
 
     def run_gem(self, prompt, gem_name=None):
         self.call_count += 1
-        # First 2 calls for each candidate are reasoning, then 3rd is finalize
-        # But wait, the loop in orchestrator is complex.
-        # Let's just use a simple stateful mock or just return finalize after some steps.
-        # Actually, for benchmarking parallelism, we just need them to take time.
-
-        # We can't easily use await inside run_gem because it's synchronous in GeminiClient
-        # Wait, GeminiClient.run_gem IS synchronous.
         time.sleep(0.1) # Simulate synchronous LLM call
 
         if gem_name == "gem6":
-            # Toggle between call_agent and finalize to simulate a short loop
             if self.call_count % 3 == 0:
                 return {
                     "json": {

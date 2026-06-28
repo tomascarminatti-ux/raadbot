@@ -3,7 +3,7 @@ import json
 import uuid
 import asyncio
 import time
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
 import config

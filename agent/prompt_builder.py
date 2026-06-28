@@ -29,14 +29,21 @@ def load_maestro() -> str:
     return load_prompt("00_prompt_maestro")
 
 
+@lru_cache(maxsize=32)
+def _get_template_with_maestro(gem_name: str) -> str:
+    """Carga el template del GEM e inyecta el maestro, cacheado."""
+    maestro = load_maestro()
+    prompt = load_prompt(gem_name)
+    return prompt.replace("{{PROMPT_MAESTRO}}", maestro)
+
+
 def build_prompt(gem_name: str, variables: dict) -> str:
     """
     Construye el prompt final para un GEM.
 
-    1. Carga el prompt del GEM
-    2. Inyecta {{PROMPT_MAESTRO}}
-    3. Reemplaza todas las {{variables}}
-    4. Valida que no queden variables sin reemplazar
+    1. Carga el template con maestro (cacheado)
+    2. Reemplaza todas las {{variables}} usando regex en un solo paso
+    3. Valida que no queden variables sin reemplazar
 
     Args:
         gem_name: nombre del GEM (ej: "gem1", "gem5")
@@ -45,21 +52,25 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     Returns:
         str con el prompt listo para enviar al modelo
     """
-    # Cargar prompt maestro y del GEM
-    maestro = load_maestro()
-    prompt = load_prompt(gem_name)
+    prompt = _get_template_with_maestro(gem_name)
 
-    # Inyectar prompt maestro
-    prompt = prompt.replace("{{PROMPT_MAESTRO}}", maestro)
+    # Optimizamos inyección: pre-procesar variables complejas
+    processed_vars = {}
+    import json
+    for k, v in variables.items():
+        if isinstance(v, dict):
+            processed_vars[k] = json.dumps(v, ensure_ascii=False, indent=2)
+        else:
+            processed_vars[k] = str(v)
 
-    # Inyectar variables
-    for key, value in variables.items():
-        placeholder = "{{" + key + "}}"
-        if isinstance(value, dict):
-            import json
+    # Reemplazo en un solo paso usando regex
+    pattern = re.compile(r"\{\{(\w+)\}\}")
 
-            value = json.dumps(value, ensure_ascii=False, indent=2)
-        prompt = prompt.replace(placeholder, str(value))
+    def replace_match(match):
+        var_name = match.group(1)
+        return processed_vars.get(var_name, match.group(0))
+
+    prompt = pattern.sub(replace_match, prompt)
 
     # Validar que no queden variables sin reemplazar
     remaining = re.findall(r"\{\{(\w+)\}\}", prompt)

@@ -3,7 +3,13 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    BackgroundTasks,
+    WebSocket,
+    WebSocketDisconnect
+)
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -20,11 +26,11 @@ from utils.ws_logger import active_connections
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Check for API Key on startup
-    if not config.GEMINI_API_KEY:
-        print(
-            "⚠️  WARNING: GEMINI_API_KEY no detectada. La API fallará si no se configura al momento del request."
-        )
+    # Validar configuración crítica al inicio
+    try:
+        config.validate_config()
+    except RuntimeError as e:
+        print(f"⚠️  ADVERTENCIA DE CONFIGURACIÓN: {e}")
     yield
 
 
@@ -182,10 +188,10 @@ async def setup_search(request: SetupSearchRequest):
     }
     
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
-    # Ejecutar GEM 5 directamente
+    # Ejecutar GEM 5 directamente (offload a thread)
     from agent.prompt_builder import build_gem5_prompt
     prompt = build_gem5_prompt(search_inputs)
-    result = gemini.run_gem(prompt, gem_name="gem5")
+    result = await asyncio.to_thread(gemini.run_gem, prompt, gem_name="gem5")
     
     # Guardar resultados
     with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
@@ -264,7 +270,7 @@ async def refine_gem(request: RefineRequest):
     """
     
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
-    result = gemini.run_gem(refinement_prompt)
+    result = await asyncio.to_thread(gemini.run_gem, refinement_prompt)
     new_prompt = result.get("markdown", "") or result.get("raw", "")
     
     if new_prompt:
