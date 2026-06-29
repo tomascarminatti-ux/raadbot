@@ -1,14 +1,12 @@
-
 import time
 import os
 import sys
-import json
-import asyncio
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent.prompt_builder import build_prompt
+from agent.prompt_builder import build_prompt  # noqa: E402
+
 
 def benchmark_build_prompt(iterations=100):
     variables = {
@@ -32,6 +30,7 @@ def benchmark_build_prompt(iterations=100):
     avg_time = (end_time - start_time) / iterations
     print(f"Average build_prompt time: {avg_time*1000:.4f} ms")
     return avg_time
+
 
 if __name__ == "__main__":
     benchmark_build_prompt()
