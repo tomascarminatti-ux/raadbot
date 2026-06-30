@@ -1,10 +1,10 @@
-import os
 from fastapi.testclient import TestClient
+import os
 
 # Set environment variables for testing
 os.environ["GEMINI_API_KEY"] = "fake_key_for_testing"
 
-from api import app  # noqa: E402
+from api import app
 
 client = TestClient(app)
 
