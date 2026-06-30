@@ -1,13 +1,13 @@
-import time
 import os
 import sys
+import time
 
-# Add the root directory to sys.path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from agent.prompt_builder import build_prompt
 
 def benchmark_build_prompt():
+    # Add the root directory to sys.path
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from agent.prompt_builder import build_prompt
+
     variables = {
         "search_id": "test-search",
         "candidate_id": "candidate-123",
@@ -27,6 +27,7 @@ def benchmark_build_prompt():
 
     avg_time = (end_time - start_time) / iterations * 1000
     print(f"Average time for build_prompt: {avg_time:.4f} ms")
+
 
 if __name__ == "__main__":
     benchmark_build_prompt()
