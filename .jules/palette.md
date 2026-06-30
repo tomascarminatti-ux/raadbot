@@ -1,0 +1,3 @@
+## 2026-06-30 - Dashboard Accessibility and Copy Feedback
+**Learning:** Screen readers and keyboard-only users cannot easily interact with or read the full content of scrollable elements (like 'pre' or 'div' with 'overflow-y: auto') unless they are explicitly focusable via tabindex='0'. Additionally, providing immediate visual and ARIA feedback for clipboard operations significantly improves user confidence and accessibility.
+**Action:** Always add tabindex='0' and descriptive ARIA labels to scrollable content areas. Implement temporary state changes (e.g., text/icon/aria-label updates) for async actions like 'Copy to Clipboard'.
