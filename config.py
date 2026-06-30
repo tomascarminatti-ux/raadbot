@@ -4,10 +4,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # LLM Settings
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini") # gemini or ollama
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini")  # gemini or ollama
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if LLM_PROVIDER == "gemini" and not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY not set while using gemini provider")
+
+
+def validate_config():
+    """Validates critical configuration at runtime."""
+    if LLM_PROVIDER == "gemini" and not GEMINI_API_KEY:
+        # noqa: E501
+        raise RuntimeError("GEMINI_API_KEY not set while using gemini provider")
+
 
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
@@ -29,8 +35,8 @@ MAX_RETRIES_ON_BLOCK = int(os.getenv("MAX_RETRIES_ON_BLOCK", "2"))
 
 # Gemini Pricing (per 1M tokens) - Update as needed
 # Prices for Gemini 2.0 Flash (current as of late 2024/early 2025)
-PRICE_PROMPT_1M = 0.10  # Example price, adjust to reality
-PRICE_COMPLETION_1M = 0.40 # Example price, adjust to reality
+PRICE_PROMPT_1M = 0.10  # Example price
+PRICE_COMPLETION_1M = 0.40 # Example price
 
 # GEM Technical Configurations (System Prompts v2.0)
 GEM_CONFIGS = {
