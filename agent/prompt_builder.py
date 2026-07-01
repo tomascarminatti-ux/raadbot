@@ -105,7 +105,6 @@ def build_agent_prompt(gem_id: str, payload: dict) -> str:
 
     # Si no se encontró placeholder de datos en el original, los anexamos
     if "{{input}}" not in base_prompt and "{{context}}" not in base_prompt:
-        import json
         data_str = json.dumps(payload, ensure_ascii=False, indent=2)
         prompt += f"\n\n### DATA INPUT:\n{data_str}"
 
