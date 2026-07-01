@@ -1,9 +1,9 @@
 import time
 import os
 import json
-import re
 from agent.prompt_builder import build_prompt
 from utils.gem_core import validate_contract
+
 
 def benchmark_prompt_builder(iterations=1000):
     variables = {
@@ -18,8 +18,11 @@ def benchmark_prompt_builder(iterations=1000):
     end_time = time.time()
 
     avg_time = (end_time - start_time) / iterations * 1000
-    print(f"Prompt Builder: Avg time per call over {iterations} iterations: {avg_time:.4f} ms")
+    msg = f"Prompt Builder: Avg time per call over {iterations} "
+    msg += f"iterations: {avg_time:.4f} ms"
+    print(msg)
     return avg_time
+
 
 def benchmark_contract_validation(iterations=1000):
     contract = {
@@ -44,11 +47,14 @@ def benchmark_contract_validation(iterations=1000):
     end_time = time.time()
 
     avg_time = (end_time - start_time) / iterations * 1000
-    print(f"Contract Validation: Avg time per call over {iterations} iterations: {avg_time:.4f} ms")
+    msg = f"Contract Validation: Avg time per call over {iterations} "
+    msg += f"iterations: {avg_time:.4f} ms"
+    print(msg)
 
     if os.path.exists(contract_path):
         os.remove(contract_path)
     return avg_time
+
 
 if __name__ == "__main__":
     print("Starting Benchmark...")

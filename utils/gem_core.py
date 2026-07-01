@@ -1,8 +1,9 @@
 import httpx
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from functools import lru_cache
+
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -16,12 +17,14 @@ class JsonFormatter(logging.Formatter):
             log_record.update(record.extra_fields)
         return json.dumps(log_record)
 
+
 handler = logging.StreamHandler()
 handler.setFormatter(JsonFormatter())
 logger = logging.getLogger("gem_v3")
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 logger.propagate = False
+
 
 class GEMClient:
     def __init__(self, db_url: str = "http://db-api:8000"):
@@ -30,7 +33,8 @@ class GEMClient:
     async def upsert_entity(self, data: Dict[str, Any]):
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.post(f"{self.db_url}/entity/upsert", json=data)
+                url = f"{self.db_url}/entity/upsert"
+                resp = await client.post(url, json=data)
                 resp.raise_for_status()
                 return resp.json()
         except Exception as e:
@@ -40,7 +44,8 @@ class GEMClient:
     async def discard_entity(self, data: Dict[str, Any]):
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.post(f"{self.db_url}/entity/discard", json=data)
+                url = f"{self.db_url}/entity/discard"
+                resp = await client.post(url, json=data)
                 resp.raise_for_status()
                 return resp.json()
         except Exception as e:
@@ -50,12 +55,14 @@ class GEMClient:
     async def log_execution(self, log_data: Dict[str, Any]):
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.post(f"{self.db_url}/log/discovery", json=log_data)
+                url = f"{self.db_url}/log/discovery"
+                resp = await client.post(url, json=log_data)
                 resp.raise_for_status()
                 return resp.json()
         except Exception as e:
             logger.error(f"Failed to log execution: {e}")
             return None
+
 
 @lru_cache(maxsize=32)
 def _load_schema(contract_path: str) -> Dict[str, Any]:
@@ -63,10 +70,11 @@ def _load_schema(contract_path: str) -> Dict[str, Any]:
     with open(contract_path, "r") as f:
         return json.load(f)
 
+
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
         contract = _load_schema(contract_path)
-        
+
         for key in contract:
             if not isinstance(key, str):
                 continue
@@ -76,12 +84,17 @@ def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
                 return False
             # Basic type checking
             val = data.get(key)
-            if expected_type == "array" and not isinstance(val, list): return False
-            if expected_type == "number" and not isinstance(val, (int, float)): return False
-            if expected_type == "string" and not isinstance(val, str): return False
-            if expected_type == "object" and not isinstance(val, dict): return False
-            if expected_type == "boolean" and not isinstance(val, bool): return False
-            
+            if expected_type == "array" and not isinstance(val, list):
+                return False
+            if expected_type == "number" and not isinstance(val, (int, float)):
+                return False
+            if expected_type == "string" and not isinstance(val, str):
+                return False
+            if expected_type == "object" and not isinstance(val, dict):
+                return False
+            if expected_type == "boolean" and not isinstance(val, bool):
+                return False
+
         return True
     except Exception as e:
         logger.error(f"Contract validation error: {e}")

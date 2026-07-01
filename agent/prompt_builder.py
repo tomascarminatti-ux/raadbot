@@ -98,14 +98,15 @@ def build_gem5_prompt(search_inputs: dict) -> str:
 
 
 def build_agent_prompt(gem_id: str, payload: dict) -> str:
-    """Helper genérico para construir prompts de agentes con inyección de datos."""
+    """Helper genérico para construir prompts de agentes con inyección."""
     base_prompt = load_prompt(gem_id)
     # Intentamos inyectar en {{input}} o {{context}}
     prompt = build_prompt(gem_id, {"input": payload, "context": payload})
 
-    # Si no se encontró ningún placeholder de datos en el prompt original, los anexamos al final
+    # Si no se encontró placeholder de datos en el original, los anexamos
     if "{{input}}" not in base_prompt and "{{context}}" not in base_prompt:
         import json
-        prompt += f"\n\n### DATA INPUT:\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
+        data_str = json.dumps(payload, ensure_ascii=False, indent=2)
+        prompt += f"\n\n### DATA INPUT:\n{data_str}"
 
     return prompt
