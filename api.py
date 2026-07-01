@@ -3,7 +3,8 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
+
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
@@ -196,7 +197,7 @@ async def setup_search(request: SetupSearchRequest):
     from agent.prompt_builder import build_gem5_prompt
     prompt = build_gem5_prompt(search_inputs)
     result = gemini.run_gem(prompt, gem_name="gem5")
-    
+
     # Guardar resultados
     with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
         json.dump(result.get("data", {}), f, indent=4)
@@ -224,9 +225,10 @@ async def get_dashboard():
 @app.get("/api/v1/gems")
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
+
     gems = []
     gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
-    
+
     for g in gem_list:
         prompt_path = f"prompts/{g}.md"
         prompt_content = ""
@@ -246,6 +248,7 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str = Field(pattern=config.ID_PATTERN)
     instruction: str
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
@@ -298,6 +301,7 @@ async def websocket_logs(websocket: WebSocket):
 
 @app.get("/health")
 def health_check():
+
     return {
         "status": "ok", 
         "agent": "raadbot", 
