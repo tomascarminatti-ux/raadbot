@@ -1,5 +1,4 @@
 import pytest
-from playwright.sync_api import Page, expect
 
 @pytest.fixture(scope="module")
 def server():
@@ -21,6 +20,7 @@ def server():
     proc.terminate()
 
 def test_dashboard_ux_elements(page, server):
+    from playwright.sync_api import expect
     page.goto(server)
 
     # Check for ARIA labels on scrollable containers
@@ -43,6 +43,7 @@ def test_dashboard_ux_elements(page, server):
     expect(copy_btn).to_have_text("📋 Copiar")
 
 def test_copy_to_clipboard(page, server, context):
+    from playwright.sync_api import expect
     # Grant clipboard permissions
     context.grant_permissions(["clipboard-read", "clipboard-write"])
 
