@@ -13,11 +13,11 @@ def server():
 
     # Start the FastAPI server
     proc = subprocess.Popen(
-        ["uvicorn", "api:app", "--host", "127.0.0.1", "--port", "8005"],
+        ["uvicorn", "api:app", "--host", "127.0.0.1", "--port", "8015"],
         env=env
     )
     time.sleep(2)  # Wait for server to start
-    yield "http://127.0.0.1:8005/dashboard"
+    yield "http://127.0.0.1:8015/dashboard"
     proc.terminate()
 
 
