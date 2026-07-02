@@ -1,0 +1,3 @@
+## 2025-05-24 - Efficient Template Substitution and Schema Caching
+**Learning:** Sequential `.replace()` calls in template engines scan the entire string multiple times, leading to $O(N \cdot M)$ complexity where $N$ is string length and $M$ is number of variables. Using a single-pass `re.sub` with a callback reduces this to $O(N)$ and allows for simultaneous validation of missing variables. Additionally, frequently accessed JSON schemas and text files benefit significantly from `lru_cache` in high-frequency loops like agent orchestration.
+**Action:** Use `re.sub` with a callback for string templating and always cache disk-based config/schema reads in hot paths.
