@@ -21,10 +21,10 @@ from utils.ws_logger import active_connections
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Check for API Key on startup
-    if not config.GEMINI_API_KEY:
-        print(
-            "⚠️  WARNING: GEMINI_API_KEY no detectada. La API fallará si no se configura al momento del request."
-        )
+    try:
+        config.validate_config()
+    except RuntimeError as e:
+        print(f"⚠️  WARNING: {e}. La API podría fallar si no se configura.")
     yield
 
 
