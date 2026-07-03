@@ -1,0 +1,4 @@
+## 2025-05-15 - Path Traversal Protection for API Identifiers
+**Vulnerability:** Path traversal and arbitrary file access via `search_id`, `gem_id`, and `local_dir` parameters.
+**Learning:** In FastAPI/Pydantic applications, relying on string inputs for file path construction without strict validation allows attackers to escape the intended directory structure. Specifically, `os.path.join` with an absolute path as the second argument resets the path, and `..` allows traversing up the directory tree.
+**Prevention:** Enforce a strict regex pattern (e.g., `^[a-zA-Z0-9_-]+$`) for all identifier-like strings using Pydantic's `Field(pattern=...)`. For directory paths, use `@field_validator` to reject absolute paths and directory traversal sequences (`..`). Always mask internal exception details in API responses to prevent information leakage.
