@@ -1,9 +1,9 @@
-import pytest
 from fastapi.testclient import TestClient
 from api import app
-import config
+
 
 client = TestClient(app)
+
 
 def test_path_traversal_run_pipeline_search_id():
     # Invalid search_id with path traversal
@@ -14,6 +14,7 @@ def test_path_traversal_run_pipeline_search_id():
     response = client.post("/api/v1/run", json=payload)
     assert response.status_code == 422
 
+
 def test_path_traversal_run_pipeline_local_dir():
     # Absolute path in local_dir
     payload = {
@@ -22,6 +23,7 @@ def test_path_traversal_run_pipeline_local_dir():
     }
     response = client.post("/api/v1/run", json=payload)
     assert response.status_code == 422
+
 
 def test_path_traversal_run_pipeline_local_dir_traversal():
     # Traversal in local_dir
@@ -32,6 +34,7 @@ def test_path_traversal_run_pipeline_local_dir_traversal():
     response = client.post("/api/v1/run", json=payload)
     assert response.status_code == 422
 
+
 def test_path_traversal_refine_gem_id():
     # Invalid gem_id
     payload = {
@@ -40,6 +43,7 @@ def test_path_traversal_refine_gem_id():
     }
     response = client.post("/api/v1/gems/refine", json=payload)
     assert response.status_code == 422
+
 
 def test_path_traversal_setup_search_id():
     # Invalid search_id in setup
@@ -51,9 +55,9 @@ def test_path_traversal_setup_search_id():
     response = client.post("/api/v1/search/setup", json=payload)
     assert response.status_code == 422
 
+
 def test_valid_inputs_pass_validation(monkeypatch):
     # Mock run_pipeline to avoid actual execution
-    from api import run_pipeline
     async def mock_run_pipeline(request):
         return {"status": "success", "search_id": request.search_id, "output_dir": "test", "summary": {}}
 
