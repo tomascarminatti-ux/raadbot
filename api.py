@@ -14,7 +14,7 @@ import config
 from agent.gemini_client import GeminiClient
 from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
-from agent.prompt_builder import load_prompt, load_maestro, get_template_with_maestro
+from agent.prompt_builder import clear_prompt_caches
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
 
@@ -277,9 +277,7 @@ async def refine_gem(request: RefineRequest):
             f.write(new_prompt)
 
         # Limpiar caches para asegurar consistencia
-        load_prompt.cache_clear()
-        load_maestro.cache_clear()
-        get_template_with_maestro.cache_clear()
+        clear_prompt_caches()
 
         return {"status": "success", "new_prompt": new_prompt}
 

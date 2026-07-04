@@ -106,3 +106,10 @@ def build_agent_prompt(gem_id: str, payload: dict) -> str:
         prompt += f"\n\n### DATA INPUT:\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
 
     return prompt
+
+
+def clear_prompt_caches():
+    """Limpia todas las caches de prompts."""
+    load_prompt.cache_clear()
+    load_maestro.cache_clear()
+    get_template_with_maestro.cache_clear()
