@@ -1,0 +1,4 @@
+## 2025-07-04 - Path Traversal via os.path.join and ID placeholders
+**Vulnerability:** API endpoints allowed arbitrary strings for `search_id`, `candidate_id`, and `gem_id`, which were used in `os.path.join("runs", request.search_id, "outputs")`. An attacker could use absolute paths (e.g., `/tmp/evil`) to bypass the intended directory structure.
+**Learning:** `os.path.join` behaves unexpectedly if any component is an absolute path—it discards previous components. This makes path construction vulnerable even without `..` if the input isn't strictly validated.
+**Prevention:** Use Pydantic's `Field(pattern=...)` to enforce strict alphanumeric/identifier characters on all ID-like fields. Use `@field_validator` with `os.path.isabs()` and `..` checks for directory-like strings to ensure they remain relative and within bounds.
