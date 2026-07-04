@@ -32,7 +32,7 @@ def load_maestro() -> str:
 
 
 @functools.lru_cache(maxsize=32)
-def _get_template_with_maestro(gem_name: str) -> str:
+def get_template_with_maestro(gem_name: str) -> str:
     """Combina el prompt maestro con el del GEM (Cacheado)."""
     maestro = load_maestro()
     prompt = load_prompt(gem_name)
@@ -54,7 +54,7 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     Returns:
         str con el prompt listo para enviar al modelo
     """
-    prompt_template = _get_template_with_maestro(gem_name)
+    prompt_template = get_template_with_maestro(gem_name)
 
     # Inyectar variables en una sola pasada usando regex callback
     def replace_var(match):
