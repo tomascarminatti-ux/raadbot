@@ -110,11 +110,9 @@
         let copyTimeout = null;
 
         function copyToClipboard() {
-            const btn = document.getElementById('copy-btn');
-            if (btn.classList.contains('text-green-400')) return; // Prevent double-trigger state bug
-
             const content = document.getElementById('prompt-content').innerText;
             navigator.clipboard.writeText(content).then(() => {
+                const btn = document.getElementById('copy-btn');
                 const icon = document.getElementById('copy-icon');
                 const text = document.getElementById('copy-text');
 
