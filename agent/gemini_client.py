@@ -9,6 +9,8 @@ import asyncio
 from google import genai
 from agent.logger import logger
 
+JSON_BLOCK_PATTERN = re.compile(r"```(?:json)?\s*\n(.*?)\n\s*```", re.DOTALL)
+
 
 class GeminiClient:
     """Cliente para interactuar con Gemini API."""
@@ -127,7 +129,7 @@ class GeminiClient:
         markdown = raw_text
 
         # Buscar bloque ```json ... ``` (o similar)
-        json_match = re.search(r"```(?:json)?\s*\n(.*?)\n\s*```", raw_text, re.DOTALL)
+        json_match = JSON_BLOCK_PATTERN.search(raw_text)
 
         if json_match:
             json_str = json_match.group(1).strip()
