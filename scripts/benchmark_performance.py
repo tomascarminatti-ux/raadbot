@@ -11,6 +11,7 @@ sys.path.append(os.getcwd())
 from agent.prompt_builder import build_prompt
 from utils.gem_core import validate_contract
 
+
 def benchmark_prompt_builder(iterations=1000):
     start_time = time.time()
     for _ in range(iterations):
@@ -20,6 +21,7 @@ def benchmark_prompt_builder(iterations=1000):
     avg_time = (end_time - start_time) / iterations
     print(f"Average time for build_prompt: {avg_time:.6f}s ({iterations} iterations)")
     return avg_time
+
 
 def benchmark_validate_contract(iterations=1000):
     # Use a temporary file for benchmarking to avoid overwriting production schemas
@@ -43,6 +45,7 @@ def benchmark_validate_contract(iterations=1000):
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
+
 
 if __name__ == "__main__":
     print("Starting benchmarks...")
