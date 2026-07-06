@@ -3,10 +3,10 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 import httpx
 import asyncio
 
@@ -52,12 +52,22 @@ app.add_middleware(
 
 
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=config.ID_PATTERN)
     drive_folder: Optional[str] = None
     local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    candidate_id: Optional[str] = Field(None, pattern=config.ID_PATTERN)  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        if v:
+            if os.path.isabs(v):
+                raise ValueError("local_dir must be a relative path")
+            if ".." in v:
+                raise ValueError("Path traversal components (..) are not allowed in local_dir")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -160,10 +170,11 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(pattern=config.ID_PATTERN)
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
+
 
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
@@ -202,6 +213,7 @@ async def setup_search(request: SetupSearchRequest):
 
 # --- Dashboard Endpoints ---
 
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard():
     """Sirve la interfaz del Dashboard."""
@@ -210,6 +222,7 @@ async def get_dashboard():
             return f.read()
     except FileNotFoundError:
         return "Dashboard template not found. Please create templates/dashboard.html"
+
 
 @app.get("/api/v1/gems")
 async def list_gems():
@@ -233,9 +246,11 @@ async def list_gems():
     
     return gems
 
+
 class RefineRequest(BaseModel):
-    gem_id: str
+    gem_id: str = Field(pattern=config.ID_PATTERN)
     instruction: str
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
@@ -274,6 +289,7 @@ async def refine_gem(request: RefineRequest):
     
     return {"status": "error", "message": "Failed to generate new prompt"}
 
+
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
     await websocket.accept()
@@ -285,6 +301,7 @@ async def websocket_logs(websocket: WebSocket):
     except WebSocketDisconnect:
         if websocket in active_connections:
             active_connections.remove(websocket)
+
 
 @app.get("/health")
 def health_check():
