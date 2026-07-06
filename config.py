@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Validation Patterns
+ID_PATTERN = r'^[a-zA-Z0-9_-]+$'
+
 # LLM Settings
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini") # gemini or ollama
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
