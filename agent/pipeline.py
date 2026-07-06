@@ -3,6 +3,7 @@ import os
 import asyncio
 from datetime import datetime, timezone
 from typing import Optional, Any
+from functools import lru_cache
 
 from jsonschema import validate, ValidationError
 from rich.console import Console
@@ -16,6 +17,18 @@ from agent.logger import logger
 
 
 console = Console()
+
+
+@lru_cache(maxsize=1)
+def _load_schema_cached() -> Optional[dict]:
+    """Carga el schema de validación (con caché)."""
+    schema_path = os.path.join(
+        os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
+    )
+    if os.path.exists(schema_path):
+        with open(schema_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return None
 
 
 class Pipeline:
@@ -35,13 +48,7 @@ class Pipeline:
         self._lock = asyncio.Lock()
 
     def _load_schema(self) -> Optional[dict]:
-        schema_path = os.path.join(
-            os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
-        )
-        if os.path.exists(schema_path):
-            with open(schema_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return None
+        return _load_schema_cached()
 
     def _load_state(self) -> dict:
         """Carga el estado anterior si existe para reanudar."""
