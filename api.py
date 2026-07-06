@@ -270,6 +270,13 @@ async def refine_gem(request: RefineRequest):
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write(new_prompt)
+
+        # Limpiar caches para asegurar que se use el nuevo prompt
+        from agent.prompt_builder import load_prompt, load_maestro, _get_template_with_maestro
+        load_prompt.cache_clear()
+        load_maestro.cache_clear()
+        _get_template_with_maestro.cache_clear()
+
         return {"status": "success", "new_prompt": new_prompt}
     
     return {"status": "error", "message": "Failed to generate new prompt"}
