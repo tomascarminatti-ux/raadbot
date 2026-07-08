@@ -4,11 +4,15 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import json
+from functools import lru_cache
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+VAR_PATTERN = re.compile(r"\{\{(\w+)\}\}")
 
 
+@lru_cache(maxsize=32)
 def load_prompt(gem_name: str) -> str:
     """Carga un prompt desde el directorio de prompts."""
     filename = f"{gem_name}.md"
@@ -21,6 +25,7 @@ def load_prompt(gem_name: str) -> str:
         return f.read()
 
 
+@lru_cache(maxsize=1)
 def load_maestro() -> str:
     """Carga el prompt maestro."""
     return load_prompt("00_prompt_maestro")
@@ -49,22 +54,32 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     # Inyectar prompt maestro
     prompt = prompt.replace("{{PROMPT_MAESTRO}}", maestro)
 
-    # Inyectar variables
-    for key, value in variables.items():
-        placeholder = "{{" + key + "}}"
-        if isinstance(value, dict):
-            import json
+    # Inyectar variables en un solo paso
+    missing = []
 
-            value = json.dumps(value, ensure_ascii=False, indent=2)
-        prompt = prompt.replace(placeholder, str(value))
+    def replace_func(match):
+        key = match.group(1)
+        if key == "VERSION":
+            return match.group(0)  # Keep VERSION
+        if key in variables:
+            val = variables[key]
+            if isinstance(val, (dict, list)):
+                return json.dumps(val, ensure_ascii=False, indent=2)
+            return str(val)
+        missing.append(key)
+        return match.group(0)
+
+    prompt = VAR_PATTERN.sub(replace_func, prompt)
 
     # Validar que no queden variables sin reemplazar
-    remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
-    if remaining:
-        # Filtrar VERSION que es metadata, no un input
-        remaining = [v for v in remaining if v != "VERSION"]
-        if remaining:
-            print(f"  ⚠️  Variables sin reemplazar: {remaining}")
+    if missing:
+        # Filtrar PROMPT_MAESTRO que ya debería haber sido reemplazado por .replace()
+        # pero por si acaso si algo falló o si estaba doble.
+        # En realidad re.sub se ejecutó DESPUÉS del replace de PROMPT_MAESTRO.
+        # Si PROMPT_MAESTRO seguía ahí, estará en missing.
+        missing = [m for m in missing if m != "PROMPT_MAESTRO"]
+        if missing:
+            print(f"  ⚠️  Variables sin reemplazar: {missing}")
 
     return prompt
 
@@ -77,7 +92,7 @@ def get_required_variables(gem_name: str) -> list[str]:
         Lista de nombres de variables (sin {{ }})
     """
     prompt = load_prompt(gem_name)
-    variables = re.findall(r"\{\{(\w+)\}\}", prompt)
+    variables = VAR_PATTERN.findall(prompt)
     # Filtrar las que se resuelven automáticamente
     auto_resolved = {"PROMPT_MAESTRO", "VERSION"}
     return [v for v in set(variables) if v not in auto_resolved]
