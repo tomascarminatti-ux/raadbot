@@ -65,6 +65,7 @@ class PipelineRequest(BaseModel):
     @field_validator("search_id", "candidate_id")
     @classmethod
     def validate_ids(cls, v: Optional[str]) -> Optional[str]:
+        # Sentinel: Prevent path traversal by whitelisting allowed characters for IDs
         if v is not None and not re.match(ID_PATTERN, v):
             raise ValueError("ID contains invalid characters")
         return v
@@ -72,6 +73,7 @@ class PipelineRequest(BaseModel):
     @field_validator("local_dir")
     @classmethod
     def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        # Sentinel: Ensure directory path is relative and does not escape the current context
         if v is not None:
             if os.path.isabs(v) or ".." in v:
                 raise ValueError("local_dir must be a relative path and cannot contain '..'")
@@ -186,6 +188,7 @@ class SetupSearchRequest(BaseModel):
     @field_validator("search_id")
     @classmethod
     def validate_search_id(cls, v: str) -> str:
+        # Sentinel: Prevent path traversal in search_id
         if not re.match(ID_PATTERN, v):
             raise ValueError("search_id contains invalid characters")
         return v
@@ -265,6 +268,7 @@ class RefineRequest(BaseModel):
     @field_validator("gem_id")
     @classmethod
     def validate_gem_id(cls, v: str) -> str:
+        # Sentinel: Prevent path traversal in gem_id
         if not re.match(ID_PATTERN, v):
             raise ValueError("gem_id contains invalid characters")
         return v
@@ -272,6 +276,7 @@ class RefineRequest(BaseModel):
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
+    # Sentinel: Defense in depth to ensure the resolved path stays within the prompts/ directory
     base_dir = os.path.abspath("prompts")
     prompt_path = os.path.abspath(os.path.join(base_dir, f"{request.gem_id}.md"))
 
