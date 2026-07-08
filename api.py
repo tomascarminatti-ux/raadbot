@@ -276,7 +276,7 @@ async def refine_gem(request: RefineRequest):
     prompt_path = os.path.abspath(os.path.join(base_dir, f"{request.gem_id}.md"))
 
     if not prompt_path.startswith(base_dir):
-         raise HTTPException(status_code=400, detail="Invalid GEM ID")
+        raise HTTPException(status_code=400, detail="Invalid GEM ID")
 
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
