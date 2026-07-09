@@ -1,11 +1,12 @@
 import sys
 import os
-import json
 
 # Ensure project root is in path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent.gemini_client import GeminiClient
+# Import after path update
+from agent.gemini_client import GeminiClient  # noqa: E402
+
 
 def test_json_cleaning():
     """Verifica que GeminiClient pueda limpiar JSONs malformados comunes."""
@@ -26,6 +27,7 @@ def test_json_cleaning():
     parsed_mixed = client._parse_response(mixed)
     assert parsed_mixed["json"]["val"] == 1
     assert "Aquí está el resultado" in parsed_mixed["markdown"]
+
 
 if __name__ == "__main__":
     print("Corriendo tests de robustez de GeminiClient...")
