@@ -3,7 +3,7 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -14,7 +14,6 @@ import config
 from agent.gemini_client import GeminiClient
 from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
-from agent.prompt_builder import load_prompt, load_maestro
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
 
@@ -166,7 +165,6 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
-
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -213,7 +211,6 @@ async def get_dashboard():
     except FileNotFoundError:
         return "Dashboard template not found. Please create templates/dashboard.html"
 
-
 @app.get("/api/v1/gems")
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
@@ -236,11 +233,9 @@ async def list_gems():
     
     return gems
 
-
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
-
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
@@ -275,15 +270,9 @@ async def refine_gem(request: RefineRequest):
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write(new_prompt)
-
-        # Clear prompt caches to ensure next load gets the refined version
-        load_prompt.cache_clear()
-        load_maestro.cache_clear()
-
         return {"status": "success", "new_prompt": new_prompt}
     
     return {"status": "error", "message": "Failed to generate new prompt"}
-
 
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
@@ -296,7 +285,6 @@ async def websocket_logs(websocket: WebSocket):
     except WebSocketDisconnect:
         if websocket in active_connections:
             active_connections.remove(websocket)
-
 
 @app.get("/health")
 def health_check():
