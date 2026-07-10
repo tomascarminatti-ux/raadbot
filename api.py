@@ -177,7 +177,7 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
             # Mask detailed error to prevent information leakage
             raise HTTPException(
                 status_code=400,
-                detail="Error al procesar el pipeline. Verifique los logs para más detalles."
+                detail="Error processing the pipeline. Check logs for details."
             )
 
 
