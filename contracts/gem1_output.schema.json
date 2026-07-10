@@ -1,5 +1,1 @@
-{
-    "discovery_dataset": "array",
-    "confidence_score": "number",
-    "execution_metadata": "object"
-}
+{"discovery_dataset": "array", "confidence_score": "number", "execution_metadata": "object"}
