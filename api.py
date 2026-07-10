@@ -3,11 +3,12 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
+import re
 import asyncio
 
 import config
@@ -16,6 +17,8 @@ from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
+
+ID_PATTERN = r'^[a-zA-Z0-9_-]+$'
 
 
 @asynccontextmanager
@@ -58,6 +61,21 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "candidate_id")
+    @classmethod
+    def validate_ids(cls, v):
+        if v and not re.match(ID_PATTERN, v):
+            raise ValueError("ID must be alphanumeric, underscores or hyphens only.")
+        return v
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_local_dir(cls, v):
+        if v:
+            if os.path.isabs(v) or ".." in v:
+                raise ValueError("local_dir must be a relative path and cannot contain '..'")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -155,8 +173,12 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
     else:
         try:
             return await run_pipeline(request)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        except Exception:
+            # Mask detailed error to prevent information leakage
+            raise HTTPException(
+                status_code=400,
+                detail="Error al procesar el pipeline. Verifique los logs para más detalles."
+            )
 
 
 class SetupSearchRequest(BaseModel):
@@ -164,6 +186,14 @@ class SetupSearchRequest(BaseModel):
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
+
+    @field_validator("search_id")
+    @classmethod
+    def validate_search_id(cls, v):
+        if v and not re.match(ID_PATTERN, v):
+            raise ValueError("search_id must be alphanumeric, underscores or hyphens only.")
+        return v
+
 
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
@@ -211,6 +241,7 @@ async def get_dashboard():
     except FileNotFoundError:
         return "Dashboard template not found. Please create templates/dashboard.html"
 
+
 @app.get("/api/v1/gems")
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
@@ -233,15 +264,27 @@ async def list_gems():
     
     return gems
 
+
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
 
+    @field_validator("gem_id")
+    @classmethod
+    def validate_gem_id(cls, v):
+        if v and not re.match(ID_PATTERN, v):
+            raise ValueError("gem_id must be alphanumeric, underscores or hyphens only.")
+        return v
+
+
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
-    prompt_path = f"prompts/{request.gem_id}.md"
-    if not os.path.exists(prompt_path):
+    # Defense in depth: Resolve absolute path and verify it's within prompts/
+    base_dir = os.path.abspath("prompts")
+    prompt_path = os.path.abspath(os.path.join(base_dir, f"{request.gem_id}.md"))
+
+    if not prompt_path.startswith(base_dir) or not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
         
     with open(prompt_path, "r", encoding="utf-8") as f:
@@ -274,6 +317,7 @@ async def refine_gem(request: RefineRequest):
     
     return {"status": "error", "message": "Failed to generate new prompt"}
 
+
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
     await websocket.accept()
@@ -285,6 +329,7 @@ async def websocket_logs(websocket: WebSocket):
     except WebSocketDisconnect:
         if websocket in active_connections:
             active_connections.remove(websocket)
+
 
 @app.get("/health")
 def health_check():
