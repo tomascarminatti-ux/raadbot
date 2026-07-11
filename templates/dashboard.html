@@ -129,31 +129,7 @@
             const logEntry = document.createElement('div');
             logEntry.style.marginBottom = '5px';
             const time = data.timestamp ? data.timestamp.split('T')[1].split('.')[0] : '--:--:--';
-
-            // Build entry using safe DOM APIs
-            const timeSpan = document.createElement('span');
-            timeSpan.textContent = `[${time}] `;
-
-            const gemSpan = document.createElement('span');
-            gemSpan.style.color = '#3b82f6';
-            gemSpan.textContent = data.gem;
-
-            const actionSpan = document.createElement('span');
-            actionSpan.textContent = `: ${data.action} - `;
-
-            const statusSpan = document.createElement('span');
-            statusSpan.style.color = data.status === 'OK' ? '#4ade80' : '#f87171';
-            statusSpan.textContent = data.status;
-
-            const scoreSpan = document.createElement('span');
-            scoreSpan.textContent = ` (Score: ${data.score || 'N/A'})`;
-
-            logEntry.appendChild(timeSpan);
-            logEntry.appendChild(gemSpan);
-            logEntry.appendChild(actionSpan);
-            logEntry.appendChild(statusSpan);
-            logEntry.appendChild(scoreSpan);
-
+            logEntry.innerHTML = `[${time}] <span style="color:#3b82f6">${data.gem}</span>: ${data.action} - <span style="color:${data.status === 'OK' ? '#4ade80' : '#f87171'}">${data.status}</span> (Score: ${data.score || 'N/A'})`;
             logsContainer.prepend(logEntry);
         };
 
