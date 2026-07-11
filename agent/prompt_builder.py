@@ -4,13 +4,17 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import json
+from functools import lru_cache
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+VAR_PATTERN = re.compile(r"\{\{(\w+)\}\}")
 
 
+@lru_cache(maxsize=32)
 def load_prompt(gem_name: str) -> str:
-    """Carga un prompt desde el directorio de prompts."""
+    """Carga un prompt desde el directorio de prompts (con caché)."""
     filename = f"{gem_name}.md"
     filepath = os.path.join(PROMPTS_DIR, filename)
 
@@ -21,19 +25,20 @@ def load_prompt(gem_name: str) -> str:
         return f.read()
 
 
+@lru_cache(maxsize=1)
 def load_maestro() -> str:
-    """Carga el prompt maestro."""
+    """Carga el prompt maestro (con caché)."""
     return load_prompt("00_prompt_maestro")
 
 
 def build_prompt(gem_name: str, variables: dict) -> str:
     """
-    Construye el prompt final para un GEM.
+    Construye el prompt final para un GEM optimizado con reemplazo en un solo paso.
 
-    1. Carga el prompt del GEM
-    2. Inyecta {{PROMPT_MAESTRO}}
-    3. Reemplaza todas las {{variables}}
-    4. Valida que no queden variables sin reemplazar
+    1. Carga el prompt del GEM (cacheado)
+    2. Inyecta {{PROMPT_MAESTRO}} (cacheado)
+    3. Reemplaza todas las {{variables}} en un solo paso usando regex
+    4. Valida que no queden variables críticas sin reemplazar
 
     Args:
         gem_name: nombre del GEM (ej: "gem1", "gem5")
@@ -46,20 +51,25 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     maestro = load_maestro()
     prompt = load_prompt(gem_name)
 
-    # Inyectar prompt maestro
+    # Inyectar prompt maestro vía reemplazo directo (solo una vez)
     prompt = prompt.replace("{{PROMPT_MAESTRO}}", maestro)
 
-    # Inyectar variables
-    for key, value in variables.items():
-        placeholder = "{{" + key + "}}"
-        if isinstance(value, dict):
-            import json
+    # Preparar el callback para re.sub
+    def replace_var(match):
+        key = match.group(1)
+        if key in variables:
+            val = variables[key]
+            if isinstance(val, dict):
+                return json.dumps(val, ensure_ascii=False, indent=2)
+            return str(val)
+        # Si no está en variables, mantener el original (o avisar después)
+        return match.group(0)
 
-            value = json.dumps(value, ensure_ascii=False, indent=2)
-        prompt = prompt.replace(placeholder, str(value))
+    # Reemplazo en un solo paso de todas las variables
+    prompt = VAR_PATTERN.sub(replace_var, prompt)
 
-    # Validar que no queden variables sin reemplazar
-    remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
+    # Validar que no queden variables sin reemplazar (excluyendo metadatos)
+    remaining = VAR_PATTERN.findall(prompt)
     if remaining:
         # Filtrar VERSION que es metadata, no un input
         remaining = [v for v in remaining if v != "VERSION"]
