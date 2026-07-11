@@ -1,6 +1,7 @@
 import os
 import json
 import re
+from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import Optional
 
@@ -74,8 +75,9 @@ class PipelineRequest(BaseModel):
     @classmethod
     def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
         if v:
+            p = Path(v)
             # Bloquear rutas absolutas o intentos de traversal
-            if os.path.isabs(v) or ".." in v:
+            if p.is_absolute() or ".." in v:
                 raise ValueError("local_dir must be a relative path and cannot contain '..'")
         return v
 
