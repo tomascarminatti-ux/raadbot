@@ -1,6 +1,7 @@
 import json
 import os
 import asyncio
+import functools
 from datetime import datetime, timezone
 from typing import Optional, Any
 
@@ -18,6 +19,18 @@ from agent.logger import logger
 console = Console()
 
 
+@functools.lru_cache(maxsize=1)
+def _get_cached_schema() -> Optional[dict]:
+    """Carga y cachea el schema JSON para evitar I/O repetitivo."""
+    schema_path = os.path.join(
+        os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
+    )
+    if os.path.exists(schema_path):
+        with open(schema_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return None
+
+
 class Pipeline:
     """Orquestador del pipeline GEM Nivel Psicópata (Stateful & Rich UI)."""
 
@@ -25,7 +38,7 @@ class Pipeline:
         self.gemini = gemini
         self.search_id = search_id
         self.output_dir = output_dir
-        self.schema = self._load_schema()
+        self.schema = _get_cached_schema()
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -33,15 +46,6 @@ class Pipeline:
         self.state_file = os.path.join(output_dir, "pipeline_state.json")
         self.state = self._load_state()
         self._lock = asyncio.Lock()
-
-    def _load_schema(self) -> Optional[dict]:
-        schema_path = os.path.join(
-            os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
-        )
-        if os.path.exists(schema_path):
-            with open(schema_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return None
 
     def _load_state(self) -> dict:
         """Carga el estado anterior si existe para reanudar."""
