@@ -270,6 +270,12 @@ async def refine_gem(request: RefineRequest):
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write(new_prompt)
+        # Invalidar caché de prompts al refinar uno
+        from agent.prompt_builder import load_prompt, load_maestro
+        load_prompt.cache_clear()
+        if request.gem_id == "00_prompt_maestro":
+            load_maestro.cache_clear()
+
         return {"status": "success", "new_prompt": new_prompt}
     
     return {"status": "error", "message": "Failed to generate new prompt"}
