@@ -56,9 +56,14 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-2">
+                            <button id="copy-btn" onclick="copyPrompt()" class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded hover:bg-blue-400/20 focus-visible:ring-2 ring-blue-500 outline-none transition-all flex items-center gap-1" aria-label="Copiar prompt al portapapeles">
+                                <span>📋</span> <span id="copy-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-slate-400 px-2 py-1 bg-slate-800 rounded">Solo lectura</span>
+                        </div>
                     </div>
-                    <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
+                    <pre id="prompt-content" tabindex="0" aria-label="Contenido del System Prompt" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto focus-visible:ring-1 ring-blue-500 outline-none">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
             </section>
 
@@ -102,6 +107,7 @@
 
         let gems = [];
         let activeGem = null;
+        let copyTimeout = null;
 
         async function loadGems() {
             try {
@@ -134,11 +140,46 @@
             document.getElementById('prompt-content').innerText = activeGem.prompt;
             document.getElementById('send-btn').disabled = false;
             
+            // Reset copy button state
+            if (copyTimeout) clearTimeout(copyTimeout);
+            const copyBtn = document.getElementById('copy-btn');
+            const copyText = document.getElementById('copy-text');
+            copyBtn.classList.replace('bg-green-500/20', 'bg-blue-400/10');
+            copyBtn.classList.replace('text-green-400', 'text-blue-400');
+            copyText.innerText = 'Copiar';
+            copyBtn.querySelector('span').innerText = '📋';
+
             document.getElementById('chat-history').innerHTML = `
                 <div class="bg-blue-600/10 border border-blue-500/30 p-3 rounded-lg text-xs leading-relaxed text-blue-200">
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?
                 </div>
             `;
+        }
+
+        function copyPrompt() {
+            if (!activeGem) return;
+            const text = document.getElementById('prompt-content').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copy-btn');
+                const textSpan = document.getElementById('copy-text');
+                const iconSpan = btn.querySelector('span');
+
+                if (copyTimeout) clearTimeout(copyTimeout);
+
+                btn.classList.replace('bg-blue-400/10', 'bg-green-500/20');
+                btn.classList.replace('text-blue-400', 'text-green-400');
+                textSpan.innerText = 'Copiado';
+                iconSpan.innerText = '✅';
+
+                copyTimeout = setTimeout(() => {
+                    btn.classList.replace('bg-green-500/20', 'bg-blue-400/10');
+                    btn.classList.replace('text-green-400', 'text-blue-400');
+                    textSpan.innerText = 'Copiar';
+                    iconSpan.innerText = '📋';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
         }
 
         async function refineGem() {
