@@ -175,7 +175,8 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
         try:
             return await run_pipeline(request)
         except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            # En producción, no filtrar detalles internos de la excepción
+            raise HTTPException(status_code=400, detail="Error al iniciar el pipeline. Verifique los parámetros.")
 
 
 class SetupSearchRequest(BaseModel):
