@@ -1,6 +1,7 @@
 import json
 import os
 import asyncio
+import functools
 from datetime import datetime, timezone
 from typing import Optional, Any
 
@@ -18,6 +19,21 @@ from agent.logger import logger
 console = Console()
 
 
+@functools.lru_cache(maxsize=1)
+def _get_cached_schema() -> Optional[dict]:
+    """Carga y parsea el schema JSON una sola vez y lo mantiene en memoria."""
+    schema_path = os.path.join(
+        os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
+    )
+    if os.path.exists(schema_path):
+        try:
+            with open(schema_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error cargando schema: {e}")
+    return None
+
+
 class Pipeline:
     """Orquestador del pipeline GEM Nivel Psicópata (Stateful & Rich UI)."""
 
@@ -25,7 +41,8 @@ class Pipeline:
         self.gemini = gemini
         self.search_id = search_id
         self.output_dir = output_dir
-        self.schema = self._load_schema()
+        # Usar versión cacheada para evitar I/O repetitivo por cada instancia
+        self.schema = _get_cached_schema()
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -34,20 +51,15 @@ class Pipeline:
         self.state = self._load_state()
         self._lock = asyncio.Lock()
 
-    def _load_schema(self) -> Optional[dict]:
-        schema_path = os.path.join(
-            os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
-        )
-        if os.path.exists(schema_path):
-            with open(schema_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return None
-
     def _load_state(self) -> dict:
         """Carga el estado anterior si existe para reanudar."""
         if os.path.exists(self.state_file):
-            with open(self.state_file, "r", encoding="utf-8") as f:
-                return json.load(f)
+            try:
+                with open(self.state_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.error(f"Error cargando estado: {e}. Iniciando estado nuevo.")
+
         return {
             "completed_gems": {},  # "CAND-001": ["gem1", "gem2"]
             "results_cache": {},  # Cache de outputs
