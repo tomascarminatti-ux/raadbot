@@ -1,0 +1,3 @@
+## 2025-05-15 - Improving Prompt Interaction and Accessibility
+**Learning:** In technical dashboards, providing a "Copy to Clipboard" feature for core content (like system prompts) significantly improves utility. Visual feedback (changing button text to "¡Copiado!" and color to green) provides immediate confirmation. Accessibility for scrollable code blocks is often missed; adding `tabindex="0"` and a descriptive `aria-label` to `<pre>` tags ensures keyboard users can navigate and read the full content.
+**Action:** Always include success feedback for clipboard actions and ensure scrollable read-only content is keyboard-accessible.
