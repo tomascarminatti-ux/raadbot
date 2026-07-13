@@ -14,6 +14,7 @@ import config
 from agent.gemini_client import GeminiClient
 from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
+from agent.prompt_builder import load_prompt, load_maestro
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
 
@@ -270,6 +271,12 @@ async def refine_gem(request: RefineRequest):
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write(new_prompt)
+
+        # Invalidate prompt cache to ensure next calls use the refined prompt
+        load_prompt.cache_clear()
+        if request.gem_id == "00_prompt_maestro":
+            load_maestro.cache_clear()
+
         return {"status": "success", "new_prompt": new_prompt}
     
     return {"status": "error", "message": "Failed to generate new prompt"}
