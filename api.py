@@ -176,7 +176,7 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
             return await run_pipeline(request)
         except Exception:
             # Secure error message to avoid leaking details
-            raise HTTPException(status_code=400, detail="Error al iniciar el pipeline")
+            raise HTTPException(status_code=400, detail="Error triggering pipeline")
 
 
 class SetupSearchRequest(BaseModel):
