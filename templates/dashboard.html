@@ -56,9 +56,14 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-2">
+                            <button id="copy-btn" onclick="copyPrompt()" aria-label="Copiar prompt al portapapeles" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1 rounded transition-all focus-visible:ring-2 ring-blue-500 outline-none flex items-center gap-1">
+                                <span>📋</span> <span id="copy-btn-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Solo lectura</span>
+                        </div>
                     </div>
-                    <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
+                    <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto" tabindex="0" aria-label="Contenido del prompt">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
             </section>
 
@@ -102,6 +107,29 @@
 
         let gems = [];
         let activeGem = null;
+        let copyTimeout = null;
+
+        function copyPrompt() {
+            const content = document.getElementById('prompt-content').innerText;
+            const btn = document.getElementById('copy-btn');
+            const btnText = document.getElementById('copy-btn-text');
+
+            navigator.clipboard.writeText(content).then(() => {
+                // Success feedback
+                btnText.innerText = 'Copiado';
+                btn.classList.replace('bg-slate-700', 'bg-green-600');
+                btn.classList.replace('hover:bg-slate-600', 'hover:bg-green-500');
+
+                if (copyTimeout) clearTimeout(copyTimeout);
+                copyTimeout = setTimeout(() => {
+                    btnText.innerText = 'Copiar';
+                    btn.classList.replace('bg-green-600', 'bg-slate-700');
+                    btn.classList.replace('hover:bg-green-500', 'hover:bg-slate-600');
+                }, 2000);
+            }).catch(err => {
+                console.error('Error copying text: ', err);
+            });
+        }
 
         async function loadGems() {
             try {
@@ -126,6 +154,13 @@
         function selectGem(id) {
             activeGem = gems.find(g => g.id === id);
             
+            // Reset Copy Button state
+            if (copyTimeout) clearTimeout(copyTimeout);
+            const copyBtn = document.getElementById('copy-btn');
+            const copyBtnText = document.getElementById('copy-btn-text');
+            copyBtnText.innerText = 'Copiar';
+            copyBtn.className = "text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1 rounded transition-all focus-visible:ring-2 ring-blue-500 outline-none flex items-center gap-1";
+
             // UI Updates
             document.querySelectorAll('#gem-nav button').forEach(b => b.classList.remove('active-gem', 'text-blue-400'));
             document.getElementById(`btn-${id}`).classList.add('active-gem', 'text-blue-400');
