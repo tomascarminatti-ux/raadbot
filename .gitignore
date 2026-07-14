@@ -17,3 +17,5 @@ __pycache__/
 zeroclaw/target/
 runs/
 api.log
+server.log
+tests/verify_copy_ux.py
