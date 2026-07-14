@@ -3,11 +3,12 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
+import re
 import asyncio
 
 import config
@@ -17,6 +18,7 @@ from agent.drive_client import DriveClient
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
 
+ID_PATTERN = r"^[a-zA-Z0-9_-]+$"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -59,6 +61,13 @@ class PipelineRequest(BaseModel):
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
 
+    @field_validator("search_id", "candidate_id")
+    @classmethod
+    def validate_ids(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not re.match(ID_PATTERN, v):
+            raise ValueError(f"Invalid identifier: {v}. Must match {ID_PATTERN}")
+        return v
+
 
 class PipelineResponse(BaseModel):
     status: str
@@ -92,7 +101,9 @@ async def run_pipeline(request: PipelineRequest) -> dict:
             raise ValueError(f"Candidato {request.candidate_id} no encontrado.")
         candidates = {request.candidate_id: candidates[request.candidate_id]}
 
-    output_dir = os.path.join("runs", request.search_id, "outputs")
+    # Sanitize search_id for path safety
+    safe_search_id = os.path.basename(request.search_id)
+    output_dir = os.path.join("runs", safe_search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
 
     gemini = GeminiClient(api_key=api_key, model=request.model)
@@ -165,13 +176,22 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id")
+    @classmethod
+    def validate_search_id(cls, v: str) -> str:
+        if not re.match(ID_PATTERN, v):
+            raise ValueError(f"Invalid search_id: {v}. Must match {ID_PATTERN}")
+        return v
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
     Inicializa una búsqueda ejecutando únicamente GEM 5 (Radiografía Estratégica).
     Crea la estructura de carpetas y guarda el mandato inicial.
     """
-    output_dir = os.path.join("runs", request.search_id, "outputs")
+    # Sanitize search_id for path safety
+    safe_search_id = os.path.basename(request.search_id)
+    output_dir = os.path.join("runs", safe_search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
     
     # Simular estructura de inputs para GEM 5
@@ -237,10 +257,19 @@ class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
 
+    @field_validator("gem_id")
+    @classmethod
+    def validate_gem_id(cls, v: str) -> str:
+        if not re.match(ID_PATTERN, v):
+            raise ValueError(f"Invalid gem_id: {v}. Must match {ID_PATTERN}")
+        return v
+
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
     """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
-    prompt_path = f"prompts/{request.gem_id}.md"
+    # Sanitize gem_id for path safety
+    safe_gem_id = os.path.basename(request.gem_id)
+    prompt_path = f"prompts/{safe_gem_id}.md"
     if not os.path.exists(prompt_path):
         raise HTTPException(status_code=404, detail="GEM prompt file not found")
         
