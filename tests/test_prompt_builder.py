@@ -1,11 +1,11 @@
 import os
 import sys
+import pytest
 
 # Ensure we can import from the current directory
 sys.path.append(os.getcwd())
 
-from agent.prompt_builder import build_prompt, clear_prompt_caches
-
+from agent.prompt_builder import build_prompt, clear_prompt_caches, load_prompt
 
 def test_build_prompt_basic(tmp_path, monkeypatch):
     # Setup temporary prompts directory
@@ -28,7 +28,6 @@ def test_build_prompt_basic(tmp_path, monkeypatch):
     result = build_prompt("test_gem", variables)
 
     assert result == "GEM: MAESTRO: 1.0 - DATA: hello"
-
 
 def test_build_prompt_caching(tmp_path, monkeypatch):
     prompts_dir = tmp_path / "prompts"
@@ -57,7 +56,6 @@ def test_build_prompt_caching(tmp_path, monkeypatch):
 
     # Should now return V2
     assert build_prompt("test_gem", {}) == "V2"
-
 
 def test_build_prompt_missing_variable(tmp_path, monkeypatch, capsys):
     prompts_dir = tmp_path / "prompts"
