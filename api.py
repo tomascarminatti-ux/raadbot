@@ -3,10 +3,11 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
+import re
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -35,6 +36,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+ID_PATTERN = r"^[a-zA-Z0-9_-]+$"
+
 # --- Configuración de CORS ---
 # Permite que la frontend de Netlify y el dashboard local se comuniquen con la API
 app.add_middleware(
@@ -58,6 +61,13 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "candidate_id")
+    @classmethod
+    def validate_ids(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not re.match(ID_PATTERN, v):
+            raise ValueError("Identifier contains invalid characters")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -155,8 +165,8 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
     else:
         try:
             return await run_pipeline(request)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        except Exception:
+            raise HTTPException(status_code=400, detail="Error triggering pipeline")
 
 
 class SetupSearchRequest(BaseModel):
@@ -164,6 +174,13 @@ class SetupSearchRequest(BaseModel):
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
+
+    @field_validator("search_id")
+    @classmethod
+    def validate_search_id(cls, v: str) -> str:
+        if not re.match(ID_PATTERN, v):
+            raise ValueError("search_id contains invalid characters")
+        return v
 
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
@@ -236,6 +253,13 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id")
+    @classmethod
+    def validate_gem_id(cls, v: str) -> str:
+        if not re.match(ID_PATTERN, v):
+            raise ValueError("gem_id contains invalid characters")
+        return v
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
