@@ -141,7 +141,7 @@ async def background_run_pipeline(request: PipelineRequest):
                         json={
                             "status": "error", 
                             "search_id": request.search_id, 
-                            "message": str(e)
+                            "message": "Error processing pipeline"
                         },
                         timeout=30.0,
                     )
