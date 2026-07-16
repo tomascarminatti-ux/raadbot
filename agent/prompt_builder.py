@@ -4,13 +4,18 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import json
+from functools import lru_cache
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+# Pre-compilar regex para mejorar performance
+VAR_PATTERN = re.compile(r"\{\{(\w+)\}\}")
 
 
+@lru_cache(maxsize=32)
 def load_prompt(gem_name: str) -> str:
-    """Carga un prompt desde el directorio de prompts."""
+    """Carga un prompt desde el directorio de prompts con cache para evitar I/O repetitivo."""
     filename = f"{gem_name}.md"
     filepath = os.path.join(PROMPTS_DIR, filename)
 
@@ -21,18 +26,25 @@ def load_prompt(gem_name: str) -> str:
         return f.read()
 
 
+@lru_cache(maxsize=1)
 def load_maestro() -> str:
-    """Carga el prompt maestro."""
+    """Carga el prompt maestro con cache."""
     return load_prompt("00_prompt_maestro")
+
+
+def clear_prompt_caches():
+    """Invalida los caches de prompts. Debe llamarse si los archivos en disco cambian."""
+    load_prompt.cache_clear()
+    load_maestro.cache_clear()
 
 
 def build_prompt(gem_name: str, variables: dict) -> str:
     """
     Construye el prompt final para un GEM.
 
-    1. Carga el prompt del GEM
+    1. Carga el prompt del GEM (usando cache)
     2. Inyecta {{PROMPT_MAESTRO}}
-    3. Reemplaza todas las {{variables}}
+    3. Reemplaza todas las {{variables}} en una sola pasada usando regex
     4. Valida que no queden variables sin reemplazar
 
     Args:
@@ -49,17 +61,20 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     # Inyectar prompt maestro
     prompt = prompt.replace("{{PROMPT_MAESTRO}}", maestro)
 
-    # Inyectar variables
-    for key, value in variables.items():
-        placeholder = "{{" + key + "}}"
-        if isinstance(value, dict):
-            import json
+    # Inyectar variables en una sola pasada (O(N) en vez de O(N*M))
+    def _replacer(match):
+        key = match.group(1)
+        if key in variables:
+            value = variables[key]
+            if isinstance(value, (dict, list)):
+                return json.dumps(value, ensure_ascii=False, indent=2)
+            return str(value)
+        return match.group(0)
 
-            value = json.dumps(value, ensure_ascii=False, indent=2)
-        prompt = prompt.replace(placeholder, str(value))
+    prompt = VAR_PATTERN.sub(_replacer, prompt)
 
     # Validar que no queden variables sin reemplazar
-    remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
+    remaining = VAR_PATTERN.findall(prompt)
     if remaining:
         # Filtrar VERSION que es metadata, no un input
         remaining = [v for v in remaining if v != "VERSION"]
@@ -77,7 +92,7 @@ def get_required_variables(gem_name: str) -> list[str]:
         Lista de nombres de variables (sin {{ }})
     """
     prompt = load_prompt(gem_name)
-    variables = re.findall(r"\{\{(\w+)\}\}", prompt)
+    variables = VAR_PATTERN.findall(prompt)
     # Filtrar las que se resuelven automáticamente
     auto_resolved = {"PROMPT_MAESTRO", "VERSION"}
     return [v for v in set(variables) if v not in auto_resolved]
@@ -96,7 +111,6 @@ def build_agent_prompt(gem_id: str, payload: dict) -> str:
 
     # Si no se encontró ningún placeholder de datos en el prompt original, los anexamos al final
     if "{{input}}" not in base_prompt and "{{context}}" not in base_prompt:
-        import json
         prompt += f"\n\n### DATA INPUT:\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
 
     return prompt
