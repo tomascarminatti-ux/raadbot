@@ -56,9 +56,14 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="copyPrompt()" id="copy-btn" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-2 py-1 rounded transition-colors flex items-center gap-1" aria-label="Copiar prompt al portapapeles">
+                                <span>📋</span> <span id="copy-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Solo lectura</span>
+                        </div>
                     </div>
-                    <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
+                    <pre id="prompt-content" tabindex="0" aria-label="Contenido del prompt" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
             </section>
 
@@ -74,7 +79,10 @@
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                    <div class="relative">
+                        <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                        <span class="absolute bottom-2 right-2 text-[10px] text-slate-500 pointer-events-none">Ctrl + Enter</span>
+                    </div>
                     <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                         <span>🚀</span> Refinar Prompt
                     </button>
@@ -193,6 +201,35 @@
                 history.scrollTop = history.scrollHeight;
             }
         }
+
+        async function copyPrompt() {
+            const content = document.getElementById('prompt-content').innerText;
+            try {
+                await navigator.clipboard.writeText(content);
+                const btn = document.getElementById('copy-btn');
+                const text = document.getElementById('copy-text');
+                const originalText = text.innerText;
+
+                text.innerText = 'Copiado';
+                btn.classList.remove('bg-slate-700', 'hover:bg-slate-600');
+                btn.classList.add('bg-green-600', 'hover:bg-green-500');
+
+                setTimeout(() => {
+                    text.innerText = originalText;
+                    btn.classList.remove('bg-green-600', 'hover:bg-green-500');
+                    btn.classList.add('bg-slate-700', 'hover:bg-slate-600');
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+            }
+        }
+
+        // Shortcut for refinement
+        document.getElementById('refine-input').addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                refineGem();
+            }
+        });
 
         // Init
         loadGems();
