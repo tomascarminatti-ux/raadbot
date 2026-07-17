@@ -1,6 +1,7 @@
 import json
 import os
 import asyncio
+import functools
 from datetime import datetime, timezone
 from typing import Optional, Any
 
@@ -16,6 +17,15 @@ from agent.logger import logger
 
 
 console = Console()
+
+
+@functools.lru_cache(maxsize=1)
+def _get_cached_schema(schema_path: str) -> Optional[dict]:
+    """Carga y almacena en caché el esquema JSON para evitar lecturas repetidas de disco."""
+    if os.path.exists(schema_path):
+        with open(schema_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return None
 
 
 class Pipeline:
@@ -38,10 +48,7 @@ class Pipeline:
         schema_path = os.path.join(
             os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
         )
-        if os.path.exists(schema_path):
-            with open(schema_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return None
+        return _get_cached_schema(schema_path)
 
     def _load_state(self) -> dict:
         """Carga el estado anterior si existe para reanudar."""
