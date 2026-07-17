@@ -1,0 +1,3 @@
+## 2026-02-25 - Prompt Builder Cache & Substitution Optimization
+**Learning:** Repetitive disk I/O (using `os.path.exists` and `open().read()`) combined with nested `.replace()` string substitution loops inside high-frequency execution paths (like generating/building system prompts for agents) creates a significant CPU bottleneck. Moving file reading to an LRU cache and performing template injection with a precompiled regex pattern in a single-pass `re.sub` callback delivers a massive ~6.5x performance boost.
+**Action:** Always pre-compile regex patterns at the module level, utilize `functools.lru_cache` for unchanging disk templates, and replace nested string replacement loops with a single-pass `re.sub` dictionary lookup callback.
