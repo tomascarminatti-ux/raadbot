@@ -1,0 +1,3 @@
+## 2026-07-18 - Copy Feedback & Keyboard Accessibility
+**Learning:** Adding immediate, visual feedback with context reset capabilities significantly reduces cognitive load on users managing multi-agent system prompt refinement. Furthermore, ensuring scrollable `<pre>` view containers have explicit keyboard tab focus (`tabindex="0"`) and descriptive ARIA labels (`aria-label`) ensures assistive technologies can navigate long-form text regions without getting trapped or lost.
+**Action:** Always include a visual status change with timed reset on Copy buttons, implement contextual reset handlers on selection changes, and decorate scrollable view containers with tabindex and aria attributes.
