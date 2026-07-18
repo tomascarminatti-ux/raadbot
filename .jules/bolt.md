@@ -1,0 +1,5 @@
+## 2026-02-25 - Efficient Multi-GEM Prompt Generation & Cache Control
+
+**Learning:** Prompt generation in mass-processing systems (such as processing 100-500 candidate pipelines in batches) is heavily bound by redundant disk I/O of loading prompt templates (`00_prompt_maestro.md`, `gem1.md`, etc.) and iterative `.replace` string allocations. By caching loaded templates via `functools.lru_cache` and invalidating them on prompt refinements, we achieve a massive performance speedup. Additionally, using a single-pass `re.sub` substitution callback instead of looping over all parameters to execute multiple `.replace` operations avoids multiple temporary string allocations and reduces execution time significantly, while preserving behavior for missing placeholders or metadata like `{{VERSION}}`.
+
+**Action:** Always pre-compile regex patterns at the module level, cache static templates with invalidation hooks on modification, and use single-pass substitution techniques for robust template systems.
