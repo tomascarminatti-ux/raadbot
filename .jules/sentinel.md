@@ -1,0 +1,4 @@
+## 2025-02-18 - Input Path Traversal Prevention via Strict Pydantic Regex Validators
+**Vulnerability:** API endpoints using client-supplied IDs (`search_id`, `candidate_id`, `gem_id`) directly in file system operations (via `os.path.join`, f-string format paths) were vulnerable to Path Traversal (`../`). This would allow malicious actors to traverse the directory structure and read or write arbitrary files on the system.
+**Learning:** Even internal or non-public APIs can have parameters that determine dynamic filesystem paths. Relying on simple file existence checks or standard error handling is insufficient to prevent arbitrary file manipulation.
+**Prevention:** Employ strict alphanumeric regex patterns (e.g. `^[a-zA-Z0-9_-]+$`) with essential `^` and `$` anchors at the model level (using Pydantic `field_validator` in v2) to reject any identifiers with traversal sequences, dots, slashes, or other unexpected special characters.
