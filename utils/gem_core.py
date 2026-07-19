@@ -64,7 +64,6 @@ def _load_contract(contract_path: str) -> Dict[str, Any]:
     with open(contract_path, "r") as f:
         return json.load(f)
 
-
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     if not os.path.exists(contract_path):
         logger.warning(f"Contract file missing: {contract_path}")
