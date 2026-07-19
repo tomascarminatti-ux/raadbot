@@ -1,6 +1,8 @@
 import httpx
 import json
 import logging
+import os
+import functools
 from typing import Dict, Any, Optional
 
 class JsonFormatter(logging.Formatter):
@@ -56,10 +58,18 @@ class GEMClient:
             logger.error(f"Failed to log execution: {e}")
             return None
 
+@functools.lru_cache(maxsize=16)
+def _load_contract(contract_path: str) -> Dict[str, Any]:
+    """Carga y parsea el archivo de contrato JSON (con cache LRU)."""
+    with open(contract_path, "r") as f:
+        return json.load(f)
+
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
+    if not os.path.exists(contract_path):
+        logger.warning(f"Contract file missing: {contract_path}")
+        return False
     try:
-        with open(contract_path, "r") as f:
-            contract = json.load(f)
+        contract = _load_contract(contract_path)
         
         for key in contract:
             if not isinstance(key, str):
