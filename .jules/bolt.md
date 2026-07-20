@@ -1,0 +1,3 @@
+## 2026-07-20 - JSON Schema Validator Pre-compilation
+**Learning:** In Python's `jsonschema` library, using the standard `validate` helper loads and parses/resolves the schema validator dynamically on *every* call, introducing a huge runtime overhead. Pre-compiling the schema using a dedicated validator class (determined via `validator_for`) and reusing the validator instance reduces execution time from ~2.6ms per call to ~0.18ms per call (~14.4x speedup).
+**Action:** Always pre-compile JSON schemas during object initialization (e.g., in a class `__init__` or module-level caching) instead of calling `jsonschema.validate` repeatedly.
