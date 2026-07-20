@@ -1,0 +1,4 @@
+## 2025-02-15 - FastAPI Path Traversal via Unvalidated Identifiers
+**Vulnerability:** User-controlled identifiers (`search_id`, `candidate_id`, `gem_id`) were utilized directly in file and directory path construction (e.g., `prompts/{gem_id}.md` or `runs/{search_id}/outputs`), allowing malicious users to perform path traversal attacks using sequences like `../`.
+**Learning:** The application lacked input validation on identifier parameters under the assumption that they are internal-only or used via pre-designed UI elements. However, even internal/non-public API endpoints must strictly validate all input to prevent unauthorized filesystem exposure and manipulation.
+**Prevention:** Always strictly validate any identifiers used in constructing file paths or directories. Use Pydantic's `@field_validator` with a strict whitelist regex pattern such as `^[a-zA-Z0-9_-]+$` to guarantee identifiers do not contain path-traversal sequences or dangerous characters.
