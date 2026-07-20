@@ -74,7 +74,7 @@ def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
             logger.warning(f"Contract file missing: {contract_path}")
             return False
 
-        contract = _load_contract(contract_path)
+        contract = _load_contract(contract_path).copy()
         
         for key in contract:
             if not isinstance(key, str):
