@@ -1,0 +1,4 @@
+## 2026-07-21 - Input Validation and Path Traversal Prevention
+**Vulnerability:** User-controlled identifiers like `search_id`, `candidate_id`, and `gem_id` were passed directly into filesystem APIs (such as `os.makedirs`, `os.path.join`, and string-based file path concatenation) without any sanitization or validation, resulting in potential path traversal vulnerabilities.
+**Learning:** Even internally or partially exposed APIs must validate inputs strictly. Relying solely on callers or external middleware to enforce valid values leaves backend logic and the filesystem exposed to manipulation if those inputs can navigate directories (e.g., using `../` or `/`).
+**Prevention:** Implement strict input validation on Pydantic request models using `@field_validator` and regular expressions (like `^[a-zA-Z0-9_-]+$`) to restrict allowed characters to a safe alphanumeric-only list before constructed paths are touched by any file operations.
