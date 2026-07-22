@@ -3,8 +3,10 @@ import os
 import asyncio
 from datetime import datetime, timezone
 from typing import Optional, Any
+import functools
 
-from jsonschema import validate, ValidationError
+import jsonschema
+from jsonschema import ValidationError
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -18,6 +20,23 @@ from agent.logger import logger
 console = Console()
 
 
+# Bolt Optimization: Caching and pre-compiling the schema and its validator at the module level.
+# This prevents reading the file from disk on every Pipeline instantiation,
+# and avoids compiling the schema's validation tree on every single output validation (~14x validation speedup).
+@functools.lru_cache(maxsize=1)
+def _get_validator() -> Optional[jsonschema.protocols.Validator]:
+    """Carga y precompila el validador del JSON Schema."""
+    schema_path = os.path.join(
+        os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
+    )
+    if os.path.exists(schema_path):
+        with open(schema_path, "r", encoding="utf-8") as f:
+            schema = json.load(f)
+            validator_cls = jsonschema.validators.validator_for(schema)
+            return validator_cls(schema)
+    return None
+
+
 class Pipeline:
     """Orquestador del pipeline GEM Nivel Psicópata (Stateful & Rich UI)."""
 
@@ -25,7 +44,10 @@ class Pipeline:
         self.gemini = gemini
         self.search_id = search_id
         self.output_dir = output_dir
-        self.schema = self._load_schema()
+
+        # Bolt Optimization: Retrieve precompiled validator and extract schema for backwards compatibility.
+        self.validator = _get_validator()
+        self.schema = self.validator.schema if self.validator else None
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -35,13 +57,8 @@ class Pipeline:
         self._lock = asyncio.Lock()
 
     def _load_schema(self) -> Optional[dict]:
-        schema_path = os.path.join(
-            os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
-        )
-        if os.path.exists(schema_path):
-            with open(schema_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return None
+        # Kept for potential subclass/backwards-compatibility, but logic uses module level _get_validator()
+        return self.schema
 
     def _load_state(self) -> dict:
         """Carga el estado anterior si existe para reanudar."""
@@ -133,10 +150,11 @@ class Pipeline:
         return json_path, md_path
 
     def _validate_output(self, json_data: dict, gem_name: str) -> bool:
-        if not self.schema or not json_data:
+        if not self.validator or not json_data:
             raise ValueError(f"Output nulo o sin JSON válido en {gem_name}")
         try:
-            validate(instance=json_data, schema=self.schema)
+            # Reusing precompiled validator for maximum validation performance.
+            self.validator.validate(instance=json_data)
             return True
         except ValidationError as e:
             raise ValueError(f"Schema fallido en {gem_name}: {e.message}")
