@@ -4,9 +4,17 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import functools
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+
+
+@functools.lru_cache(maxsize=32)
+def _load_prompt_cached(filepath: str, mtime: float) -> str:
+    """Carga y devuelve el contenido de un prompt, almacenándolo en caché por filepath y mtime."""
+    with open(filepath, "r", encoding="utf-8") as f:
+        return f.read()
 
 
 def load_prompt(gem_name: str) -> str:
@@ -17,8 +25,18 @@ def load_prompt(gem_name: str) -> str:
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Prompt no encontrado: {filepath}")
 
-    with open(filepath, "r", encoding="utf-8") as f:
-        return f.read()
+    try:
+        mtime = os.path.getmtime(filepath)
+        return _load_prompt_cached(filepath, mtime)
+    except Exception:
+        # Fallback to reading without cache if mtime is unavailable
+        with open(filepath, "r", encoding="utf-8") as f:
+            return f.read()
+
+
+def clear_prompt_caches():
+    """Limpia la cache de los prompts cargados."""
+    _load_prompt_cached.cache_clear()
 
 
 def load_maestro() -> str:

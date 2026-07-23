@@ -1,0 +1,3 @@
+## 2025-02-18 - [Correctness-preserving caching using file modification times]
+**Learning:** In codebases where prompt files and JSON contract schemas can be dynamically refined or updated on disk (especially during testing), simple standard caching can lead to stale data reads or test isolation failures. Checking the file's modification time (`os.path.getmtime`) on disk and including it in the `lru_cache` key is an extremely low-overhead operation that guarantees 100% cache correctness without sacrifying O(1) in-memory performance for unchanged files.
+**Action:** Always combine `functools.lru_cache` with a file modification time (`mtime`) key parameter when caching file-based structures that might be modified at runtime.
