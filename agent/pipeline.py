@@ -1,10 +1,12 @@
 import json
 import os
 import asyncio
+import functools
 from datetime import datetime, timezone
 from typing import Optional, Any
 
-from jsonschema import validate, ValidationError
+from jsonschema import ValidationError
+from jsonschema.validators import validator_for
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -16,6 +18,26 @@ from agent.logger import logger
 
 
 console = Console()
+
+
+@functools.lru_cache(maxsize=1)
+def _get_compiled_validator(schema_path: str, mtime: float):
+    """Carga y compila el validador de JSON Schema una sola vez (o cuando cambie el mtime)."""
+    with open(schema_path, "r", encoding="utf-8") as f:
+        schema = json.load(f)
+    validator_class = validator_for(schema)
+    return validator_class(schema)
+
+
+def get_validator() -> Optional[Any]:
+    """Obtiene el validador precompilado de JSON Schema si el archivo existe."""
+    schema_path = os.path.join(
+        os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
+    )
+    if os.path.exists(schema_path):
+        mtime = os.path.getmtime(schema_path)
+        return _get_compiled_validator(schema_path, mtime)
+    return None
 
 
 class Pipeline:
@@ -35,13 +57,9 @@ class Pipeline:
         self._lock = asyncio.Lock()
 
     def _load_schema(self) -> Optional[dict]:
-        schema_path = os.path.join(
-            os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
-        )
-        if os.path.exists(schema_path):
-            with open(schema_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return None
+        """Obtiene el esquema cargado desde el validador cached."""
+        validator = get_validator()
+        return validator.schema if validator else None
 
     def _load_state(self) -> dict:
         """Carga el estado anterior si existe para reanudar."""
@@ -133,10 +151,11 @@ class Pipeline:
         return json_path, md_path
 
     def _validate_output(self, json_data: dict, gem_name: str) -> bool:
-        if not self.schema or not json_data:
+        validator = get_validator()
+        if not validator or not json_data:
             raise ValueError(f"Output nulo o sin JSON válido en {gem_name}")
         try:
-            validate(instance=json_data, schema=self.schema)
+            validator.validate(json_data)
             return True
         except ValidationError as e:
             raise ValueError(f"Schema fallido en {gem_name}: {e.message}")
