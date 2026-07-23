@@ -4,21 +4,29 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import functools
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
 
+@functools.lru_cache(maxsize=32)
+def _load_prompt_cached(filepath: str, mtime: float) -> str:
+    """Carga y almacena en caché el contenido del archivo si no ha sido modificado."""
+    with open(filepath, "r", encoding="utf-8") as f:
+        return f.read()
+
+
 def load_prompt(gem_name: str) -> str:
-    """Carga un prompt desde el directorio de prompts."""
+    """Carga un prompt desde el directorio de prompts (con caché basada en mtime)."""
     filename = f"{gem_name}.md"
     filepath = os.path.join(PROMPTS_DIR, filename)
 
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Prompt no encontrado: {filepath}")
 
-    with open(filepath, "r", encoding="utf-8") as f:
-        return f.read()
+    mtime = os.path.getmtime(filepath)
+    return _load_prompt_cached(filepath, mtime)
 
 
 def load_maestro() -> str:
