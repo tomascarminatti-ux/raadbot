@@ -56,9 +56,14 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-2">
+                            <button id="copy-btn" onclick="copyPrompt()" disabled class="text-xs text-slate-400 hover:text-white px-2 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-all flex items-center gap-1 border border-white/10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none" aria-label="Copiar prompt al portapapeles">
+                                <span id="copy-icon">📋</span> <span id="copy-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        </div>
                     </div>
-                    <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
+                    <pre id="prompt-content" tabindex="0" aria-label="Contenido del prompt del sistema" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
             </section>
 
@@ -69,7 +74,7 @@
                     <p class="text-xs text-slate-500">Dale instrucciones al orquestador para ajustar el comportamiento de este GEM.</p>
                 </div>
 
-                <div class="flex-1 bg-black/20 rounded-xl p-4 border border-white/5 overflow-y-auto" id="chat-history">
+                <div class="flex-1 bg-black/20 rounded-xl p-4 border border-white/5 overflow-y-auto focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none" id="chat-history" tabindex="0" aria-label="Historial de chat y refinamientos">
                     <div class="text-xs text-slate-500 italic">Chat disponible al seleccionar un GEM...</div>
                 </div>
 
@@ -83,7 +88,7 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
+    <div id="live-logs" tabindex="0" aria-label="Logs en tiempo real de Raadbot" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;" class="focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:outline-none">
         <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
         <div id="logs-container"></div>
     </div>
@@ -102,6 +107,7 @@
 
         let gems = [];
         let activeGem = null;
+        let copyTimeout = null;
 
         async function loadGems() {
             try {
@@ -134,11 +140,51 @@
             document.getElementById('prompt-content').innerText = activeGem.prompt;
             document.getElementById('send-btn').disabled = false;
             
+            const copyBtn = document.getElementById('copy-btn');
+            if (copyBtn) {
+                copyBtn.disabled = false;
+                resetCopyButton();
+            }
+
             document.getElementById('chat-history').innerHTML = `
                 <div class="bg-blue-600/10 border border-blue-500/30 p-3 rounded-lg text-xs leading-relaxed text-blue-200">
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?
                 </div>
             `;
+        }
+
+        async function copyPrompt() {
+            if (!activeGem) return;
+            try {
+                await navigator.clipboard.writeText(activeGem.prompt);
+                const btn = document.getElementById('copy-btn');
+                const text = document.getElementById('copy-text');
+                const icon = document.getElementById('copy-icon');
+
+                btn.classList.add('border-green-500/50', 'bg-green-500/10', 'text-green-400');
+                btn.classList.remove('border-white/10', 'bg-slate-800', 'text-slate-400');
+                text.innerText = 'Copiado';
+                icon.innerText = '✅';
+
+                if (copyTimeout) clearTimeout(copyTimeout);
+                copyTimeout = setTimeout(() => {
+                    resetCopyButton();
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+            }
+        }
+
+        function resetCopyButton() {
+            const btn = document.getElementById('copy-btn');
+            const text = document.getElementById('copy-text');
+            const icon = document.getElementById('copy-icon');
+            if (!btn) return;
+
+            btn.classList.remove('border-green-500/50', 'bg-green-500/10', 'text-green-400');
+            btn.classList.add('border-white/10', 'bg-slate-800', 'text-slate-400');
+            text.innerText = 'Copiar';
+            icon.innerText = '📋';
         }
 
         async function refineGem() {
