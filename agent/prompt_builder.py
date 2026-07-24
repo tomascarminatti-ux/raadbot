@@ -4,13 +4,23 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
-
+import functools
+import json
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
 
-def load_prompt(gem_name: str) -> str:
-    """Carga un prompt desde el directorio de prompts."""
+def _get_file_mtime(filepath: str) -> float:
+    """Returns the modification time of a file to check if cache needs to be invalidated."""
+    try:
+        return os.path.getmtime(filepath)
+    except OSError:
+        return 0.0
+
+
+@functools.lru_cache(maxsize=32)
+def _load_prompt_cached(gem_name: str, mtime: float) -> str:
+    """Helper that actually loads the file, cached by both filename and mtime."""
     filename = f"{gem_name}.md"
     filepath = os.path.join(PROMPTS_DIR, filename)
 
@@ -21,9 +31,22 @@ def load_prompt(gem_name: str) -> str:
         return f.read()
 
 
+def load_prompt(gem_name: str) -> str:
+    """Carga un prompt desde el directorio de prompts (con invalidación de caché automática si cambia mtime)."""
+    filename = f"{gem_name}.md"
+    filepath = os.path.join(PROMPTS_DIR, filename)
+    mtime = _get_file_mtime(filepath)
+    return _load_prompt_cached(gem_name, mtime)
+
+
 def load_maestro() -> str:
     """Carga el prompt maestro."""
     return load_prompt("00_prompt_maestro")
+
+
+@functools.lru_cache(maxsize=128)
+def _compile_regex(pattern: str):
+    return re.compile(pattern)
 
 
 def build_prompt(gem_name: str, variables: dict) -> str:
@@ -49,14 +72,28 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     # Inyectar prompt maestro
     prompt = prompt.replace("{{PROMPT_MAESTRO}}", maestro)
 
-    # Inyectar variables
-    for key, value in variables.items():
-        placeholder = "{{" + key + "}}"
-        if isinstance(value, dict):
-            import json
+    # Inyectar variables with single-pass replacement optimization
+    if variables:
+        # Pre-process dicts to json strings to avoid repeating in the replacement loop
+        processed_vars = {}
+        for k, v in variables.items():
+            if isinstance(v, dict):
+                processed_vars[k] = json.dumps(v, ensure_ascii=False, indent=2)
+            else:
+                processed_vars[k] = str(v)
 
-            value = json.dumps(value, ensure_ascii=False, indent=2)
-        prompt = prompt.replace(placeholder, str(value))
+        # Build single regex pattern for all variable keys, sorted by length descending to prevent prefix matching conflicts
+        sorted_keys = sorted(processed_vars.keys(), key=len, reverse=True)
+        pattern_str = "|".join(re.escape("{{" + k + "}}") for k in sorted_keys)
+        pattern = _compile_regex(pattern_str)
+
+        # Single-pass replace function
+        def repl(match):
+            placeholder = match.group(0)
+            key = placeholder[2:-2]
+            return processed_vars.get(key, placeholder)
+
+        prompt = pattern.sub(repl, prompt)
 
     # Validar que no queden variables sin reemplazar
     remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
