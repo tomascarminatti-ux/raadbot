@@ -59,21 +59,29 @@ class GEMClient:
 import functools
 import os
 
-def _get_contract_mtime(contract_path: str) -> float:
-    try:
-        return os.path.getmtime(contract_path)
-    except OSError:
-        return 0.0
-
 @functools.lru_cache(maxsize=16)
-def _load_contract(contract_path: str, mtime: float) -> Dict[str, Any]:
+def _load_contract_cached(contract_path: str, mtime: float) -> Optional[Dict[str, Any]]:
+    """Loads and parses the contract JSON, cached based on path and file mtime."""
     with open(contract_path, "r") as f:
         return json.load(f)
 
+def _load_contract(contract_path: str) -> Optional[Dict[str, Any]]:
+    """Safe wrapper for loading contract with disk presence checking and cache validation."""
+    if not os.path.exists(contract_path):
+        logger.warning(f"Contract file not found: {contract_path}")
+        return None
+    try:
+        mtime = os.path.getmtime(contract_path)
+        return _load_contract_cached(contract_path, mtime)
+    except Exception as e:
+        logger.error(f"Error reading contract file {contract_path}: {e}")
+        return None
+
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
-        mtime = _get_contract_mtime(contract_path)
-        contract = _load_contract(contract_path, mtime)
+        contract = _load_contract(contract_path)
+        if contract is None:
+            return False
         
         for key in contract:
             if not isinstance(key, str):
