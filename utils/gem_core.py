@@ -56,10 +56,24 @@ class GEMClient:
             logger.error(f"Failed to log execution: {e}")
             return None
 
+import functools
+import os
+
+def _get_contract_mtime(contract_path: str) -> float:
+    try:
+        return os.path.getmtime(contract_path)
+    except OSError:
+        return 0.0
+
+@functools.lru_cache(maxsize=16)
+def _load_contract(contract_path: str, mtime: float) -> Dict[str, Any]:
+    with open(contract_path, "r") as f:
+        return json.load(f)
+
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
-        with open(contract_path, "r") as f:
-            contract = json.load(f)
+        mtime = _get_contract_mtime(contract_path)
+        contract = _load_contract(contract_path, mtime)
         
         for key in contract:
             if not isinstance(key, str):
