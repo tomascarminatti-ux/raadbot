@@ -1,0 +1,3 @@
+## 2024-07-24 - Accessibility and Visual Feedback of Scrollable & Copyable UI Elements
+**Learning:** Headless browser testing for modern navigator.clipboard functions requires explicit browser context permissions (`['clipboard-read', 'clipboard-write']`) to be granted. Furthermore, all scrollable containers must have tabindex="0" and corresponding ARIA descriptions to be usable by keyboard-only and screen reader users.
+**Action:** Always provide standard ARIA labels, focus-visible outlines, tabindex="0" on scrollable containers, and explicitly configure mock clipboard permissions in Playwright testing suites.
