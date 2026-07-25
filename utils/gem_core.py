@@ -1,5 +1,7 @@
 import httpx
 import json
+import os
+import functools
 import logging
 from typing import Dict, Any, Optional
 
@@ -56,10 +58,24 @@ class GEMClient:
             logger.error(f"Failed to log execution: {e}")
             return None
 
+
+@functools.lru_cache(maxsize=16)
+def _load_contract_cached(contract_path: str, mtime: float) -> dict:
+    """Carga y cachea un contrato de forma interna. Se invalida si el mtime cambia."""
+    with open(contract_path, "r") as f:
+        return json.load(f)
+
+
+def clear_contract_caches() -> None:
+    """Limpia la caché de contratos manualmente si es necesario."""
+    _load_contract_cached.cache_clear()
+
+
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
-        with open(contract_path, "r") as f:
-            contract = json.load(f)
+        # Obtener el tiempo de modificación del archivo de contrato para invalidación automática
+        mtime = os.path.getmtime(contract_path)
+        contract = _load_contract_cached(contract_path, mtime)
         
         for key in contract:
             if not isinstance(key, str):

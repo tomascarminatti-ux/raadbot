@@ -4,9 +4,16 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
-
+import functools
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+
+
+@functools.lru_cache(maxsize=32)
+def _load_prompt_cached(filepath: str, mtime: float) -> str:
+    """Carga y cachea un prompt de forma interna. Se invalida si el mtime cambia."""
+    with open(filepath, "r", encoding="utf-8") as f:
+        return f.read()
 
 
 def load_prompt(gem_name: str) -> str:
@@ -17,8 +24,14 @@ def load_prompt(gem_name: str) -> str:
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Prompt no encontrado: {filepath}")
 
-    with open(filepath, "r", encoding="utf-8") as f:
-        return f.read()
+    # Obtener el tiempo de modificación del archivo para invalidación de caché
+    mtime = os.path.getmtime(filepath)
+    return _load_prompt_cached(filepath, mtime)
+
+
+def clear_prompt_caches() -> None:
+    """Limpia la caché de prompts manualmente si es necesario."""
+    _load_prompt_cached.cache_clear()
 
 
 def load_maestro() -> str:
@@ -32,7 +45,7 @@ def build_prompt(gem_name: str, variables: dict) -> str:
 
     1. Carga el prompt del GEM
     2. Inyecta {{PROMPT_MAESTRO}}
-    3. Reemplaza todas las {{variables}}
+    3. Reemplaza todas las {{variables}} de manera eficiente en un solo paso
     4. Valida que no queden variables sin reemplazar
 
     Args:
@@ -49,14 +62,23 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     # Inyectar prompt maestro
     prompt = prompt.replace("{{PROMPT_MAESTRO}}", maestro)
 
-    # Inyectar variables
+    # Inyectar variables: preparar reemplazos mapeando key -> stringified value
+    replacements = {}
     for key, value in variables.items():
-        placeholder = "{{" + key + "}}"
         if isinstance(value, dict):
             import json
+            replacements[key] = json.dumps(value, ensure_ascii=False, indent=2)
+        else:
+            replacements[key] = str(value)
 
-            value = json.dumps(value, ensure_ascii=False, indent=2)
-        prompt = prompt.replace(placeholder, str(value))
+    # Reemplazo en un solo paso usando re.sub para optimizar el rendimiento
+    def replace_match(match):
+        key = match.group(1)
+        if key in replacements:
+            return replacements[key]
+        return match.group(0)
+
+    prompt = re.sub(r"\{\{(\w+)\}\}", replace_match, prompt)
 
     # Validar que no queden variables sin reemplazar
     remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
