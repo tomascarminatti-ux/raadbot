@@ -75,3 +75,12 @@ async def test_pipeline_full_run_with_descartado(mock_gemini, temp_output_dir):
     results = await pipeline.run_full_pipeline(search_inputs, candidates)
 
     assert results["candidates"]["CAND-001"]["decision"] == "DESCARTADO_GEM1"
+
+
+def test_get_cached_validator():
+    from agent.pipeline import _get_cached_validator
+    validator = _get_cached_validator()
+    assert validator is not None
+    assert hasattr(validator, "validate")
+    # Verify that lru_cache caches the same validator instance
+    assert _get_cached_validator() is validator
