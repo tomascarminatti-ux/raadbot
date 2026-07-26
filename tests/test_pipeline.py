@@ -75,3 +75,29 @@ async def test_pipeline_full_run_with_descartado(mock_gemini, temp_output_dir):
     results = await pipeline.run_full_pipeline(search_inputs, candidates)
 
     assert results["candidates"]["CAND-001"]["decision"] == "DESCARTADO_GEM1"
+
+
+def test_get_cached_validator():
+    from agent.pipeline import _get_cached_validator
+    validator = _get_cached_validator()
+    assert validator is not None
+
+    # Test caching works (the same object is returned)
+    validator_again = _get_cached_validator()
+    assert validator is validator_again
+
+    # Test validation works on a valid payload
+    valid_data = {
+        "meta": {
+            "search_id": "SEARCH-2026-001",
+            "gem": "GEM_1",
+            "prompt_version": "v1.2",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "sources": ["s1"]
+        },
+        "scores": {"score_dimension": 8, "confidence": 9},
+        "blockers": [],
+        "content": {}
+    }
+    # Should not raise any exceptions
+    validator.validate(valid_data)
