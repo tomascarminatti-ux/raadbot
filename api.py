@@ -1,14 +1,18 @@
 import os
 import json
+import re
 from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
+
+# --- Regex para validar identificadores seguros contra path traversal ---
+IDENTIFIER_REGEX = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 import config
 from agent.gemini_client import GeminiClient
@@ -58,6 +62,20 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id")
+    @classmethod
+    def validate_search_id(cls, v: str) -> str:
+        if not IDENTIFIER_REGEX.match(v):
+            raise ValueError("search_id must only contain alphanumeric characters, underscores, or hyphens.")
+        return v
+
+    @field_validator("candidate_id")
+    @classmethod
+    def validate_candidate_id(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not IDENTIFIER_REGEX.match(v):
+            raise ValueError("candidate_id must only contain alphanumeric characters, underscores, or hyphens.")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -165,6 +183,13 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id")
+    @classmethod
+    def validate_search_id(cls, v: str) -> str:
+        if not IDENTIFIER_REGEX.match(v):
+            raise ValueError("search_id must only contain alphanumeric characters, underscores, or hyphens.")
+        return v
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -236,6 +261,13 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id")
+    @classmethod
+    def validate_gem_id(cls, v: str) -> str:
+        if not IDENTIFIER_REGEX.match(v):
+            raise ValueError("gem_id must only contain alphanumeric characters, underscores, or hyphens.")
+        return v
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
