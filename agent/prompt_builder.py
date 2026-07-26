@@ -4,26 +4,39 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import functools
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
 
+@functools.lru_cache(maxsize=32)
+def _load_prompt_cached(filepath: str, mtime: float) -> str:
+    """Carga y cachea un prompt basándose en la ruta del archivo y su mtime."""
+    with open(filepath, "r", encoding="utf-8") as f:
+        return f.read()
+
+
 def load_prompt(gem_name: str) -> str:
-    """Carga un prompt desde el directorio de prompts."""
+    """Carga un prompt desde el directorio de prompts con caché basada en mtime."""
     filename = f"{gem_name}.md"
     filepath = os.path.join(PROMPTS_DIR, filename)
 
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Prompt no encontrado: {filepath}")
 
-    with open(filepath, "r", encoding="utf-8") as f:
-        return f.read()
+    mtime = os.path.getmtime(filepath)
+    return _load_prompt_cached(filepath, mtime)
 
 
 def load_maestro() -> str:
     """Carga el prompt maestro."""
     return load_prompt("00_prompt_maestro")
+
+
+def clear_prompt_caches() -> None:
+    """Limpia manualmente la caché de prompts cargados."""
+    _load_prompt_cached.cache_clear()
 
 
 def build_prompt(gem_name: str, variables: dict) -> str:
@@ -32,7 +45,7 @@ def build_prompt(gem_name: str, variables: dict) -> str:
 
     1. Carga el prompt del GEM
     2. Inyecta {{PROMPT_MAESTRO}}
-    3. Reemplaza todas las {{variables}}
+    3. Reemplaza todas las {{variables}} en un solo paso regex optimizado
     4. Valida que no queden variables sin reemplazar
 
     Args:
@@ -42,21 +55,37 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     Returns:
         str con el prompt listo para enviar al modelo
     """
-    # Cargar prompt maestro y del GEM
+    # Cargar prompt maestro y del GEM (ambos usan la caché)
     maestro = load_maestro()
     prompt = load_prompt(gem_name)
 
-    # Inyectar prompt maestro
+    # Inyectar prompt maestro primero para permitir que cualquier variable
+    # dentro del prompt maestro también sea reemplazada por las variables provistas
     prompt = prompt.replace("{{PROMPT_MAESTRO}}", maestro)
 
-    # Inyectar variables
+    # Preparar variables e inyectar
+    # Guardamos en un diccionario formateado todas las variables a inyectar
+    formatted_vars = {}
     for key, value in variables.items():
-        placeholder = "{{" + key + "}}"
         if isinstance(value, dict):
             import json
+            formatted_vars[key] = json.dumps(value, ensure_ascii=False, indent=2)
+        else:
+            formatted_vars[key] = str(value)
 
-            value = json.dumps(value, ensure_ascii=False, indent=2)
-        prompt = prompt.replace(placeholder, str(value))
+    # Ordenar las llaves por longitud descendente para evitar conflictos de prefijos
+    # (ej. evitar que {{input}} se confunda con {{input_special}} si se hiciera secuencial)
+    sorted_keys = sorted(formatted_vars.keys(), key=len, reverse=True)
+
+    if sorted_keys:
+        # Compilar patrón regex para buscar todos los placeholders correspondientes a nuestras variables
+        # Soporta opcionalmente espacios en blanco alrededor del nombre de la variable (ej: {{ variable }})
+        pattern = re.compile("|".join(r"\{\{\s*" + re.escape(k) + r"\s*\}\}" for k in sorted_keys))
+        # Reemplazo en un solo paso
+        prompt = pattern.sub(
+            lambda match: formatted_vars[match.group(0).strip("{} \t\n\r")],
+            prompt
+        )
 
     # Validar que no queden variables sin reemplazar
     remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
