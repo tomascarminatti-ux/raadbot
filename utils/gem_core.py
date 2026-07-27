@@ -56,10 +56,23 @@ class GEMClient:
             logger.error(f"Failed to log execution: {e}")
             return None
 
+import functools
+import os
+
+@functools.lru_cache(maxsize=16)
+def _load_contract(contract_path: str, mtime: float) -> Dict[str, Any]:
+    """
+    Helper optimized for contract loading. Caches the schema definition based on
+    file path and modification time (mtime) to avoid redundant disk read/json parsing.
+    """
+    with open(contract_path, "r") as f:
+        return json.load(f)
+
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
-        with open(contract_path, "r") as f:
-            contract = json.load(f)
+        # Fetch file modification time to serve as an invalidation key in our cache
+        mtime = os.path.getmtime(contract_path)
+        contract = _load_contract(contract_path, mtime)
         
         for key in contract:
             if not isinstance(key, str):
