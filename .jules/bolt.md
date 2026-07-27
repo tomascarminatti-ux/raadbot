@@ -1,0 +1,3 @@
+## 2026-07-27 - Single-Pass Template Substitution and Nested Placeholders
+**Learning:** When performing a single-pass regex substitution using `re.sub` for replacing template variables, keys must be sorted by length descending to prevent prefix conflicts. Moreover, if there are nested placeholders like `{{PROMPT_MAESTRO}}` which contain other variables, we must replace them first with `.replace()` before running the single-pass regex pattern, or else variables inside the nested template will not be resolved.
+**Action:** Always replace parent/nested templates first before compiling the variable replacement pattern, and sort placeholder keys by descending length before regex compilation.
