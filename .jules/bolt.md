@@ -1,0 +1,3 @@
+## 2026-07-27 - JSON Schema Contract Validation Caching with mtime Invalidation
+**Learning:** Ingesting and parsing JSON files from disk repeatedly (e.g., contract schema files during autonomous multi-agent loops) is a significant bottleneck. Standard `functools.lru_cache` can cache these structures, but risks serving stale data if contracts are modified on disk. Incorporating `os.path.getmtime(contract_path)` as a parameter in the cached loader function creates an automatic, zero-overhead cache invalidation key when the target file is touched.
+**Action:** Always use a helper decorated with `@functools.lru_cache` taking both the filepath and its `os.path.getmtime` modification timestamp as cache keys to safely optimize disk-bound resource loading in Python projects.
