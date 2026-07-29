@@ -1,0 +1,4 @@
+## 2026-07-29 - Input Validation and Path Traversal Mitigation in FastAPI Endpoints
+**Vulnerability:** Path traversal / directory traversal through unvalidated `search_id`, `candidate_id`, `local_dir`, and `gem_id` parameters. This would allow an attacker to read/write files in arbitrary directories on the server by supplying inputs like `../../etc/passwd` or similar relative paths.
+**Learning:** The endpoints in `api.py` processed IDs and directory paths directly in file system operations (like `os.path.join` and file open/write) without enforcing strict character schemas or path checks.
+**Prevention:** Enforce strict alphanumeric and safe symbol constraints (`^[a-zA-Z0-9_-]+$`) on all identifier fields via Pydantic `field_validator` hooks. For path/directory fields, parse and normalize using `os.path.normpath` and actively block directory traversal components (e.g. `..` and absolute indicators).
