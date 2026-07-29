@@ -1,7 +1,14 @@
 import httpx
 import json
 import logging
+import os
+import functools
 from typing import Dict, Any, Optional
+
+@functools.lru_cache(maxsize=16)
+def _load_contract(contract_path: str, mtime: float) -> Dict[str, Any]:
+    with open(contract_path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -58,8 +65,14 @@ class GEMClient:
 
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
-        with open(contract_path, "r") as f:
-            contract = json.load(f)
+        # Fetch file modification time for auto cache invalidation
+        try:
+            mtime = os.path.getmtime(contract_path)
+        except OSError:
+            logger.warning(f"Could not get mtime for contract path: {contract_path}")
+            return False
+
+        contract = _load_contract(contract_path, mtime)
         
         for key in contract:
             if not isinstance(key, str):
