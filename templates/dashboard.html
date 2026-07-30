@@ -56,9 +56,14 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                            <button id="copy-prompt-btn" onclick="copyPromptToClipboard()" disabled class="text-xs text-slate-500 px-2 py-1 bg-slate-800 rounded transition-all flex items-center gap-1 border border-white/10 opacity-50 cursor-not-allowed" aria-label="Copiar prompt al portapapeles">
+                                <span>📋</span> <span id="copy-btn-text">Copiar</span>
+                            </button>
+                        </div>
                     </div>
-                    <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
+                    <pre id="prompt-content" tabindex="0" aria-label="Contenido del prompt del sistema" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
             </section>
 
@@ -69,12 +74,12 @@
                     <p class="text-xs text-slate-500">Dale instrucciones al orquestador para ajustar el comportamiento de este GEM.</p>
                 </div>
 
-                <div class="flex-1 bg-black/20 rounded-xl p-4 border border-white/5 overflow-y-auto" id="chat-history">
+                <div class="flex-1 bg-black/20 rounded-xl p-4 border border-white/5 overflow-y-auto" id="chat-history" tabindex="0" aria-label="Historial de refinamiento">
                     <div class="text-xs text-slate-500 italic">Chat disponible al seleccionar un GEM...</div>
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                    <textarea id="refine-input" aria-label="Instrucciones para refinar el comportamiento de este GEM" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
                     <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                         <span>🚀</span> Refinar Prompt
                     </button>
@@ -83,7 +88,7 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
+    <div id="live-logs" tabindex="0" aria-label="Logs de Raadbot en tiempo real" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y-auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
         <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
         <div id="logs-container"></div>
     </div>
@@ -139,6 +144,48 @@
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?
                 </div>
             `;
+
+            // Enable and reset Copy button
+            const copyBtn = document.getElementById('copy-prompt-btn');
+            copyBtn.disabled = false;
+            copyBtn.classList.remove('text-slate-500', 'cursor-not-allowed', 'opacity-50');
+            copyBtn.classList.add('text-slate-400', 'hover:text-white');
+            copyBtn.innerHTML = '<span>📋</span> <span id="copy-btn-text">Copiar</span>';
+        }
+
+        async function copyPromptToClipboard() {
+            if (!activeGem) return;
+            const copyBtn = document.getElementById('copy-prompt-btn');
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    try {
+                        await navigator.clipboard.writeText(activeGem.prompt);
+                    } catch (clipErr) {
+                        // Fallback if browser blocks clipboard writing (e.g. headless / permissions)
+                        copyPromptFallback(activeGem.prompt);
+                    }
+                } else {
+                    copyPromptFallback(activeGem.prompt);
+                }
+                copyBtn.innerHTML = '<span>✅</span> <span id="copy-btn-text" class="text-green-400 font-semibold">¡Copiado!</span>';
+                setTimeout(() => {
+                    if (activeGem) {
+                        copyBtn.innerHTML = '<span>📋</span> <span id="copy-btn-text">Copiar</span>';
+                    }
+                }, 2000);
+            } catch (err) {
+                console.error("No se pudo copiar el texto: ", err);
+            }
+        }
+
+        function copyPromptFallback(text) {
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = text;
+            tempTextarea.style.position = 'fixed';
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextarea);
         }
 
         async function refineGem() {
