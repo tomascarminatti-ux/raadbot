@@ -1,0 +1,3 @@
+## 2026-02-21 - [JSON Schema Validator Precompilation]
+**Learning:** Instantiating `jsonschema.Draft7Validator` or dynamically calling `jsonschema.validate` repeatedly for the same schema has significant overhead due to parsing and validator compilation on every call. Precompiling the validator using `validator_for(schema)` once and reusing the compiled validator instance speeds up JSON schema validation in Python by ~13x (from ~2.6s to ~0.19s for 1000 validation runs).
+**Action:** Always precompile and cache/instantiate JSON schema validators during class/pipeline initialization instead of calling `jsonschema.validate` repeatedly in hot paths.
