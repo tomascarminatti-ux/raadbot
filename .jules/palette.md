@@ -1,0 +1,3 @@
+## 2025-02-23 - Robust Clipboard Fallback for Headless and Non-Secure Contexts
+**Learning:** In modern browser design, `navigator.clipboard.writeText` is only supported in secure contexts (HTTPS or localhost) and may throw runtime permissions errors (e.g., `NotAllowedError`) inside headless testing environments like Playwright or CI/CD pipelines. Checking `if (navigator.clipboard)` is insufficient as the object exists but throws an exception upon execution.
+**Action:** Always wrap `navigator.clipboard.writeText` in a try-catch block and fall back to the traditional `document.execCommand('copy')` with a temporary `<textarea>` element to ensure seamless copy-to-clipboard behavior across both standard user browsers and headless/testing environments.
