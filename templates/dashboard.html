@@ -55,10 +55,15 @@
             <section class="flex-1 p-8 overflow-y-auto space-y-6">
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
+                        <div class="flex items-center gap-3">
+                            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
+                            <button id="copy-btn" onclick="copyPrompt()" disabled class="text-xs text-slate-400 hover:text-white px-2 py-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:hover:bg-slate-800 disabled:hover:text-slate-400 rounded transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none" aria-label="Copiar System Prompt al portapapeles">
+                                <span>📋</span> <span id="copy-btn-text">Copiar</span>
+                            </button>
+                        </div>
                         <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
                     </div>
-                    <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
+                    <pre id="prompt-content" tabindex="0" aria-label="Contenido del System Prompt" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
             </section>
 
@@ -69,12 +74,13 @@
                     <p class="text-xs text-slate-500">Dale instrucciones al orquestador para ajustar el comportamiento de este GEM.</p>
                 </div>
 
-                <div class="flex-1 bg-black/20 rounded-xl p-4 border border-white/5 overflow-y-auto" id="chat-history">
+                <div class="flex-1 bg-black/20 rounded-xl p-4 border border-white/5 overflow-y-auto focus-visible:ring-2 focus-visible:ring-blue-500 outline-none" id="chat-history" tabindex="0" aria-label="Historial de conversación">
                     <div class="text-xs text-slate-500 italic">Chat disponible al seleccionar un GEM...</div>
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                    <label for="refine-input" class="sr-only">Instrucciones de refinamiento para el prompt</label>
+                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
                     <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                         <span>🚀</span> Refinar Prompt
                     </button>
@@ -83,7 +89,7 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
+    <div id="live-logs" tabindex="0" aria-label="Logs en tiempo real" class="focus-visible:ring-2 focus-visible:ring-blue-500 outline-none" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
         <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
         <div id="logs-container"></div>
     </div>
@@ -103,6 +109,46 @@
         let gems = [];
         let activeGem = null;
 
+        async function copyPrompt() {
+            if (!activeGem) return;
+            const btn = document.getElementById('copy-btn');
+            const textSpan = document.getElementById('copy-btn-text');
+            let success = false;
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(activeGem.prompt);
+                    success = true;
+                }
+            } catch (err) {
+                console.warn('Clipboard API failed, trying fallback...', err);
+            }
+
+            if (!success) {
+                try {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = activeGem.prompt;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    success = true;
+                } catch (fallbackErr) {
+                    console.error('Fallback copy failed as well: ', fallbackErr);
+                }
+            }
+
+            if (success) {
+                textSpan.innerText = 'Copiado';
+                btn.classList.add('bg-green-600/20', 'text-green-400');
+                setTimeout(() => {
+                    textSpan.innerText = 'Copiar';
+                    btn.classList.remove('bg-green-600/20', 'text-green-400');
+                }, 2000);
+            }
+        }
+
         async function loadGems() {
             try {
                 const res = await fetch('/api/v1/gems');
@@ -116,7 +162,7 @@
         function renderNav() {
             const nav = document.getElementById('gem-nav');
             nav.innerHTML = gems.map(gem => `
-                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
+                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none flex items-center justify-between group" aria-label="Seleccionar módulo ${gem.name}">
                     <span>${gem.name}</span>
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
                 </button>
@@ -134,6 +180,13 @@
             document.getElementById('prompt-content').innerText = activeGem.prompt;
             document.getElementById('send-btn').disabled = false;
             
+            // Reset copy button state
+            const copyBtn = document.getElementById('copy-btn');
+            copyBtn.disabled = false;
+            const textSpan = document.getElementById('copy-btn-text');
+            textSpan.innerText = 'Copiar';
+            copyBtn.classList.remove('bg-green-600/20', 'text-green-400');
+
             document.getElementById('chat-history').innerHTML = `
                 <div class="bg-blue-600/10 border border-blue-500/30 p-3 rounded-lg text-xs leading-relaxed text-blue-200">
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?

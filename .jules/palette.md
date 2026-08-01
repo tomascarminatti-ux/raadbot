@@ -1,0 +1,3 @@
+## 2025-08-01 - Clipboard API Headless Exception Failure Pattern
+**Learning:** Modern `navigator.clipboard.writeText` API can fail or throw security/permission exceptions when executing inside automated or headless browser test sessions (such as Playwright headless chromium), which directly interrupts sequential JS execution if uncaught.
+**Action:** When implementing interactive Copy to Clipboard buttons, wrap modern `navigator.clipboard` inside a secure `try/catch` block and gracefully fall back to a programmatically created `<textarea>` + `document.execCommand('copy')` to guarantee 100% operation rate across both standard and headless environments.
