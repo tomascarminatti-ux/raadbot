@@ -6,6 +6,7 @@ import functools
 import os
 import re
 
+
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
 
@@ -109,9 +110,6 @@ def build_agent_prompt(gem_id: str, payload: dict) -> str:
     # Si no se encontró ningún placeholder de datos en el prompt original, los anexamos al final
     if "{{input}}" not in base_prompt and "{{context}}" not in base_prompt:
         import json
-
-        prompt += (
-            f"\n\n### DATA INPUT:\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
-        )
+        prompt += f"\n\n### DATA INPUT:\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
 
     return prompt

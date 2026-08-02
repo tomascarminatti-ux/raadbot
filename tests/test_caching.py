@@ -1,7 +1,6 @@
 import json
 import os
 import time
-
 from agent.prompt_builder import clear_prompt_caches, load_prompt
 from utils.gem_core import _load_contract_cached, validate_contract
 
@@ -34,7 +33,7 @@ def test_prompt_caching_and_invalidation():
         with open(temp_prompt_path, "w", encoding="utf-8") as f:
             f.write("Modified Prompt Content")
 
-        # Explicitly modify utime to guarantee mtime resolution changes (some filesystems have coarse resolution)
+        # Explicitly modify utime to guarantee mtime resolution changes
         current_mtime = os.path.getmtime(temp_prompt_path)
         os.utime(temp_prompt_path, (current_mtime + 5, current_mtime + 5))
 
@@ -71,11 +70,7 @@ def test_contract_caching_and_invalidation():
         assert validate_contract(data, temp_contract_path) is True
 
         # Modify the schema file on disk
-        modified_schema = {
-            "score": "number",
-            "name": "string",
-            "required_field": "boolean",
-        }
+        modified_schema = {"score": "number", "name": "string", "required_field": "boolean"}
         with open(temp_contract_path, "w", encoding="utf-8") as f:
             json.dump(modified_schema, f)
 

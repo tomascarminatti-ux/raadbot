@@ -1,25 +1,20 @@
-import asyncio
-import json
 import os
+import json
 from contextlib import asynccontextmanager
+from typing import Optional
 
-import httpx
-from fastapi import (
-    BackgroundTasks,
-    FastAPI,
-    HTTPException,
-    WebSocket,
-    WebSocketDisconnect,
-)
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import httpx
+import asyncio
 
 import config
-from agent.drive_client import DriveClient
-from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.gemini_client import GeminiClient
+from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.prompt_builder import clear_prompt_caches
+from agent.drive_client import DriveClient
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
 
@@ -59,11 +54,11 @@ app.add_middleware(
 
 class PipelineRequest(BaseModel):
     search_id: str
-    drive_folder: str | None = None
-    local_dir: str | None = None
-    candidate_id: str | None = None  # Si se quiere procesar solo uno
+    drive_folder: Optional[str] = None
+    local_dir: Optional[str] = None
+    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
-    webhook_url: str | None = None  # Para n8n asíncrono
+    webhook_url: Optional[str] = None  # Para n8n asíncrono
 
 
 class PipelineResponse(BaseModel):
@@ -102,9 +97,7 @@ async def run_pipeline(request: PipelineRequest) -> dict:
     os.makedirs(output_dir, exist_ok=True)
 
     gemini = GeminiClient(api_key=api_key, model=request.model)
-    orchestrator = GEM6Orchestrator(
-        gemini=gemini, search_id=request.search_id, output_dir=output_dir
-    )
+    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
 
     # Ejecución asíncrona no bloqueante
     await orchestrator.run_pipeline(search_inputs, candidates)
@@ -139,7 +132,7 @@ async def background_run_pipeline(request: PipelineRequest):
                         json={
                             "status": "error",
                             "search_id": request.search_id,
-                            "message": str(e),
+                            "message": str(e)
                         },
                         timeout=30.0,
                     )
@@ -171,8 +164,7 @@ class SetupSearchRequest(BaseModel):
     search_id: str
     brief_notes: str
     jd_content: str
-    company_context: str | None = None
-
+    company_context: Optional[str] = None
 
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
@@ -187,13 +179,12 @@ async def setup_search(request: SetupSearchRequest):
     search_inputs = {
         "kickoff_notes": request.brief_notes,
         "brief_jd": request.jd_content,
-        "company_context": request.company_context or "",
+        "company_context": request.company_context or ""
     }
 
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     # Ejecutar GEM 5 directamente
     from agent.prompt_builder import build_gem5_prompt
-
     prompt = build_gem5_prompt(search_inputs)
     result = gemini.run_gem(prompt, gem_name="gem5")
 
@@ -206,14 +197,11 @@ async def setup_search(request: SetupSearchRequest):
     return {
         "status": "success",
         "search_id": request.search_id,
-        "gem5_summary": result.get("data", {}).get(
-            "mandate_summary", "Mandato generado con éxito."
-        ),
+        "gem5_summary": result.get("data", {}).get("mandate_summary", "Mandato generado con éxito.")
     }
 
 
 # --- Dashboard Endpoints ---
-
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard():
@@ -223,7 +211,6 @@ async def get_dashboard():
             return f.read()
     except FileNotFoundError:
         return "Dashboard template not found. Please create templates/dashboard.html"
-
 
 @app.get("/api/v1/gems")
 async def list_gems():
@@ -238,22 +225,18 @@ async def list_gems():
             with open(prompt_path, "r", encoding="utf-8") as f:
                 prompt_content = f.read()
 
-        gems.append(
-            {
-                "id": g,
-                "name": g.upper(),
-                "prompt": prompt_content,
-                "config": config.GEM_CONFIGS.get(g, {}),
-            }
-        )
+        gems.append({
+            "id": g,
+            "name": g.upper(),
+            "prompt": prompt_content,
+            "config": config.GEM_CONFIGS.get(g, {})
+        })
 
     return gems
-
 
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
-
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
@@ -294,7 +277,6 @@ async def refine_gem(request: RefineRequest):
 
     return {"status": "error", "message": "Failed to generate new prompt"}
 
-
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
     await websocket.accept()
@@ -307,7 +289,6 @@ async def websocket_logs(websocket: WebSocket):
         if websocket in active_connections:
             active_connections.remove(websocket)
 
-
 @app.get("/health")
 def health_check():
     return {
@@ -315,5 +296,5 @@ def health_check():
         "agent": "raadbot",
         "version": "3.0.0",
         "model": config.DEFAULT_MODEL,
-        "provider": config.LLM_PROVIDER,
+        "provider": config.LLM_PROVIDER
     }
