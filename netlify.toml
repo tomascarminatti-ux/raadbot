@@ -1,7 +1,5 @@
 [build]
   publish = "."
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[build.environment]
+  NETLIFY_SKIP_SUBMODULES_CHECKOUT = "true"
