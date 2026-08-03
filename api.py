@@ -3,10 +3,10 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -58,6 +58,28 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "candidate_id", mode="before")
+    @classmethod
+    def validate_ids(cls, v):
+        if v is not None:
+            # Prevent path traversal and special file components
+            if ".." in v or "/" in v or "\\" in v:
+                raise ValueError("Path traversal sequences are not allowed in identifiers.")
+        return v
+
+    @field_validator("local_dir", mode="before")
+    @classmethod
+    def validate_local_dir(cls, v):
+        if v is not None:
+            # Normalize backslashes to forward slashes for cross-platform robustness
+            normalized = v.replace("\\", "/")
+            if ".." in normalized:
+                raise ValueError("Directory traversal sequence '..' is not allowed.")
+            if normalized.startswith("/") or (len(normalized) > 1 and normalized[1] == ":"):
+                raise ValueError("Absolute paths are not allowed.")
+            return normalized
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -165,6 +187,14 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id", mode="before")
+    @classmethod
+    def validate_search_id(cls, v):
+        if v is not None:
+            if ".." in v or "/" in v or "\\" in v:
+                raise ValueError("Path traversal sequences are not allowed in search_id.")
+        return v
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -236,6 +266,14 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id", mode="before")
+    @classmethod
+    def validate_gem_id(cls, v):
+        allowed_gems = {"gem1", "gem2", "gem3", "gem4", "gem5"}
+        if v not in allowed_gems:
+            raise ValueError(f"Invalid gem_id. Must be one of {allowed_gems}")
+        return v
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
