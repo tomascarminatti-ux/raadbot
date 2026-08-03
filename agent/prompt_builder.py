@@ -4,21 +4,32 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import functools
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
 
+@functools.lru_cache(maxsize=32)
+def _load_prompt_cached(filepath: str, mtime: float) -> str:
+    """Helper interno cacheado para cargar el contenido de un prompt.
+    La clave del caché incluye mtime para forzar recargas si el archivo cambia en disco.
+    """
+    with open(filepath, "r", encoding="utf-8") as f:
+        return f.read()
+
+
 def load_prompt(gem_name: str) -> str:
-    """Carga un prompt desde el directorio de prompts."""
+    """Carga un prompt desde el directorio de prompts con mtime-based lru_cache."""
     filename = f"{gem_name}.md"
     filepath = os.path.join(PROMPTS_DIR, filename)
 
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Prompt no encontrado: {filepath}")
 
-    with open(filepath, "r", encoding="utf-8") as f:
-        return f.read()
+    # Obtener tiempo de modificación del archivo para invalidación de caché
+    mtime = os.path.getmtime(filepath)
+    return _load_prompt_cached(filepath, mtime)
 
 
 def load_maestro() -> str:
@@ -97,6 +108,9 @@ def build_agent_prompt(gem_id: str, payload: dict) -> str:
     # Si no se encontró ningún placeholder de datos en el prompt original, los anexamos al final
     if "{{input}}" not in base_prompt and "{{context}}" not in base_prompt:
         import json
-        prompt += f"\n\n### DATA INPUT:\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
+
+        prompt += (
+            f"\n\n### DATA INPUT:\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
+        )
 
     return prompt

@@ -1,0 +1,3 @@
+## 2026-03-03 - File modification time (mtime) based LRU Cache Invalidation
+**Learning:** Traditional cache clearing is error-prone when files are modified by end-users or separate processes on disk. In multi-agent pipelines, loading raw prompt templates or JSON schema files repeatedly from disk causes significant I/O latency. Utilizing `functools.lru_cache` keyed on both the file path and its last modification time (`mtime`) provides seamless, automated, and thread-safe cache invalidation without requiring manual clear calls.
+**Action:** When caching disk reads/parsers in Python, pass `mtime = os.path.getmtime(filepath)` as a parameter to the cached function to guarantee automatic invalidation when files change on disk.
