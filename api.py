@@ -1,19 +1,32 @@
-import os
-import json
-from contextlib import asynccontextmanager
-from typing import Optional
-
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import httpx
 import asyncio
+import json
+import os
+import re
+from contextlib import asynccontextmanager
+
+import httpx
+from fastapi import (
+    BackgroundTasks,
+    FastAPI,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+)
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel, field_validator
+
+
+def validate_identifier(v: str) -> str:
+    """Valida que un identificador sea alfanumérico, guiones o guiones bajos para prevenir path traversal."""
+    if not re.match(r"^[a-zA-Z0-9_-]+$", v):
+        raise ValueError("Identifier must be alphanumeric, underscores, or hyphens only.")
+    return v
 
 import config
-from agent.gemini_client import GeminiClient
-from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
+from agent.gem6.orchestrator import GEM6Orchestrator
+from agent.gemini_client import GeminiClient
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
 
@@ -53,11 +66,33 @@ app.add_middleware(
 
 class PipelineRequest(BaseModel):
     search_id: str
-    drive_folder: Optional[str] = None
-    local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    drive_folder: str | None = None
+    local_dir: str | None = None
+    candidate_id: str | None = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
-    webhook_url: Optional[str] = None  # Para n8n asíncrono
+    webhook_url: str | None = None  # Para n8n asíncrono
+
+    @field_validator("search_id")
+    @classmethod
+    def check_search_id(cls, v: str) -> str:
+        return validate_identifier(v)
+
+    @field_validator("candidate_id")
+    @classmethod
+    def check_candidate_id(cls, v: str | None) -> str | None:
+        if v is not None:
+            return validate_identifier(v)
+        return v
+
+    @field_validator("local_dir")
+    @classmethod
+    def check_local_dir(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        normalized = v.replace("\\", "/")
+        if ".." in normalized or normalized.startswith("/") or ":" in normalized:
+            raise ValueError("Directory traversal, absolute paths, or system paths are not allowed in local_dir.")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -163,7 +198,12 @@ class SetupSearchRequest(BaseModel):
     search_id: str
     brief_notes: str
     jd_content: str
-    company_context: Optional[str] = None
+    company_context: str | None = None
+
+    @field_validator("search_id")
+    @classmethod
+    def check_search_id(cls, v: str) -> str:
+        return validate_identifier(v)
 
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
@@ -236,6 +276,11 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id")
+    @classmethod
+    def check_gem_id(cls, v: str) -> str:
+        return validate_identifier(v)
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
