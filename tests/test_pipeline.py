@@ -75,3 +75,40 @@ async def test_pipeline_full_run_with_descartado(mock_gemini, temp_output_dir):
     results = await pipeline.run_full_pipeline(search_inputs, candidates)
 
     assert results["candidates"]["CAND-001"]["decision"] == "DESCARTADO_GEM1"
+
+
+@pytest.mark.asyncio
+async def test_pipeline_compiled_validator_correctness(mock_gemini, temp_output_dir):
+    pipeline = Pipeline(mock_gemini, "SEARCH-2026-001", temp_output_dir)
+    assert pipeline.validator is not None
+
+    # Valid data matching schema
+    valid_data = {
+        "meta": {
+            "search_id": "SEARCH-2026-001",
+            "gem": "GEM_5",
+            "prompt_version": "v1.2",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "sources": ["s1"]
+        },
+        "scores": {"confidence": 8},
+        "blockers": [],
+        "content": {}
+    }
+    # Should not raise exception
+    assert pipeline._validate_output(valid_data, "gem5") is True
+
+    # Invalid data (missing required meta.gem)
+    invalid_data = {
+        "meta": {
+            "search_id": "SEARCH-2026-001",
+            "prompt_version": "v1.2",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "sources": ["s1"]
+        },
+        "scores": {"confidence": 8},
+        "blockers": [],
+        "content": {}
+    }
+    with pytest.raises(ValueError, match="Schema fallido en gem5"):
+        pipeline._validate_output(invalid_data, "gem5")
