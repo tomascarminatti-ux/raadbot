@@ -56,7 +56,12 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-2">
+                            <button id="copy-btn" onclick="copyPrompt()" disabled class="text-xs text-slate-400 hover:text-white disabled:text-slate-600 disabled:cursor-not-allowed px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded border border-white/10 transition-all flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none" aria-label="Copiar instrucciones del System Prompt">
+                                <span id="copy-icon">📋</span> <span id="copy-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        </div>
                     </div>
                     <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
@@ -74,8 +79,9 @@
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
-                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <label for="refine-input" class="sr-only">Instrucciones de refinamiento IA</label>
+                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all placeholder:text-slate-600 focus-visible:ring-2 focus-visible:ring-blue-500" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">
                         <span>🚀</span> Refinar Prompt
                     </button>
                 </div>
@@ -116,7 +122,7 @@
         function renderNav() {
             const nav = document.getElementById('gem-nav');
             nav.innerHTML = gems.map(gem => `
-                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
+                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">
                     <span>${gem.name}</span>
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
                 </button>
@@ -133,12 +139,60 @@
             document.getElementById('current-gem-title').innerText = `${activeGem.name} - ${id}`;
             document.getElementById('prompt-content').innerText = activeGem.prompt;
             document.getElementById('send-btn').disabled = false;
+            document.getElementById('copy-btn').disabled = false;
             
             document.getElementById('chat-history').innerHTML = `
                 <div class="bg-blue-600/10 border border-blue-500/30 p-3 rounded-lg text-xs leading-relaxed text-blue-200">
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?
                 </div>
             `;
+        }
+
+        function copyPrompt() {
+            if (!activeGem) return;
+            const textToCopy = activeGem.prompt;
+            const btn = document.getElementById('copy-btn');
+            const icon = document.getElementById('copy-icon');
+            const txt = document.getElementById('copy-text');
+
+            function showSuccess() {
+                icon.innerText = '✅';
+                txt.innerText = '¡Copiado!';
+                btn.classList.add('border-green-500/50', 'bg-green-500/10', 'text-green-400');
+                setTimeout(() => {
+                    icon.innerText = '📋';
+                    txt.innerText = 'Copiar';
+                    btn.classList.remove('border-green-500/50', 'bg-green-500/10', 'text-green-400');
+                }, 2000);
+            }
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy)
+                    .then(showSuccess)
+                    .catch(err => {
+                        console.error('Failed to copy using navigator.clipboard:', err);
+                        fallbackCopy(textToCopy, showSuccess);
+                    });
+            } else {
+                fallbackCopy(textToCopy, showSuccess);
+            }
+        }
+
+        function fallbackCopy(text, callback) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                callback();
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+            }
+            document.body.removeChild(textArea);
         }
 
         async function refineGem() {

@@ -1,0 +1,3 @@
+## 2026-08-05 - Safe Clipboard Access with Visual Copy Feedback
+**Learning:** Native `navigator.clipboard.writeText` requires a secure context (HTTPS/localhost) and user permission. In headless test environments or legacy browsers, it can fail. Implementing a quick `<textarea>` fallback using `document.execCommand('copy')` guarantees robust copy functionality across all environments. Providing instant visual confirmation (e.g., text/icon change to "¡Copiado!" with green accents) for 2 seconds drastically increases task confidence.
+**Action:** Always wrap clipboard write actions with fallback methods and provide temporary visual success feedback to prevent UI silence.
