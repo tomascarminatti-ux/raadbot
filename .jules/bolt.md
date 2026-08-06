@@ -1,0 +1,3 @@
+## 2026-03-05 - [On-disk Resource Caching with mtime-based LRU Cache Invalidation]
+**Learning:** File-system reads and parsing operations (e.g., prompt files or JSON schema validation schemas) can be safely and heavily cached using Python's `functools.lru_cache`. By using the file's modification time (`os.path.getmtime`) as a parameter to the cached function, we avoid redundant disk I/O while ensuring automatic cache invalidation when a file is modified. It is critical NOT to decorate the `os.path.getmtime` lookup itself with `@lru_cache` to avoid caching the timestamp.
+**Action:** Implement `mtime` checking prior to cached function dispatch, and use `os.utime` in tests to cleanly simulate disk updates without introducing sleep-based flakiness.
