@@ -1,0 +1,3 @@
+## 2026-03-04 - [Mtime-based Cache Invalidation for Schema Contracts]
+**Learning:** Naive `lru_cache` of files loaded from disk can return stale data if file contents are modified (e.g., during tests or dynamic updates). Keying the cache on both the file path and its last modified time (`os.path.getmtime`) provides incredibly fast, robust cache invalidation without requiring manual cache purging, because `os.path.getmtime` uses the extremely fast `stat` system call.
+**Action:** Always include a lightweight file stat modification check as part of the LRU cache key when caching disk-read operations that could dynamically change during the application's runtime.
