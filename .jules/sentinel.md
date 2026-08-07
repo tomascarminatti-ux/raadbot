@@ -1,0 +1,4 @@
+## 2026-08-07 - [Path Traversal in API Request Identifiers and Directories]
+**Vulnerability:** User-controlled parameters (`search_id`, `candidate_id`, `gem_id`, and `local_dir`) could be manipulated to perform path traversal (e.g., passing `../` sequences), leading to directory breakout, arbitrary file loading, or unauthorized directory creation in the local filesystem.
+**Learning:** Standard string parameters in FastAPI endpoints used for constructing file paths or accessing folders should always be validated strictly on the API contract level to prevent path traversal issues.
+**Prevention:** Enforce strict validation on identifiers (alphanumeric plus hyphens and underscores) and reject directory traversal sequences, absolute paths, or invalid drive letters on any custom directory parameters before processing.
