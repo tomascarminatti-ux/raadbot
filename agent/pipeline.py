@@ -4,14 +4,20 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Optional, Any
 
-from jsonschema import validate, ValidationError
+from jsonschema import ValidationError
+from jsonschema.validators import validator_for
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
 from agent.gemini_client import GeminiClient
 from agent.prompt_builder import build_prompt
-from agent.config import THRESHOLDS, MAX_RETRIES_ON_BLOCK, PRICE_PROMPT_1M, PRICE_COMPLETION_1M
+from agent.config import (
+    THRESHOLDS,
+    MAX_RETRIES_ON_BLOCK,
+    PRICE_PROMPT_1M,
+    PRICE_COMPLETION_1M,
+)
 from agent.logger import logger
 
 
@@ -26,6 +32,12 @@ class Pipeline:
         self.search_id = search_id
         self.output_dir = output_dir
         self.schema = self._load_schema()
+
+        # Precompile and cache JSON Schema validator instance
+        self.validator = None
+        if self.schema:
+            val_cls = validator_for(self.schema)
+            self.validator = val_cls(self.schema)
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -136,7 +148,13 @@ class Pipeline:
         if not self.schema or not json_data:
             raise ValueError(f"Output nulo o sin JSON válido en {gem_name}")
         try:
-            validate(instance=json_data, schema=self.schema)
+            # Use precompiled validator for high performance
+            if self.validator:
+                self.validator.validate(json_data)
+            else:
+                from jsonschema import validate
+
+                validate(instance=json_data, schema=self.schema)
             return True
         except ValidationError as e:
             raise ValueError(f"Schema fallido en {gem_name}: {e.message}")
@@ -165,7 +183,9 @@ class Pipeline:
                 return result
             except ValueError as e:
                 if attempt < MAX_RETRIES_ON_BLOCK:
-                    logger.warning(f"⚠️ Error de validación en {gem_name} ({e}). Reintentando {attempt+1}/{MAX_RETRIES_ON_BLOCK}...")
+                    logger.warning(
+                        f"⚠️ Error de validación en {gem_name} ({e}). Reintentando {attempt + 1}/{MAX_RETRIES_ON_BLOCK}..."
+                    )
                     await asyncio.sleep(2)
                 else:
                     logger.error(f"❌ Error definitivo de validación en {gem_name}.")
@@ -192,14 +212,18 @@ class Pipeline:
         score = self._get_score(result.get("json"))
 
         if score is None:
-            logger.error(f"❌ Error parseando score en {gem_name} para {candidate_id}. Fallo automático.")
+            logger.error(
+                f"❌ Error parseando score en {gem_name} para {candidate_id}. Fallo automático."
+            )
             return result, score, False
 
         passed = self._check_gate(gem_name, score)
         if not passed:
-            logger.warning(f"⚠️ {gem_name} score ({score}) < {THRESHOLDS.get(gem_name)} para {candidate_id}. Candidato descartado en este punto.")
+            logger.warning(
+                f"⚠️ {gem_name} score ({score}) < {THRESHOLDS.get(gem_name)} para {candidate_id}. Candidato descartado en este punto."
+            )
         else:
-            pass # console.print(f"[green]  ✅ {gem_name} aprobado para {candidate_id}[/green] (score {score})")
+            pass  # console.print(f"[green]  ✅ {gem_name} aprobado para {candidate_id}[/green] (score {score})")
 
         return result, score, passed
 
@@ -392,14 +416,18 @@ class Pipeline:
         }
 
         # 2. Iterar candidatos en paralelo
-        console.print(f"[bold blue]🚀 Procesando {len(candidates)} candidatos en paralelo...[/bold blue]")
+        console.print(
+            f"[bold blue]🚀 Procesando {len(candidates)} candidatos en paralelo...[/bold blue]"
+        )
 
         async def process_candidate(cid, cinputs):
             try:
                 logger.info(f"👤 Iniciando pipeline para candidato: {cid}")
                 return cid, await self.run_candidate_pipeline(cid, cinputs, gem5_result)
             except Exception as e:
-                logger.error(f"❌ Error crítico procesando candidato {cid}: {e}", exc_info=True)
+                logger.error(
+                    f"❌ Error crítico procesando candidato {cid}: {e}", exc_info=True
+                )
                 return cid, {
                     "candidate_id": cid,
                     "decision": f"ERROR_EJECUCION: {e}",

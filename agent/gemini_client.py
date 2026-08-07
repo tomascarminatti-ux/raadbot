@@ -63,7 +63,9 @@ class GeminiClient:
             except Exception as e:
                 if attempt < max_retries:
                     wait = 2 ** (attempt + 1)
-                    logger.warning(f"⚠️ Error Gemini (intento {attempt + 1}/{max_retries + 1}): {e}")
+                    logger.warning(
+                        f"⚠️ Error Gemini (intento {attempt + 1}/{max_retries + 1}): {e}"
+                    )
                     logger.info(f"⏳ Reintentando en {wait}s...")
                     time.sleep(wait)
                 else:
@@ -112,7 +114,9 @@ class GeminiClient:
             except Exception as e:
                 if attempt < max_retries:
                     wait = 2 ** (attempt + 1)
-                    logger.warning(f"⚠️ Error Gemini Async (intento {attempt + 1}/{max_retries + 1}): {e}")
+                    logger.warning(
+                        f"⚠️ Error Gemini Async (intento {attempt + 1}/{max_retries + 1}): {e}"
+                    )
                     logger.info(f"⏳ Reintentando en {wait}s...")
                     await asyncio.sleep(wait)
                 else:
