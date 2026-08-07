@@ -4,6 +4,7 @@ utils.py – Utilidades para carga de archivos y manejo de datos.
 
 import os
 
+
 def load_local_inputs(local_dir: str) -> tuple[dict, dict]:
     """
     Lee inputs desde carpeta local.
