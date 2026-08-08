@@ -1,2 +1,0 @@
-# Redirect rules to prevent 404s
-/  /index.html  200
