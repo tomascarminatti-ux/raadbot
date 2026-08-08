@@ -1,9 +1,9 @@
 import pytest
 import os
-import json
 from unittest.mock import AsyncMock, MagicMock
 from agent.pipeline import Pipeline
 from agent.gemini_client import GeminiClient
+
 
 @pytest.fixture
 def mock_gemini():
@@ -11,11 +11,13 @@ def mock_gemini():
     client.run_gem_async = AsyncMock()
     return client
 
+
 @pytest.fixture
 def temp_output_dir(tmp_path):
     d = tmp_path / "outputs"
     d.mkdir()
     return str(d)
+
 
 @pytest.mark.asyncio
 async def test_pipeline_run_gem5(mock_gemini, temp_output_dir):
@@ -28,14 +30,14 @@ async def test_pipeline_run_gem5(mock_gemini, temp_output_dir):
                 "gem": "GEM_5",
                 "prompt_version": "v1.2",
                 "timestamp": "2024-01-01T00:00:00Z",
-                "sources": ["brief_jd.txt"]
+                "sources": ["brief_jd.txt"],
             },
             "scores": {"confidence": 9},
             "blockers": [],
-            "content": {"problema_real_del_rol": "Test challenge"}
+            "content": {"problema_real_del_rol": "Test challenge"},
         },
         "markdown": "# GEM5 Output",
-        "usage": {"prompt_tokens": 100, "candidates_tokens": 50}
+        "usage": {"prompt_tokens": 100, "candidates_tokens": 50},
     }
 
     search_inputs = {"jd_text": "Need a CEO"}
@@ -44,6 +46,7 @@ async def test_pipeline_run_gem5(mock_gemini, temp_output_dir):
     assert result["json"]["scores"]["confidence"] == 9
     assert os.path.exists(os.path.join(temp_output_dir, "gem5.json"))
     assert os.path.exists(os.path.join(temp_output_dir, "pipeline_state.json"))
+
 
 @pytest.mark.asyncio
 async def test_pipeline_full_run_with_descartado(mock_gemini, temp_output_dir):
@@ -54,19 +57,35 @@ async def test_pipeline_full_run_with_descartado(mock_gemini, temp_output_dir):
         # GEM5
         {
             "json": {
-                "meta": {"search_id": "SEARCH-2026-001", "gem": "GEM_5", "prompt_version": "v1.2", "timestamp": "2024-01-01T00:00:00Z", "sources": ["s1"]},
-                "scores": {"confidence": 8}, "blockers": [], "content": {}
+                "meta": {
+                    "search_id": "SEARCH-2026-001",
+                    "gem": "GEM_5",
+                    "prompt_version": "v1.2",
+                    "timestamp": "2024-01-01T00:00:00Z",
+                    "sources": ["s1"],
+                },
+                "scores": {"confidence": 8},
+                "blockers": [],
+                "content": {},
             },
-            "usage": {"prompt_tokens": 10, "candidates_tokens": 10}
+            "usage": {"prompt_tokens": 10, "candidates_tokens": 10},
         },
         # GEM1 for Candidate 1 (fail score)
         {
             "json": {
-                "meta": {"search_id": "SEARCH-2026-001", "gem": "GEM_1", "prompt_version": "v1.2", "timestamp": "2024-01-01T00:00:00Z", "sources": ["s1"]},
-                "scores": {"score_dimension": 4, "confidence": 8}, "blockers": [], "content": {}
+                "meta": {
+                    "search_id": "SEARCH-2026-001",
+                    "gem": "GEM_1",
+                    "prompt_version": "v1.2",
+                    "timestamp": "2024-01-01T00:00:00Z",
+                    "sources": ["s1"],
+                },
+                "scores": {"score_dimension": 4, "confidence": 8},
+                "blockers": [],
+                "content": {},
             },
-            "usage": {"prompt_tokens": 10, "candidates_tokens": 10}
-        }
+            "usage": {"prompt_tokens": 10, "candidates_tokens": 10},
+        },
     ]
 
     search_inputs = {"jd_text": "jd"}
@@ -75,3 +94,30 @@ async def test_pipeline_full_run_with_descartado(mock_gemini, temp_output_dir):
     results = await pipeline.run_full_pipeline(search_inputs, candidates)
 
     assert results["candidates"]["CAND-001"]["decision"] == "DESCARTADO_GEM1"
+
+
+def test_pipeline_compiled_validator_correctness(mock_gemini, temp_output_dir):
+    pipeline = Pipeline(mock_gemini, "SEARCH-2026-001", temp_output_dir)
+
+    # Verify compiled validator is instantiated on initialization
+    assert pipeline.validator is not None
+
+    # Test a valid JSON structure matching the schema
+    valid_data = {
+        "meta": {
+            "search_id": "SEARCH-2026-001",
+            "gem": "GEM_1",
+            "prompt_version": "v1.2",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "sources": ["source1"],
+        },
+        "scores": {"score_dimension": 8, "confidence": 9},
+        "blockers": [],
+        "content": {},
+    }
+    assert pipeline._validate_output(valid_data, "gem1") is True
+
+    # Test an invalid JSON structure
+    invalid_data = {"meta": {"search_id": "INVALID-ID-PATTERN", "gem": "GEM_1"}}
+    with pytest.raises(ValueError, match="Schema fallido"):
+        pipeline._validate_output(invalid_data, "gem1")
