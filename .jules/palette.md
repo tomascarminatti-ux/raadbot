@@ -1,0 +1,3 @@
+## 2026-03-01 - [Keyboard & Clipboard Accessibility]
+**Learning:** When adding copy-to-clipboard actions to read-only content viewers, ensuring keyboard navigability is key. Providing a screen-reader-accessible ARIA-label and disabled/enabled states that prevent useless clicks prior to active module selection ensures robust UX. In addition, providing a visually-hidden screen-reader-only label for multiline textareas like `#refine-input` using standard HTML 'for' attributes helps screen reader users understand dynamic context adjustments.
+**Action:** Always pair interactive status buttons with meaningful labels, and wrap complex form textareas with a standard `<label class="sr-only">` rather than relying solely on placeholders or visual headers.
