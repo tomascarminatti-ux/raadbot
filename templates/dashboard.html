@@ -56,7 +56,12 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-2">
+                            <button id="copy-btn" disabled onclick="copyPrompt()" class="text-xs text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed px-2 py-1 rounded flex items-center gap-1 transition-all" aria-label="Copiar instrucciones del GEM al portapapeles">
+                                <span id="copy-icon">📋</span> <span id="copy-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        </div>
                     </div>
                     <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
@@ -74,6 +79,7 @@
                 </div>
 
                 <div class="space-y-3">
+                    <label for="refine-input" class="sr-only">Instrucciones de refinamiento para el prompt del GEM</label>
                     <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
                     <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                         <span>🚀</span> Refinar Prompt
@@ -133,12 +139,47 @@
             document.getElementById('current-gem-title').innerText = `${activeGem.name} - ${id}`;
             document.getElementById('prompt-content').innerText = activeGem.prompt;
             document.getElementById('send-btn').disabled = false;
+            document.getElementById('copy-btn').disabled = false;
             
             document.getElementById('chat-history').innerHTML = `
                 <div class="bg-blue-600/10 border border-blue-500/30 p-3 rounded-lg text-xs leading-relaxed text-blue-200">
                     <strong>Soporte de Agente:</strong> Estoy listo para ayudarte a refinar las instrucciones de <strong>${activeGem.name}</strong>. ¿Qué cambio te gustaría implementar?
                 </div>
             `;
+        }
+
+        async function copyPrompt() {
+            if (!activeGem) return;
+            const btn = document.getElementById('copy-btn');
+            const textSpan = document.getElementById('copy-text');
+            const iconSpan = document.getElementById('copy-icon');
+
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(activeGem.prompt);
+                } else {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = activeGem.prompt;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                }
+
+                textSpan.innerText = 'Copiado';
+                iconSpan.innerText = '✅';
+                btn.classList.add('bg-green-600/20', 'text-green-400');
+
+                setTimeout(() => {
+                    textSpan.innerText = 'Copiar';
+                    iconSpan.innerText = '📋';
+                    btn.classList.remove('bg-green-600/20', 'text-green-400');
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+            }
         }
 
         async function refineGem() {
