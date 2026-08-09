@@ -3,10 +3,11 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+import re
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -58,6 +59,37 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id")
+    @classmethod
+    def validate_search_id(cls, v: str) -> str:
+        # SECURITY: Prevent path traversal by strictly requiring alphanumeric/dashes/underscores.
+        if not re.match(r"^[a-zA-Z0-9_-]+$", v):
+            raise ValueError("search_id debe ser alfanumérico con guiones o guiones bajos (sin caracteres de ruta)")
+        return v
+
+    @field_validator("candidate_id")
+    @classmethod
+    def validate_candidate_id(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        # SECURITY: Prevent path traversal by strictly requiring alphanumeric/dashes/underscores.
+        if not re.match(r"^[a-zA-Z0-9_-]+$", v):
+            raise ValueError("candidate_id debe ser alfanumérico con guiones o guiones bajos (sin caracteres de ruta)")
+        return v
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        # SECURITY: Prevent directory traversal by rejecting '..' and normalizing path separators.
+        normalized = v.replace("\\", "/")
+        if ".." in normalized:
+            raise ValueError("No se permiten secuencias de escape de directorio '..'")
+        if normalized.startswith("/") or ":" in normalized:
+            raise ValueError("No se permiten rutas absolutas o letras de unidad de disco")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -165,6 +197,14 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id")
+    @classmethod
+    def validate_search_id(cls, v: str) -> str:
+        # SECURITY: Prevent path traversal by strictly requiring alphanumeric/dashes/underscores.
+        if not re.match(r"^[a-zA-Z0-9_-]+$", v):
+            raise ValueError("search_id debe ser alfanumérico con guiones o guiones bajos (sin caracteres de ruta)")
+        return v
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -236,6 +276,14 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id")
+    @classmethod
+    def validate_gem_id(cls, v: str) -> str:
+        # SECURITY: Prevent path traversal by strictly requiring alphanumeric/dashes/underscores.
+        if not re.match(r"^[a-zA-Z0-9_-]+$", v):
+            raise ValueError("gem_id debe ser alfanumérico con guiones o guiones bajos (sin caracteres de ruta)")
+        return v
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
