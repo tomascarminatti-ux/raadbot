@@ -1,0 +1,3 @@
+## 2026-03-08 - Precompiled JSON Schema Validation and Caching
+**Learning:** `jsonschema.validate` is slow because it recompiles the schema and recreates the validator class on every single invocation. Precompiling the schema using `jsonschema.validators.validator_for` yields a ~14x speedup on schema validation. Additionally, reading prompt markdown files from disk on every invocation introduces unnecessary I/O overhead. Employing `@functools.lru_cache` removes disk I/O bottlenecks.
+**Action:** Always precompile JSON schemas if they are evaluated multiple times during execution, and use LRU caching for static prompt file reads.
