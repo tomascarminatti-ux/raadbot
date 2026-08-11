@@ -4,11 +4,13 @@ prompt_builder.py – Construye prompts finales inyectando variables de template
 
 import os
 import re
+import functools
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
 
+@functools.lru_cache(maxsize=32)
 def load_prompt(gem_name: str) -> str:
     """Carga un prompt desde el directorio de prompts."""
     filename = f"{gem_name}.md"
@@ -19,6 +21,11 @@ def load_prompt(gem_name: str) -> str:
 
     with open(filepath, "r", encoding="utf-8") as f:
         return f.read()
+
+
+def clear_prompt_caches():
+    """Limpia el cache de carga de prompts."""
+    load_prompt.cache_clear()
 
 
 def load_maestro() -> str:
@@ -97,6 +104,9 @@ def build_agent_prompt(gem_id: str, payload: dict) -> str:
     # Si no se encontró ningún placeholder de datos en el prompt original, los anexamos al final
     if "{{input}}" not in base_prompt and "{{context}}" not in base_prompt:
         import json
-        prompt += f"\n\n### DATA INPUT:\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
+
+        prompt += (
+            f"\n\n### DATA INPUT:\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
+        )
 
     return prompt
