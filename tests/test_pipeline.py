@@ -1,6 +1,5 @@
 import pytest
 import os
-import json
 from unittest.mock import AsyncMock, MagicMock
 from agent.pipeline import Pipeline
 from agent.gemini_client import GeminiClient
