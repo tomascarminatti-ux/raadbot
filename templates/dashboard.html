@@ -83,8 +83,11 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
+    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; max-height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
+        <div id="live-logs-header" style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;" class="flex justify-between items-center">
+            <span>🚀 Raadbot Live - GEMs en tiempo real</span>
+            <button id="toggle-logs-btn" onclick="toggleLogs()" aria-label="Minimizar panel de registros en vivo" aria-expanded="true" class="text-green-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 rounded px-1 leading-none text-base">─</button>
+        </div>
         <div id="logs-container"></div>
     </div>
     <script>
@@ -191,6 +194,34 @@
                 btn.disabled = false;
                 btn.innerHTML = '<span>🚀</span> Refinar Prompt';
                 history.scrollTop = history.scrollHeight;
+            }
+        }
+
+        function toggleLogs() {
+            const container = document.getElementById('logs-container');
+            const btn = document.getElementById('toggle-logs-btn');
+            const liveLogs = document.getElementById('live-logs');
+            const header = document.getElementById('live-logs-header');
+            const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+
+            if (isExpanded) {
+                container.style.display = 'none';
+                liveLogs.style.height = 'auto';
+                header.style.borderBottom = 'none';
+                header.style.marginBottom = '0px';
+                header.style.paddingBottom = '0px';
+                btn.setAttribute('aria-expanded', 'false');
+                btn.setAttribute('aria-label', 'Expandir panel de registros en vivo');
+                btn.innerText = '┼';
+            } else {
+                container.style.display = 'block';
+                liveLogs.style.height = '300px';
+                header.style.borderBottom = '1px solid #0f0';
+                header.style.marginBottom = '10px';
+                header.style.paddingBottom = '5px';
+                btn.setAttribute('aria-expanded', 'true');
+                btn.setAttribute('aria-label', 'Minimizar panel de registros en vivo');
+                btn.innerText = '─';
             }
         }
 
