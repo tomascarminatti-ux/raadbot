@@ -50,3 +50,32 @@ def test_real_contracts():
             with open(path, "r") as f:
                 data = json.load(f)
                 assert isinstance(data, dict)
+
+def test_validate_contract_cache_performance():
+    """Verify caching hit and measure execution performance for validate_contract."""
+    from utils.gem_core import _load_contract_cached
+    _load_contract_cached.cache_clear()
+
+    contract = {"name": "string", "score": "number"}
+    contract_path = "tests/temp_perf_contract.json"
+    with open(contract_path, "w") as f:
+        json.dump(contract, f)
+
+    try:
+        valid_data = {"name": "Test", "score": 10}
+
+        # First call loads contract into cache
+        assert validate_contract(valid_data, contract_path) is True
+        info1 = _load_contract_cached.cache_info()
+        assert info1.hits == 0
+        assert info1.misses >= 1
+
+        # Subsequent calls hit LRU cache
+        for _ in range(100):
+            assert validate_contract(valid_data, contract_path) is True
+
+        info2 = _load_contract_cached.cache_info()
+        assert info2.hits >= 100
+    finally:
+        if os.path.exists(contract_path):
+            os.remove(contract_path)
