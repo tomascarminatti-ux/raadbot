@@ -65,8 +65,9 @@ def _load_contract_cached(contract_path: str) -> Dict[str, Any]:
 
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
-        # Optimization: Use cached contract schema to avoid repeated disk I/O and JSON parsing per step
-        contract = _load_contract_cached(contract_path)
+        # Optimization: Use cached contract schema to avoid repeated disk I/O and JSON parsing per step.
+        # .copy() prevents caller mutations from altering the cached dictionary.
+        contract = _load_contract_cached(contract_path).copy()
         
         for key in contract:
             if not isinstance(key, str):
