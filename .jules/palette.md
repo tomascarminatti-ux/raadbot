@@ -1,0 +1,3 @@
+## 2026-08-16 - Textarea Submission UX and Focus Contrast
+**Learning:** Multi-line textareas in interactive dashboard panels often lack keyboard submission shortcuts (such as Ctrl+Enter), forcing users to switch input modalities to click action buttons. Additionally, dark theme inputs require explicit text color utility classes (`text-slate-200`) and focus indicators (`focus-visible:ring-2`) for accessibility and contrast across browsers.
+**Action:** When adding or enhancing form textareas in dark dashboards, always attach a `Ctrl+Enter` keydown event handler, visual keyboard shortcut indicators (`<kbd>`), and explicit `aria-label` / `focus-visible` ring styling.
