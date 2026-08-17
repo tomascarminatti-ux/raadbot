@@ -1,6 +1,7 @@
 import pytest
 from pydantic import ValidationError
-from api import PipelineRequest, SetupSearchRequest, RefineRequest
+
+from api import PipelineRequest, RefineRequest, SetupSearchRequest
 
 
 def test_pipeline_request_valid():
