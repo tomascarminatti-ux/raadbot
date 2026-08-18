@@ -56,15 +56,24 @@ class GEMClient:
             logger.error(f"Failed to log execution: {e}")
             return None
 
+import functools
+import os
+
+@functools.lru_cache(maxsize=32)
+def _load_contract_cached(path: str, mtime: float) -> dict:
+    """Load JSON contract with mtime-based LRU caching to eliminate redundant disk I/O."""
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
-        with open(contract_path, "r") as f:
-            contract = json.load(f)
-        
-        for key in contract:
+        # Cache contract loading using file modification time as cache key component
+        mtime = os.path.getmtime(contract_path)
+        contract = _load_contract_cached(contract_path, mtime)
+
+        for key, expected_type in contract.items():
             if not isinstance(key, str):
                 continue
-            expected_type = contract[key]
             if key not in data:
                 logger.warning(f"Contract Violation: Missing key '{key}'")
                 return False
@@ -75,7 +84,7 @@ def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
             if expected_type == "string" and not isinstance(val, str): return False
             if expected_type == "object" and not isinstance(val, dict): return False
             if expected_type == "boolean" and not isinstance(val, bool): return False
-            
+
         return True
     except Exception as e:
         logger.error(f"Contract validation error: {e}")

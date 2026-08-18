@@ -1,0 +1,3 @@
+## 2026-08-18 - Caching JSON Contract File Loading with mtime LRU
+**Learning:** Contract schema validation is called repeatedly during multi-step agent pipeline orchestration. Loading the schema file from disk and parsing JSON on every validation step introduces significant redundant I/O and parsing overhead (~0.0435ms per call). Using `@functools.lru_cache` keyed on file path and `os.path.getmtime` eliminates disk reads while guaranteeing invalidation when schema files are modified.
+**Action:** Always wrap file-based configuration/schema readers in an mtime-aware LRU cache when invoked in high-frequency execution loops.
