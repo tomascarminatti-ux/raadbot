@@ -222,9 +222,11 @@
                 }
 
                 btnText.innerText = '✅ Copiado!';
+                btn.setAttribute('aria-label', 'Prompt del sistema copiado al portapapeles');
                 btn.classList.add('text-green-400');
                 setTimeout(() => {
                     btnText.innerText = 'Copiar';
+                    btn.setAttribute('aria-label', 'Copiar prompt del sistema');
                     btn.classList.remove('text-green-400');
                 }, 2000);
             } catch (err) {
