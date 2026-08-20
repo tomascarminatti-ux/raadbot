@@ -1,0 +1,10 @@
+[build]
+  publish = "."
+
+[build.environment]
+  GIT_SUBMODULES = "false"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
