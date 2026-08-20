@@ -1,0 +1,3 @@
+## 2026-02-21 - Pre-compiling JSON Schema Validator in Pipeline
+**Learning:** Re-calling `jsonschema.validate(instance, schema)` recreates and recompiles the schema validator validator class on every function call. Pre-compiling the validator during class initialization with `jsonschema.validators.validator_for(schema)(schema)` and reusing it via `validator.validate(data)` yields a ~13.8x - 14.3x execution speedup (e.g. 5.36s vs 0.38s over 2,000 iterations).
+**Action:** Always pre-compile JSON Schema validators when schema validation is performed repeatedly on hot execution paths or within loops.
