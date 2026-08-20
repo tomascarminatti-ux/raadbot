@@ -12,6 +12,12 @@ import config
 
 console = Console()
 
+# Pre-compiled regular expressions for response parsing
+JSON_BLOCK_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
+ANY_JSON_RE = re.compile(r"(\{.*\})", re.DOTALL)
+TRAILING_COMMA_RE = re.compile(r",\s*([\]}])")
+
+
 class GeminiUsage(TypedDict):
     prompt_tokens: int
     candidates_tokens: int
@@ -163,17 +169,17 @@ class GeminiClient:
         markdown = raw_text
 
         # Intentar encontrar bloques de código JSON
-        json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", raw_text, re.DOTALL)
+        json_match = JSON_BLOCK_RE.search(raw_text)
         
         if not json_match:
             # Intentar encontrar cualquier bloque que empiece con { y termine con }
-            json_match = re.search(r"(\{.*\})", raw_text, re.DOTALL)
+            json_match = ANY_JSON_RE.search(raw_text)
 
         if json_match:
             json_str = json_match.group(1).strip()
             
             # Limpieza básica de JSON: eliminar comas finales antes de cerrar llaves/corchetes
-            json_str = re.sub(r",\s*([\]}])", r"\1", json_str)
+            json_str = TRAILING_COMMA_RE.sub(r"\1", json_str)
             
             try:
                 json_data = json.loads(json_str)
