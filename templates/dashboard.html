@@ -74,8 +74,13 @@
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
-                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <div class="relative">
+                        <textarea id="refine-input" rows="3" aria-label="Instrucción para refinar prompt" class="w-full bg-slate-800 text-slate-200 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none transition-all placeholder:text-slate-500" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                        <div class="text-[10px] text-slate-500 text-right mt-1 flex items-center justify-end gap-1 select-none">
+                            <kbd class="px-1 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-400 font-mono">Ctrl</kbd> + <kbd class="px-1 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-400 font-mono">Enter</kbd> para enviar
+                        </div>
+                    </div>
+                    <button onclick="refineGem()" id="send-btn" disabled aria-label="Refinar Prompt con IA" class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-blue-500">
                         <span>🚀</span> Refinar Prompt
                     </button>
                 </div>
@@ -83,8 +88,11 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
-        <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
+    <div id="live-logs" style="position:fixed; bottom:20px; right:410px; width:380px; max-height:240px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:1px solid #0f0; border-radius:10px; z-index:100; opacity:0.9;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:8px; font-weight:bold;">
+            <span>🚀 Raadbot Live</span>
+            <button id="toggle-logs-btn" onclick="toggleLogs()" aria-expanded="true" aria-label="Minimizar logs en vivo" style="background:none; border:none; color:#0f0; cursor:pointer;" class="focus-visible:ring-1 focus-visible:ring-green-400 font-mono text-xs">[−]</button>
+        </div>
         <div id="logs-container"></div>
     </div>
     <script>
@@ -193,6 +201,31 @@
                 history.scrollTop = history.scrollHeight;
             }
         }
+
+        function toggleLogs() {
+            const container = document.getElementById('logs-container');
+            const btn = document.getElementById('toggle-logs-btn');
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                btn.innerText = '[−]';
+                btn.setAttribute('aria-expanded', 'true');
+            } else {
+                container.style.display = 'none';
+                btn.innerText = '[+]';
+                btn.setAttribute('aria-expanded', 'false');
+            }
+        }
+
+        // Keyboard shortcut for prompt refinement
+        document.getElementById('refine-input').addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                const btn = document.getElementById('send-btn');
+                if (!btn.disabled) {
+                    refineGem();
+                }
+            }
+        });
 
         // Init
         loadGems();
