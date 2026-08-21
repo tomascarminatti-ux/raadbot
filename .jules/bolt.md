@@ -1,0 +1,3 @@
+## 2026-02-25 - Prompt Template LRU Caching and Invalidation
+**Learning:** In LLM pipelines, prompt templates like `00_prompt_maestro` and `gemX.md` are repeatedly read from disk during candidate processing. Decorating `load_prompt` with `@functools.lru_cache(maxsize=32)` eliminates disk I/O overhead (>110x speedup for prompt reads). However, explicit cache invalidation (`cache_clear()`) must be wired into API endpoints (e.g. `/api/v1/gems/refine`) that update templates on disk to prevent stale prompt usage.
+**Action:** When adding memory caching to files read from disk, always check for API or pipeline mutation entry points and invoke cache invalidation functions to ensure correctness.
