@@ -26,7 +26,7 @@
             </h1>
             <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest font-semibold">Industrial Orchestrator</p>
         </div>
-        <nav class="flex-1 p-4 space-y-2 overflow-y-auto" id="gem-nav">
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto" id="gem-nav" aria-label="Módulos GEM">
             <!-- GEMS will be loaded here -->
             <div class="animate-pulse space-y-2">
                 <div class="h-10 bg-slate-800 rounded"></div>
@@ -73,9 +73,12 @@
                     <div class="text-xs text-slate-500 italic">Chat disponible al seleccionar un GEM...</div>
                 </div>
 
-                <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
-                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                <div class="space-y-2">
+                    <textarea id="refine-input" rows="3" aria-label="Instrucción de refinamiento" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm text-slate-200 focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none transition-all placeholder:text-slate-500" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                    <div class="flex justify-end text-[10px] text-slate-500">
+                        <span>Presiona <kbd class="px-1 py-0.5 bg-slate-700 text-slate-300 rounded font-mono">Ctrl+Enter</kbd> para enviar</span>
+                    </div>
+                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-blue-500" aria-label="Enviar refinamiento de prompt">
                         <span>🚀</span> Refinar Prompt
                     </button>
                 </div>
@@ -83,7 +86,7 @@
         </div>
     </main>
 
-    <div id="live-logs" style="position:fixed; bottom:20px; right:20px; width:400px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
+    <div id="live-logs" style="position:fixed; bottom:20px; right:410px; width:380px; height:300px; background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; overflow-y:auto; border:2px solid #0f0; border-radius:10px; z-index:1000; opacity:0.9;">
         <div style="border-bottom:1px solid #0f0; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">🚀 Raadbot Live - GEMs en tiempo real</div>
         <div id="logs-container"></div>
     </div>
@@ -193,6 +196,15 @@
                 history.scrollTop = history.scrollHeight;
             }
         }
+
+        document.getElementById('refine-input').addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                if (!document.getElementById('send-btn').disabled) {
+                    refineGem();
+                }
+            }
+        });
 
         // Init
         loadGems();
