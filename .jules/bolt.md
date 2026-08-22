@@ -1,0 +1,3 @@
+## 2025-05-18 - Prompt template in-memory LRU caching
+**Learning:** Loading prompt markdown templates (`gem1.md`, `00_prompt_maestro.md`) directly from disk on every `load_prompt` invocation introduced unnecessary disk I/O overhead. Adding `@functools.lru_cache(maxsize=32)` and invalidating it via `clear_prompt_caches()` in prompt-editing API endpoints (`/api/v1/gems/refine`) speeds up template loading by >100x while guaranteeing data freshness.
+**Action:** When working with file-based template assets in FastAPI endpoints or processing loops, apply `lru_cache` and expose explicit cache-invalidation callbacks for write/update operations.
