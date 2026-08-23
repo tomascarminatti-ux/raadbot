@@ -1,0 +1,4 @@
+## 2025-05-18 - Input Validation & Path Traversal Prevention in API Requests
+**Vulnerability:** API request endpoints accepting `search_id`, `candidate_id`, `gem_id`, and `local_dir` did not sanitize input parameters, allowing path traversal vectors (`..`, absolute paths) when manipulating filesystem paths in file read/write operations.
+**Learning:** Pydantic models used as API request payloads need explicit field validators using `field_validator` to enforce strict character formats (alphanumeric + underscore/hyphen) on user-supplied identifiers and sanitize directory paths by checking normalized components.
+**Prevention:** Always validate all path-related and identifier parameters at the Pydantic request schema boundary using regex patterns and path normalization before passing them downstream to file operations.
