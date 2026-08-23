@@ -64,7 +64,7 @@ class GEMClient:
 
 @functools.lru_cache(maxsize=32)
 def _load_contract_cached(contract_path: str, mtime: float) -> dict:
-    """Carga y parsea el contrato JSON desde disco utilizando LRU cache."""
+    """Loads and parses JSON contract schema from disk using LRU cache."""
     with open(contract_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
