@@ -1,0 +1,4 @@
+## 2025-05-20 - Path Traversal Invalidation via Pydantic Field Validation
+**Vulnerability:** API request models (`PipelineRequest`, `SetupSearchRequest`, `RefineRequest`) accepted unvalidated string paths and IDs (`search_id`, `candidate_id`, `gem_id`, `local_dir`) which were directly used in `os.path.join` and file path formatting (`f"prompts/{gem_id}.md"`), permitting path traversal outside intended workspaces.
+**Learning:** FastAPI endpoints that map string fields to file system paths require explicit schema-level input validation using Pydantic `@field_validator`s rather than relying on downstream route handling.
+**Prevention:** Always enforce strict regular expression checks (e.g. `^[a-zA-Z0-9_-]+$`) on identifier parameters and normalize path separators to prevent directory traversal sequences (`..`), leading slashes, or drive letters.
