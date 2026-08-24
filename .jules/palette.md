@@ -1,0 +1,3 @@
+## 2026-08-24 - Collapsible Live Logs Panel with Accessible Toggle
+**Learning:** Fixed position overlay panels (such as live log terminals) can obscure interactive controls like textareas or buttons on smaller viewports or standard layouts. Adding an accessible toggle button (`#toggle-logs-btn`) managing `aria-expanded` and dynamic `aria-label` along with horizontal offset positioning (`right: 410px`) avoids UI overlap while preserving keyboard navigation and screen-reader usability.
+**Action:** Always verify overlay panel positions against interactive chat/input sections and provide accessible collapse/expand controls.
