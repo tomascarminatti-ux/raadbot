@@ -1,0 +1,4 @@
+## 2026-03-30 - Path Traversal Prevention via Request Model Validation
+**Vulnerability:** API endpoints (`/api/v1/run`, `/api/v1/search/setup`, `/api/v1/gems/refine`) accepted unvalidated string parameters (`search_id`, `candidate_id`, `local_dir`, `gem_id`) directly used in `os.path.join` and file system operations, enabling directory traversal (`..`) to read or write arbitrary files.
+**Learning:** Pydantic models handling paths or file identifiers must enforce strict field validation rules (regex patterns for IDs and path normalization checks for directory paths) before passing user input to file operations.
+**Prevention:** Apply `@field_validator` on Pydantic request DTOs to enforce strict alphanumeric identifier patterns (`^[a-zA-Z0-9_-]+$`) and reject relative/absolute directory traversal sequences (`..`, leading `/`, drive letters) in folder paths.
