@@ -1,0 +1,3 @@
+## 2025-05-18 - Refine Prompt Input Accessibility & Contrast
+**Learning:** Dark mode textareas in Tailwind CSS without explicit text color classes (e.g., `text-slate-200`) can default to browser user-agent styles with low contrast text against dark backgrounds (`bg-slate-800`). Additionally, chat/refinement inputs benefit significantly from disabled state synchronization prior to module selection, ARIA labels for screen reader context, and explicit `Ctrl+Enter` / `Cmd+Enter` keyboard shortcuts with visual `<kbd>` indicators.
+**Action:** Always specify explicit text color classes on form inputs in dark mode, set appropriate disabled states and placeholders for non-active states, and support keyboard shortcuts with visible hints for multiline input submissions.
