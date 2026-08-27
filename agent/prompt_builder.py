@@ -2,6 +2,7 @@
 prompt_builder.py – Construye prompts finales inyectando variables de template.
 """
 
+import functools
 import os
 import re
 
@@ -9,8 +10,9 @@ import re
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 
 
+@functools.lru_cache(maxsize=32)
 def load_prompt(gem_name: str) -> str:
-    """Carga un prompt desde el directorio de prompts."""
+    """Carga un prompt desde el directorio de prompts (con caché LRU)."""
     filename = f"{gem_name}.md"
     filepath = os.path.join(PROMPTS_DIR, filename)
 
@@ -19,6 +21,11 @@ def load_prompt(gem_name: str) -> str:
 
     with open(filepath, "r", encoding="utf-8") as f:
         return f.read()
+
+
+def clear_prompt_caches() -> None:
+    """Invalida la caché LRU de prompts para reflejar cambios en disco."""
+    load_prompt.cache_clear()
 
 
 def load_maestro() -> str:
