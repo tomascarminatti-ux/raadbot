@@ -69,7 +69,7 @@
                     <p class="text-xs text-slate-500">Dale instrucciones al orquestador para ajustar el comportamiento de este GEM.</p>
                 </div>
 
-                <div class="flex-1 bg-black/20 rounded-xl p-4 border border-white/5 overflow-y-auto" id="chat-history">
+                <div class="flex-1 bg-black/20 rounded-xl p-4 border border-white/5 overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" id="chat-history" tabindex="0" aria-label="Historial de refinamiento" aria-live="polite">
                     <div class="text-xs text-slate-500 italic">Chat disponible al seleccionar un GEM...</div>
                 </div>
 
@@ -116,9 +116,9 @@
         function renderNav() {
             const nav = document.getElementById('gem-nav');
             nav.innerHTML = gems.map(gem => `
-                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group">
+                <button onclick="selectGem('${gem.id}')" id="btn-${gem.id}" aria-label="Seleccionar módulo ${gem.name}" class="w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all hover:bg-white/5 flex items-center justify-between group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
                     <span>${gem.name}</span>
-                    <span class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">➔</span>
+                    <span class="opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity text-blue-400" aria-hidden="true">➔</span>
                 </button>
             `).join('');
         }
@@ -127,8 +127,15 @@
             activeGem = gems.find(g => g.id === id);
             
             // UI Updates
-            document.querySelectorAll('#gem-nav button').forEach(b => b.classList.remove('active-gem', 'text-blue-400'));
-            document.getElementById(`btn-${id}`).classList.add('active-gem', 'text-blue-400');
+            document.querySelectorAll('#gem-nav button').forEach(b => {
+                b.classList.remove('active-gem', 'text-blue-400');
+                b.removeAttribute('aria-current');
+            });
+            const activeBtn = document.getElementById(`btn-${id}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active-gem', 'text-blue-400');
+                activeBtn.setAttribute('aria-current', 'true');
+            }
             
             document.getElementById('current-gem-title').innerText = `${activeGem.name} - ${id}`;
             document.getElementById('prompt-content').innerText = activeGem.prompt;
