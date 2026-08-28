@@ -41,6 +41,33 @@ def test_validate_contract_types():
     if os.path.exists(contract_path):
         os.remove(contract_path)
 
+def test_validate_contract_caching():
+    """Verify that caching works and invalidates when contract file changes."""
+    contract_path = "tests/temp_cache_contract.json"
+    os.makedirs("tests", exist_ok=True)
+
+    # Contract v1: requires "name" (string)
+    with open(contract_path, "w") as f:
+        json.dump({"name": "string"}, f)
+
+    data = {"name": "Alice"}
+    assert validate_contract(data, contract_path) is True
+
+    # Contract v2: requires "name" (string) and "age" (number)
+    with open(contract_path, "w") as f:
+        json.dump({"name": "string", "age": "number"}, f)
+
+    # Touch mtime explicitly to guarantee invalidation if system clock has coarse resolution
+    st = os.stat(contract_path)
+    os.utime(contract_path, (st.st_atime, st.st_mtime + 2))
+
+    # Validation against old schema data should fail now
+    assert validate_contract(data, contract_path) is False
+
+    # Cleanup
+    if os.path.exists(contract_path):
+        os.remove(contract_path)
+
 def test_real_contracts():
     """Verify that current contracts are valid JSON and can be loaded"""
     contract_dir = "contracts"
