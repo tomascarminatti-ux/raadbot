@@ -1,0 +1,4 @@
+## 2025-05-18 - Path Traversal Prevention in API Request Models
+**Vulnerability:** API request endpoints accepted parameters (`search_id`, `candidate_id`, `gem_id`, `local_dir`) directly into `os.path.join` file path operations without input validation, allowing potential path traversal (`../`) attacks to read/write arbitrary files outside designated directories.
+**Learning:** FastApi / Pydantic request models without strict field validators leave file system routing functions vulnerable to path manipulation if user input is passed into file system operations.
+**Prevention:** Use Pydantic `@field_validator` on model fields representing filesystem parameters to enforce strict alphanumeric regex (`^[a-zA-Z0-9_-]+$`) on identifiers and disallow parent directory components (`..`) or absolute path indicators in relative paths.
