@@ -56,7 +56,12 @@
                 <div class="glass p-6 rounded-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">System Prompt</h3>
-                        <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        <div class="flex items-center gap-2">
+                            <button id="copy-btn" onclick="copyPrompt()" disabled aria-label="Copiar prompt al portapapeles" class="text-xs text-slate-400 hover:text-white px-2.5 py-1 bg-white/5 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed rounded border border-white/10 transition-all flex items-center gap-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                <span id="copy-icon">📋</span> <span id="copy-text">Copiar</span>
+                            </button>
+                            <span class="text-xs text-blue-400 px-2 py-1 bg-blue-400/10 rounded">Read-only</span>
+                        </div>
                     </div>
                     <pre id="prompt-content" class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-black/30 p-4 rounded-lg border border-white/5 font-mono max-h-[60vh] overflow-y-auto">Selecciona un GEM para ver sus instrucciones core...</pre>
                 </div>
@@ -133,6 +138,7 @@
             document.getElementById('current-gem-title').innerText = `${activeGem.name} - ${id}`;
             document.getElementById('prompt-content').innerText = activeGem.prompt;
             document.getElementById('send-btn').disabled = false;
+            document.getElementById('copy-btn').disabled = false;
             
             document.getElementById('chat-history').innerHTML = `
                 <div class="bg-blue-600/10 border border-blue-500/30 p-3 rounded-lg text-xs leading-relaxed text-blue-200">
@@ -191,6 +197,48 @@
                 btn.disabled = false;
                 btn.innerHTML = '<span>🚀</span> Refinar Prompt';
                 history.scrollTop = history.scrollHeight;
+            }
+        }
+
+        function copyPrompt() {
+            if (!activeGem || !activeGem.prompt) return;
+            const btn = document.getElementById('copy-btn');
+            const textSpan = document.getElementById('copy-text');
+            const iconSpan = document.getElementById('copy-icon');
+            const textToCopy = activeGem.prompt;
+
+            const handleSuccess = () => {
+                textSpan.innerText = 'Copiado';
+                iconSpan.innerText = '✅';
+                btn.setAttribute('aria-label', 'Prompt copiado al portapapeles');
+                setTimeout(() => {
+                    textSpan.innerText = 'Copiar';
+                    iconSpan.innerText = '📋';
+                    btn.setAttribute('aria-label', 'Copiar prompt al portapapeles');
+                }, 2000);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(handleSuccess).catch(() => fallbackCopy(textToCopy, handleSuccess));
+            } else {
+                fallbackCopy(textToCopy, handleSuccess);
+            }
+        }
+
+        function fallbackCopy(text, callback) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                callback();
+            } catch (e) {
+                console.error('Fallback copy failed', e);
+            } finally {
+                document.body.removeChild(ta);
             }
         }
 
