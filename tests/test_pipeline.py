@@ -1,9 +1,11 @@
-import pytest
 import os
-import json
 from unittest.mock import AsyncMock, MagicMock
-from agent.pipeline import Pipeline
+
+import pytest
+
 from agent.gemini_client import GeminiClient
+from agent.pipeline import Pipeline
+
 
 @pytest.fixture
 def mock_gemini():
@@ -75,3 +77,26 @@ async def test_pipeline_full_run_with_descartado(mock_gemini, temp_output_dir):
     results = await pipeline.run_full_pipeline(search_inputs, candidates)
 
     assert results["candidates"]["CAND-001"]["decision"] == "DESCARTADO_GEM1"
+
+def test_pipeline_compiled_validator(mock_gemini, temp_output_dir):
+    pipeline = Pipeline(mock_gemini, "SEARCH-2026-001", temp_output_dir)
+
+    assert pipeline.validator is not None
+
+    valid_json = {
+        "meta": {
+            "search_id": "SEARCH-2026-001",
+            "gem": "GEM_1",
+            "prompt_version": "v1.0",
+            "timestamp": "2026-01-01T00:00:00Z",
+            "sources": ["cv"]
+        },
+        "scores": {"confidence": 9},
+        "blockers": [],
+        "content": {}
+    }
+    assert pipeline._validate_output(valid_json, "gem1") is True
+
+    invalid_json = {"meta": {}}
+    with pytest.raises(ValueError, match="Schema fallido"):
+        pipeline._validate_output(invalid_json, "gem1")

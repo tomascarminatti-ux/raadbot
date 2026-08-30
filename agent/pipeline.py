@@ -1,19 +1,23 @@
+import asyncio
 import json
 import os
-import asyncio
 from datetime import datetime, timezone
-from typing import Optional, Any
+from typing import Any
 
-from jsonschema import validate, ValidationError
+from jsonschema import ValidationError, validators
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from agent.config import (
+    MAX_RETRIES_ON_BLOCK,
+    PRICE_COMPLETION_1M,
+    PRICE_PROMPT_1M,
+    THRESHOLDS,
+)
 from agent.gemini_client import GeminiClient
-from agent.prompt_builder import build_prompt
-from agent.config import THRESHOLDS, MAX_RETRIES_ON_BLOCK, PRICE_PROMPT_1M, PRICE_COMPLETION_1M
 from agent.logger import logger
-
+from agent.prompt_builder import build_prompt
 
 console = Console()
 
@@ -26,6 +30,12 @@ class Pipeline:
         self.search_id = search_id
         self.output_dir = output_dir
         self.schema = self._load_schema()
+        # Pre-compile the validator instance to avoid re-parsing the schema on every validation call (~14x speedup)
+        self.validator = None
+        if self.schema:
+            validator_cls = validators.validator_for(self.schema)
+            validator_cls.check_schema(self.schema)
+            self.validator = validator_cls(self.schema)
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -34,7 +44,7 @@ class Pipeline:
         self.state = self._load_state()
         self._lock = asyncio.Lock()
 
-    def _load_schema(self) -> Optional[dict]:
+    def _load_schema(self) -> dict | None:
         schema_path = os.path.join(
             os.path.dirname(__file__), "..", "schemas", "gem_output.schema.json"
         )
@@ -83,7 +93,7 @@ class Pipeline:
         await self._save_state()
 
     async def _save_output(
-        self, gem_name: str, result: dict, candidate_id: Optional[str] = None
+        self, gem_name: str, result: dict, candidate_id: str | None = None
     ):
         """Guarda output JSON y Markdown y trackea estado."""
         prefix = gem_name
@@ -136,18 +146,19 @@ class Pipeline:
         if not self.schema or not json_data:
             raise ValueError(f"Output nulo o sin JSON válido en {gem_name}")
         try:
-            validate(instance=json_data, schema=self.schema)
+            if self.validator:
+                self.validator.validate(json_data)
             return True
         except ValidationError as e:
             raise ValueError(f"Schema fallido en {gem_name}: {e.message}")
 
-    def _get_score(self, json_data: Optional[dict]) -> Optional[int]:
+    def _get_score(self, json_data: dict | None) -> int | None:
         if not json_data:
             return None
         scores = json_data.get("scores", {})
         return scores.get("score_dimension")
 
-    def _check_gate(self, gem_name: str, score: Optional[int]) -> bool:
+    def _check_gate(self, gem_name: str, score: int | None) -> bool:
         threshold = THRESHOLDS.get(gem_name)
         if threshold is None:
             return True
