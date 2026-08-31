@@ -1,12 +1,13 @@
 import os
 import json
+import re
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -16,6 +17,27 @@ from agent.gem6.orchestrator import GEM6Orchestrator
 from agent.drive_client import DriveClient
 from utils.input_loader import load_local_inputs
 from utils.ws_logger import active_connections
+
+
+def validate_id(v: Optional[str], field_name: str) -> Optional[str]:
+    """Helper to enforce strict alphanumeric, dash, and underscore identifiers."""
+    if v is None:
+        return v
+    if not re.fullmatch(r"[a-zA-Z0-9_-]+", v):
+        raise ValueError(
+            f"Invalid {field_name}: '{v}'. Must contain only alphanumeric characters, dashes, and underscores."
+        )
+    return v
+
+
+def validate_path(v: Optional[str]) -> Optional[str]:
+    """Helper to sanitize and check local directory paths against path traversal."""
+    if v is None:
+        return v
+    normalized = v.replace("\\", "/")
+    if ".." in normalized.split("/") or normalized.startswith("/") or re.match(r"^[a-zA-Z]:", normalized):
+        raise ValueError(f"Invalid path: '{v}'. Path traversal or absolute paths are not allowed.")
+    return normalized
 
 
 @asynccontextmanager
@@ -58,6 +80,16 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "candidate_id", mode="before")
+    @classmethod
+    def check_ids(cls, v: Optional[str], info) -> Optional[str]:
+        return validate_id(v, info.field_name)
+
+    @field_validator("local_dir", mode="before")
+    @classmethod
+    def check_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        return validate_path(v)
 
 
 class PipelineResponse(BaseModel):
@@ -165,6 +197,11 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id", mode="before")
+    @classmethod
+    def check_search_id(cls, v: Optional[str], info) -> Optional[str]:
+        return validate_id(v, info.field_name)
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -236,6 +273,11 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id", mode="before")
+    @classmethod
+    def check_gem_id(cls, v: Optional[str], info) -> Optional[str]:
+        return validate_id(v, info.field_name)
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
