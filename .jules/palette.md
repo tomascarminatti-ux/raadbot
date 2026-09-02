@@ -1,0 +1,3 @@
+## 2026-09-02 - Accessible Copy to Clipboard Feedback
+**Learning:** When adding copy-to-clipboard functionality for technical content (e.g. system prompts), updating both the visual button text and screen-reader `aria-label` dynamically provides clear accessible feedback for assistive technologies and mouse users alike. Using `navigator.clipboard.writeText` with a `document.execCommand('copy')` fallback ensures compatibility across restricted or headless environments.
+**Action:** Always pair visual button state changes (icon + label) with dynamic `aria-label` updates and temporary state resets when implementing clipboard actions.
