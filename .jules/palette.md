@@ -1,0 +1,3 @@
+## 2025-09-06 - Dark Mode Input Accessibility and Floating Overlay Constraints
+**Learning:** Textareas in dark-themed interfaces require explicit text color classes (`text-slate-200`) and keyboard focus rings (`focus-visible:ring-2`) to guarantee proper contrast and keyboard navigation. Fixed overlay widgets like live log feeds can obscure interactive sidebar inputs unless made collapsible with explicit `aria-expanded` attributes.
+**Action:** Always include high-contrast text styling, `focus-visible` focus rings, `<kbd>` shortcut indicators, and collapsible toggle states on fixed overlays when modifying control panel interfaces.
