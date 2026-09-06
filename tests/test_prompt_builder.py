@@ -1,7 +1,12 @@
 import os
-import time
-import pytest
-from agent.prompt_builder import load_prompt, build_prompt, get_required_variables, PROMPTS_DIR, _load_prompt_cached
+from agent.prompt_builder import (
+    load_prompt,
+    build_prompt,
+    get_required_variables,
+    PROMPTS_DIR,
+    _load_prompt_cached,
+)
+
 
 def test_prompt_builder_cache_and_invalidation():
     temp_gem_name = "temp_test_prompt"
@@ -29,7 +34,7 @@ def test_prompt_builder_cache_and_invalidation():
         info2 = _load_prompt_cached.cache_info()
         assert info2.hits >= 1
 
-        # 2. Modify file and update mtime using os.utime for deterministic testing
+        # 2. Modify file and update mtime using os.utime for testing
         updated_content = "Updated {{name}} for {{service}}!"
         with open(temp_filepath, "w", encoding="utf-8") as f:
             f.write(updated_content)
@@ -44,12 +49,17 @@ def test_prompt_builder_cache_and_invalidation():
         if os.path.exists(temp_filepath):
             os.remove(temp_filepath)
 
+
 def test_build_prompt_and_get_required_variables():
     temp_gem_name = "temp_var_test"
     temp_filepath = os.path.join(PROMPTS_DIR, f"{temp_gem_name}.md")
 
     try:
-        content = "System: {{PROMPT_MAESTRO}}\nUser: {{user_val}}\nMetadata: {{VERSION}}"
+        content = (
+            "System: {{PROMPT_MAESTRO}}\n"
+            "User: {{user_val}}\n"
+            "Metadata: {{VERSION}}"
+        )
         with open(temp_filepath, "w", encoding="utf-8") as f:
             f.write(content)
 
