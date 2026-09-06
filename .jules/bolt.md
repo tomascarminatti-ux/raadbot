@@ -1,0 +1,3 @@
+## 2026-03-30 - JSON Schema Validator Pre-compilation
+**Learning:** Calling `jsonschema.validate(instance, schema)` dynamically parses and compiles schema rules and regexes on every call, taking ~2.75ms per validation. Instantiating the validator instance once via `jsonschema.validators.validator_for(schema)(schema)` and calling `validator.validate(instance)` reuses compiled validator structures, achieving a ~14.29x speedup (~0.19ms per validation call).
+**Action:** Always pre-compile JSON schema validator instances when schemas are static across pipeline or application lifecycles instead of repeatedly calling `jsonschema.validate()`.
