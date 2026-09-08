@@ -1,0 +1,4 @@
+## 2026-03-30 - Path Traversal Prevention in API Request Models
+**Vulnerability:** Unvalidated `search_id`, `candidate_id`, `gem_id`, and `local_dir` input parameters in `PipelineRequest`, `SetupSearchRequest`, and `RefineRequest` API models allowed path traversal sequences (such as `..` or absolute paths) to construct file paths outside intended output/input directories (`runs/`, `prompts/`).
+**Learning:** Accepting user-controlled strings directly into `os.path.join` or format strings for filesystem operations without strict format validation creates severe directory traversal and arbitrary file access vulnerabilities, even if the application prepends a base folder name.
+**Prevention:** Enforce strict Pydantic field validators using `re.fullmatch(r"[a-zA-Z0-9_-]+", v)` for identifiers and checking normalized folder path strings for `..`, leading slashes, or drive letters.

@@ -6,7 +6,22 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+import re
+from pydantic import BaseModel, field_validator
+
+
+def _validate_id(v: Optional[str]) -> Optional[str]:
+    if v is not None and not re.fullmatch(r"[a-zA-Z0-9_-]+", v):
+        raise ValueError("Invalid identifier format. Only alphanumeric characters, dashes, and underscores are allowed.")
+    return v
+
+
+def _validate_path(v: Optional[str]) -> Optional[str]:
+    if v is not None:
+        normalized = v.replace("\\", "/")
+        if ".." in normalized.split("/") or normalized.startswith("/") or re.match(r"^[a-zA-Z]:", normalized):
+            raise ValueError("Invalid local_dir path. Directory traversal or absolute paths are not allowed.")
+    return v
 import httpx
 import asyncio
 
@@ -58,6 +73,9 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    _val_ids = field_validator("search_id", "candidate_id")(_validate_id)
+    _val_path = field_validator("local_dir")(_validate_path)
 
 
 class PipelineResponse(BaseModel):
@@ -165,6 +183,8 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    _val_id = field_validator("search_id")(_validate_id)
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -236,6 +256,8 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    _val_id = field_validator("gem_id")(_validate_id)
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
