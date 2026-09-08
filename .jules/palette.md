@@ -1,0 +1,3 @@
+## 2026-09-08 - Keyboard Shortcuts and Dynamic ARIA States in Control Panels
+**Learning:** Adding `Ctrl+Enter` / `Cmd+Enter` submit shortcuts on textareas paired with visible `<kbd>` badges significantly improves keyboard-first workflow efficiency. When dynamically updating navigation buttons via client-side JavaScript, explicitly setting `aria-current="true"` on the active element and `aria-hidden="true"` on decorative icons provides necessary screen reader state feedback.
+**Action:** Always include keyboard shortcut hints (`<kbd>`) near textareas and manage `aria-current` state explicitly during client-side tab or navigation updates.
