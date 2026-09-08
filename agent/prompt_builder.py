@@ -2,23 +2,37 @@
 prompt_builder.py – Construye prompts finales inyectando variables de template.
 """
 
+import functools
+import json
 import os
 import re
 
-
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+VAR_RE = re.compile(r"\{\{(\w+)\}\}")
+
+
+@functools.lru_cache(maxsize=32)
+def _load_prompt_cached(filepath: str, mtime: float) -> str:
+    """Carga y cachea el contenido de un prompt dado su filepath y timestamp de modificación."""
+    with open(filepath, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def clear_prompt_caches() -> None:
+    """Limpia el cache LRU de templates de prompt."""
+    _load_prompt_cached.cache_clear()
 
 
 def load_prompt(gem_name: str) -> str:
-    """Carga un prompt desde el directorio de prompts."""
+    """Carga un prompt desde el directorio de prompts utilizando caching mtime."""
     filename = f"{gem_name}.md"
     filepath = os.path.join(PROMPTS_DIR, filename)
 
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Prompt no encontrado: {filepath}")
 
-    with open(filepath, "r", encoding="utf-8") as f:
-        return f.read()
+    mtime = os.path.getmtime(filepath)
+    return _load_prompt_cached(filepath, mtime)
 
 
 def load_maestro() -> str:
@@ -53,13 +67,11 @@ def build_prompt(gem_name: str, variables: dict) -> str:
     for key, value in variables.items():
         placeholder = "{{" + key + "}}"
         if isinstance(value, dict):
-            import json
-
             value = json.dumps(value, ensure_ascii=False, indent=2)
         prompt = prompt.replace(placeholder, str(value))
 
     # Validar que no queden variables sin reemplazar
-    remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
+    remaining = VAR_RE.findall(prompt)
     if remaining:
         # Filtrar VERSION que es metadata, no un input
         remaining = [v for v in remaining if v != "VERSION"]
@@ -77,7 +89,7 @@ def get_required_variables(gem_name: str) -> list[str]:
         Lista de nombres de variables (sin {{ }})
     """
     prompt = load_prompt(gem_name)
-    variables = re.findall(r"\{\{(\w+)\}\}", prompt)
+    variables = VAR_RE.findall(prompt)
     # Filtrar las que se resuelven automáticamente
     auto_resolved = {"PROMPT_MAESTRO", "VERSION"}
     return [v for v in set(variables) if v not in auto_resolved]
@@ -96,7 +108,6 @@ def build_agent_prompt(gem_id: str, payload: dict) -> str:
 
     # Si no se encontró ningún placeholder de datos en el prompt original, los anexamos al final
     if "{{input}}" not in base_prompt and "{{context}}" not in base_prompt:
-        import json
         prompt += f"\n\n### DATA INPUT:\n{json.dumps(payload, ensure_ascii=False, indent=2)}"
 
     return prompt
