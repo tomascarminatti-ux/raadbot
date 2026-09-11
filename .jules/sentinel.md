@@ -1,0 +1,4 @@
+## 2025-02-17 - Path Traversal Prevention in API Endpoints
+**Vulnerability:** Unsanitized request parameters (`search_id`, `candidate_id`, `gem_id`, and `local_dir`) in Pydantic request models could allow path traversal sequences (`../`, absolute paths) when constructing filesystem paths with `os.path.join`.
+**Learning:** Pydantic models accepting path fragments or identifier strings should enforce explicit string validation using strict regular expressions (`^[a-zA-Z0-9_-]+$`) or explicit directory traversal checks rather than relying on downstream checks or raw string operations.
+**Prevention:** Use Pydantic `@field_validator` on all request models that supply string parameters to file operations to validate string patterns (`re.fullmatch(r"[a-zA-Z0-9_-]+", v)`) and block relative directory traversal components (`..`) or absolute path indicators.
