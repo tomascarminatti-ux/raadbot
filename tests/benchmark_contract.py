@@ -3,6 +3,7 @@ import os
 import time
 from utils.gem_core import validate_contract, _load_contract_cached
 
+
 def main():
     contract = {
         "name": "string",
@@ -39,7 +40,7 @@ def main():
         with open(contract_path, "r") as f:
             c = json.load(f)
         for key, expected_type in c.items():
-            val = valid_data.get(key)
+            _ = valid_data.get(key)
     uncached_duration = time.perf_counter() - start_time
 
     speedup = uncached_duration / cached_duration if cached_duration > 0 else 0
@@ -51,6 +52,7 @@ def main():
 
     if os.path.exists(contract_path):
         os.remove(contract_path)
+
 
 if __name__ == "__main__":
     main()
