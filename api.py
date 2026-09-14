@@ -1,12 +1,13 @@
 import os
 import json
+import re
 from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -51,6 +52,10 @@ app.add_middleware(
 )
 
 
+# Security: Strict regex pattern to validate safe alphanumeric identifiers (prevents directory traversal)
+IDENTIFIER_REGEX = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
 class PipelineRequest(BaseModel):
     search_id: str
     drive_folder: Optional[str] = None
@@ -58,6 +63,24 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "candidate_id")
+    @classmethod
+    def validate_identifier(cls, v: Optional[str]) -> Optional[str]:
+        # Security concern: Prevent path traversal by enforcing strict alphanumeric identifiers
+        if v is not None and not IDENTIFIER_REGEX.fullmatch(v):
+            raise ValueError("Identifier must contain only alphanumeric characters, hyphens, or underscores.")
+        return v
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        # Security concern: Prevent directory traversal or arbitrary filesystem access
+        if v is not None:
+            normalized = v.replace("\\", "/")
+            if ".." in normalized or normalized.startswith("/") or re.match(r"^[a-zA-Z]:", normalized):
+                raise ValueError("Path traversal or absolute paths are not allowed in local_dir.")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -165,6 +188,14 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id")
+    @classmethod
+    def validate_search_id(cls, v: str) -> str:
+        # Security concern: Prevent path traversal by enforcing strict alphanumeric identifiers
+        if not IDENTIFIER_REGEX.fullmatch(v):
+            raise ValueError("search_id must contain only alphanumeric characters, hyphens, or underscores.")
+        return v
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -236,6 +267,14 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id")
+    @classmethod
+    def validate_gem_id(cls, v: str) -> str:
+        # Security concern: Prevent path traversal by enforcing strict alphanumeric identifiers
+        if not IDENTIFIER_REGEX.fullmatch(v):
+            raise ValueError("gem_id must contain only alphanumeric characters, hyphens, or underscores.")
+        return v
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
