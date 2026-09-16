@@ -1,7 +1,15 @@
+import functools
+import os
 import httpx
 import json
 import logging
 from typing import Dict, Any, Optional
+
+@functools.lru_cache(maxsize=32)
+def _load_contract_cached(contract_path: str, mtime: float) -> dict:
+    """Loads and caches JSON contract schema indexed by filepath and mtime."""
+    with open(contract_path, "r") as f:
+        return json.load(f)
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
@@ -58,8 +66,8 @@ class GEMClient:
 
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
-        with open(contract_path, "r") as f:
-            contract = json.load(f)
+        mtime = os.path.getmtime(contract_path)
+        contract = _load_contract_cached(contract_path, mtime)
         
         for key in contract:
             if not isinstance(key, str):
