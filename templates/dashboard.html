@@ -127,8 +127,13 @@
             activeGem = gems.find(g => g.id === id);
             
             // UI Updates
-            document.querySelectorAll('#gem-nav button').forEach(b => b.classList.remove('active-gem', 'text-blue-400'));
-            document.getElementById(`btn-${id}`).classList.add('active-gem', 'text-blue-400');
+            document.querySelectorAll('#gem-nav button').forEach(b => {
+                b.classList.remove('active-gem', 'text-blue-400');
+                b.removeAttribute('aria-current');
+            });
+            const activeBtn = document.getElementById(`btn-${id}`);
+            activeBtn.classList.add('active-gem', 'text-blue-400');
+            activeBtn.setAttribute('aria-current', 'true');
             
             document.getElementById('current-gem-title').innerText = `${activeGem.name} - ${id}`;
             document.getElementById('prompt-content').innerText = activeGem.prompt;
