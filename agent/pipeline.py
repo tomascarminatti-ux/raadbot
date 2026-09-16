@@ -4,7 +4,8 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Optional, Any
 
-from jsonschema import validate, ValidationError
+from jsonschema import ValidationError
+from jsonschema.validators import validator_for
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -26,6 +27,7 @@ class Pipeline:
         self.search_id = search_id
         self.output_dir = output_dir
         self.schema = self._load_schema()
+        self.validator = self._init_validator()
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -33,6 +35,13 @@ class Pipeline:
         self.state_file = os.path.join(output_dir, "pipeline_state.json")
         self.state = self._load_state()
         self._lock = asyncio.Lock()
+
+    def _init_validator(self):
+        """Precompila el validador jsonschema para evitar recompilaciones por request."""
+        if self.schema:
+            cls = validator_for(self.schema)
+            return cls(self.schema)
+        return None
 
     def _load_schema(self) -> Optional[dict]:
         schema_path = os.path.join(
@@ -133,10 +142,10 @@ class Pipeline:
         return json_path, md_path
 
     def _validate_output(self, json_data: dict, gem_name: str) -> bool:
-        if not self.schema or not json_data:
+        if not self.validator or not json_data:
             raise ValueError(f"Output nulo o sin JSON válido en {gem_name}")
         try:
-            validate(instance=json_data, schema=self.schema)
+            self.validator.validate(json_data)
             return True
         except ValidationError as e:
             raise ValueError(f"Schema fallido en {gem_name}: {e.message}")
