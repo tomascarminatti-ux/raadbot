@@ -1,12 +1,14 @@
+import ipaddress
 import os
 import json
 from contextlib import asynccontextmanager
 from typing import Optional
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -58,6 +60,40 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("webhook_url")
+    @classmethod
+    def validate_webhook_url(cls, v: Optional[str]) -> Optional[str]:
+        """Validate webhook_url scheme and target host to prevent SSRF attacks."""
+        if v is None:
+            return v
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("webhook_url scheme must be http or https")
+        hostname = parsed.hostname
+        if not hostname:
+            raise ValueError("webhook_url must contain a valid hostname")
+
+        hostname_lower = hostname.lower()
+        if hostname_lower == "localhost":
+            raise ValueError("webhook_url target is restricted (localhost)")
+
+        try:
+            ip = ipaddress.ip_address(hostname_lower)
+            if (
+                ip.is_loopback
+                or ip.is_private
+                or ip.is_link_local
+                or ip.is_reserved
+                or ip.is_multicast
+            ):
+                raise ValueError("webhook_url target is restricted (internal IP)")
+        except ValueError as err:
+            # Not an IP address string, which is normal for domain names
+            if "restricted" in str(err):
+                raise err
+
+        return v
 
 
 class PipelineResponse(BaseModel):
