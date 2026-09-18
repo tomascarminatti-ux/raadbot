@@ -1,0 +1,4 @@
+## 2026-02-25 - Pydantic Field Validation for Path Traversal Mitigation
+**Vulnerability:** API endpoints accepting `search_id`, `candidate_id`, `local_dir`, or `gem_id` parameter inputs directly constructed file paths (e.g. `os.path.join("runs", request.search_id, "outputs")`, `f"prompts/{request.gem_id}.md"`), allowing path traversal (`..`) payloads to access or modify files outside intended directories.
+**Learning:** Pydantic models used in FastAPI default to string type validation without checking string content, allowing path traversal vectors such as `../` or relative paths to pass through into file system operations.
+**Prevention:** Apply Pydantic `@field_validator` constraints using strict regex matching (e.g. `r"[a-zA-Z0-9_-]+"` for identifiers or explicit enum/regex whitelist like `r"gem[1-5]"` for specific system files) and enforce path normalization checks against directory traversal (`..`) on directory parameters.
