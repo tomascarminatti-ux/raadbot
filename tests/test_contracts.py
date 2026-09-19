@@ -1,7 +1,9 @@
 import pytest
 import json
 import os
-from utils.gem_core import validate_contract
+import time
+import httpx
+from utils.gem_core import validate_contract, GEMClient, _load_contract_cached
 
 def test_validate_contract_types():
     # Create temp contract
@@ -40,6 +42,46 @@ def test_validate_contract_types():
     # Cleanup
     if os.path.exists(contract_path):
         os.remove(contract_path)
+
+def test_validate_contract_cache_and_invalidation():
+    contract_path = "tests/temp_cache_contract.json"
+    os.makedirs("tests", exist_ok=True)
+
+    initial_contract = {"field_a": "string"}
+    with open(contract_path, "w") as f:
+        json.dump(initial_contract, f)
+
+    _load_contract_cached.cache_clear()
+
+    # First validation
+    assert validate_contract({"field_a": "hello"}, contract_path) is True
+    assert validate_contract({"field_b": "hello"}, contract_path) is False
+
+    # Modify file and update mtime
+    updated_contract = {"field_b": "string"}
+    with open(contract_path, "w") as f:
+        json.dump(updated_contract, f)
+
+    # Explicitly change mtime to trigger cache invalidation
+    new_mtime = time.time() + 10.0
+    os.utime(contract_path, (new_mtime, new_mtime))
+
+    # Should pick up updated schema after mtime change
+    assert validate_contract({"field_b": "hello"}, contract_path) is True
+    assert validate_contract({"field_a": "hello"}, contract_path) is False
+
+    if os.path.exists(contract_path):
+        os.remove(contract_path)
+
+@pytest.mark.asyncio
+async def test_gem_client_connection_reuse():
+    mock_client = httpx.AsyncClient()
+    gem_client = GEMClient(db_url="http://localhost:9999", client=mock_client)
+
+    assert gem_client._get_client() is mock_client
+
+    await gem_client.close()
+    assert mock_client.is_closed is True
 
 def test_real_contracts():
     """Verify that current contracts are valid JSON and can be loaded"""
