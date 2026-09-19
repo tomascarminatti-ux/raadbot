@@ -1,6 +1,8 @@
+import functools
 import httpx
 import json
 import logging
+import os
 from typing import Dict, Any, Optional
 
 class JsonFormatter(logging.Formatter):
@@ -23,43 +25,68 @@ logger.setLevel(logging.INFO)
 logger.propagate = False
 
 class GEMClient:
-    def __init__(self, db_url: str = "http://db-api:8000"):
+    """Client for interacting with the DB API, reusing an AsyncClient session for connection pooling."""
+
+    def __init__(self, db_url: str = "http://db-api:8000", client: Optional[httpx.AsyncClient] = None):
         self.db_url = db_url
+        self._client = client
+
+    def _get_client(self) -> httpx.AsyncClient:
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient()
+        return self._client
+
+    async def close(self):
+        """Closes the underlying HTTP client session if open."""
+        if self._client is not None and not self._client.is_closed:
+            await self._client.aclose()
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
 
     async def upsert_entity(self, data: Dict[str, Any]):
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(f"{self.db_url}/entity/upsert", json=data)
-                resp.raise_for_status()
-                return resp.json()
+            client = self._get_client()
+            resp = await client.post(f"{self.db_url}/entity/upsert", json=data)
+            resp.raise_for_status()
+            return resp.json()
         except Exception as e:
             logger.error(f"Failed to upsert entity: {e}")
             return None
 
     async def discard_entity(self, data: Dict[str, Any]):
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(f"{self.db_url}/entity/discard", json=data)
-                resp.raise_for_status()
-                return resp.json()
+            client = self._get_client()
+            resp = await client.post(f"{self.db_url}/entity/discard", json=data)
+            resp.raise_for_status()
+            return resp.json()
         except Exception as e:
             logger.error(f"Failed to discard entity: {e}")
             return None
 
     async def log_execution(self, log_data: Dict[str, Any]):
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(f"{self.db_url}/log/discovery", json=log_data)
-                resp.raise_for_status()
-                return resp.json()
+            client = self._get_client()
+            resp = await client.post(f"{self.db_url}/log/discovery", json=log_data)
+            resp.raise_for_status()
+            return resp.json()
         except Exception as e:
             logger.error(f"Failed to log execution: {e}")
             return None
 
+@functools.lru_cache(maxsize=32)
+def _load_contract_cached(filepath: str, mtime: float) -> dict:
+    """Helper to read and parse contract schema JSON with LRU caching."""
+    with open(filepath, "r", encoding="utf-8") as f:
+        return json.load(f)
+
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
-        with open(contract_path, "r") as f:
-            contract = json.load(f)
+        mtime = os.path.getmtime(contract_path) if os.path.exists(contract_path) else 0.0
+        contract = _load_contract_cached(contract_path, mtime)
         
         for key in contract:
             if not isinstance(key, str):
