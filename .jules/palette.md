@@ -1,0 +1,3 @@
+## 2026-02-25 - Scrollable pre/div containers require tabindex="0" and focus rings for keyboard accessibility
+**Learning:** In Tailwind dark-themed single-page apps with scrollable containers (like `<pre>` prompt viewers or `<div>` chat logs), keyboard-only users cannot scroll through long overflow content unless the containers are explicitly given `tabindex="0"`, descriptive `aria-label` tags, and `focus-visible:ring-2` focus rings.
+**Action:** Always inspect scrollable overflow containers in dashboard templates and add `tabindex="0"`, `aria-label`, and `focus-visible` ring styling to guarantee keyboard scrollability and focus indication.
