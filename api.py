@@ -1,14 +1,19 @@
 import os
 import json
+import re
+from ipaddress import ip_address
+from urllib.parse import urlparse
 from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
+
+ID_REGEX = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 import config
 from agent.gemini_client import GeminiClient
@@ -58,6 +63,53 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id")
+    @classmethod
+    def validate_search_id(cls, v: str) -> str:
+        if not v or not ID_REGEX.fullmatch(v):
+            raise ValueError("search_id must contain only alphanumeric characters, underscores, and hyphens.")
+        return v
+
+    @field_validator("candidate_id")
+    @classmethod
+    def validate_candidate_id(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not ID_REGEX.fullmatch(v):
+            raise ValueError("candidate_id must contain only alphanumeric characters, underscores, and hyphens.")
+        return v
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        normalized = v.replace("\\", "/")
+        parts = [p for p in normalized.split("/") if p]
+        if ".." in parts or normalized.startswith("/") or (len(v) > 1 and v[1] == ":"):
+            raise ValueError("local_dir must be a relative directory without traversal sequences.")
+        return v
+
+    @field_validator("webhook_url")
+    @classmethod
+    def validate_webhook_url(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("webhook_url must use http or https scheme.")
+        host = parsed.hostname
+        if not host:
+            raise ValueError("webhook_url must include a valid hostname.")
+        if host.lower() in ("localhost", "0.0.0.0", "::1"):
+            raise ValueError("webhook_url cannot target local loopback addresses.")
+        try:
+            ip = ip_address(host)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                raise ValueError("webhook_url cannot target private or local networks.")
+        except ValueError as exc:
+            if "does not appear to be an IPv4 or IPv6 address" not in str(exc):
+                raise
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -165,6 +217,13 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id")
+    @classmethod
+    def validate_search_id(cls, v: str) -> str:
+        if not v or not ID_REGEX.fullmatch(v):
+            raise ValueError("search_id must contain only alphanumeric characters, underscores, and hyphens.")
+        return v
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -236,6 +295,13 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id")
+    @classmethod
+    def validate_gem_id(cls, v: str) -> str:
+        if not v or not ID_REGEX.fullmatch(v):
+            raise ValueError("gem_id must contain only alphanumeric characters, underscores, and hyphens.")
+        return v
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
