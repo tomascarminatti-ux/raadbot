@@ -207,7 +207,7 @@ Selecciona un GEM para ver sus instrucciones core...</pre
             const c = document.getElementById('logs-container');
             const isHidden = c.style.display === 'none';
             c.style.display = isHidden ? 'block' : 'none';
-            this.setAttribute('aria-expanded', !isHidden);
+            this.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
             this.innerText = isHidden ? '−' : '+';
           "
           style="
