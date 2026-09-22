@@ -1,12 +1,13 @@
 import os
 import json
 from contextlib import asynccontextmanager
+import re
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -51,6 +52,23 @@ app.add_middleware(
 )
 
 
+def validate_identifier(v: Optional[str], field_name: str) -> Optional[str]:
+    """Valida que un identificador solo contenga caracteres alfanuméricos, guiones o guiones bajos."""
+    if v is not None:
+        if not re.fullmatch(r"[a-zA-Z0-9_-]+", v):
+            raise ValueError(f"'{field_name}' must be alphanumeric and may include dashes or underscores.")
+    return v
+
+
+def validate_relative_path(v: Optional[str], field_name: str) -> Optional[str]:
+    """Valida que un path de directorio local no contenga secuencias de traversal ('..') ni prefijos absolutos."""
+    if v is not None:
+        normalized = v.replace("\\", "/")
+        if ".." in normalized or normalized.startswith("/") or re.match(r"^[a-zA-Z]:", normalized):
+            raise ValueError(f"'{field_name}' must be a safe relative path without directory traversal ('..').")
+    return v
+
+
 class PipelineRequest(BaseModel):
     search_id: str
     drive_folder: Optional[str] = None
@@ -58,6 +76,16 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "candidate_id")
+    @classmethod
+    def validate_ids(cls, v: Optional[str], info) -> Optional[str]:
+        return validate_identifier(v, info.field_name)
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_path(cls, v: Optional[str], info) -> Optional[str]:
+        return validate_relative_path(v, info.field_name)
 
 
 class PipelineResponse(BaseModel):
@@ -165,6 +193,12 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id")
+    @classmethod
+    def validate_search_id(cls, v: str, info) -> str:
+        return validate_identifier(v, info.field_name)
+
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -236,6 +270,12 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id")
+    @classmethod
+    def validate_gem_id(cls, v: str, info) -> str:
+        return validate_identifier(v, info.field_name)
+
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
