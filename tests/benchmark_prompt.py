@@ -1,6 +1,5 @@
 import os
 import time
-import functools
 import re
 from agent.prompt_builder import PROMPTS_DIR, build_prompt
 
