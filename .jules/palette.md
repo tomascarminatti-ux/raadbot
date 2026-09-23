@@ -1,0 +1,5 @@
+# Palette's Journal - Critical UX & Accessibility Learnings
+
+## 2026-03-23 - Fixed Overlay Positioning & Keyboard Input Controls
+**Learning:** Fixed bottom-right overlays (such as live log panels) frequently overlap interactive control panels and form submit buttons in split-view dashboards on standard viewports (1280x800). Repositioning fixed floating overlays to the bottom-left of the main view container (`left: 270px; bottom: 16px`) and adding a collapsible toggle with `aria-label` and `aria-expanded` keeps all form inputs and submission buttons fully accessible. Additionally, dark mode textareas require explicit text colors (`text-slate-200`) and shortcut hints (`Enter` / `Ctrl+Enter`) for high contrast and smooth keyboard UX.
+**Action:** Always position fixed floating widgets away from primary action columns, ensure textareas have high-contrast text styling in dark themes, provide explicit character counters (`aria-live="polite"`), and implement `Enter` keydown handlers for instant submission.
