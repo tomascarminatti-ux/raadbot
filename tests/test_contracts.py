@@ -1,7 +1,8 @@
 import pytest
 import json
 import os
-from utils.gem_core import validate_contract
+import time
+from utils.gem_core import validate_contract, _load_contract_cached
 
 def test_validate_contract_types():
     # Create temp contract
@@ -50,3 +51,43 @@ def test_real_contracts():
             with open(path, "r") as f:
                 data = json.load(f)
                 assert isinstance(data, dict)
+
+
+def test_validate_contract_cache_and_invalidation():
+    """Verify contract schema loading is cached and invalidates on mtime update."""
+    _load_contract_cached.cache_clear()
+    contract_path = "tests/temp_cache_contract.json"
+    os.makedirs("tests", exist_ok=True)
+
+    initial_contract = {"field1": "string"}
+    with open(contract_path, "w") as f:
+        json.dump(initial_contract, f)
+
+    try:
+        data = {"field1": "hello"}
+
+        # First call loads schema into cache (1 miss)
+        assert validate_contract(data, contract_path) is True
+        hits_before = _load_contract_cached.cache_info().hits
+
+        # Second call should be a cache hit
+        assert validate_contract(data, contract_path) is True
+        assert _load_contract_cached.cache_info().hits == hits_before + 1
+
+        # Update contract on disk and mtime
+        updated_contract = {"field1": "string", "field2": "number"}
+        with open(contract_path, "w") as f:
+            json.dump(updated_contract, f)
+
+        new_mtime = os.path.getmtime(contract_path) + 10.0
+        os.utime(contract_path, (new_mtime, new_mtime))
+
+        # Data lacking field2 should fail validation using updated schema
+        assert validate_contract(data, contract_path) is False
+
+        # Data matching updated contract should pass
+        updated_data = {"field1": "hello", "field2": 42}
+        assert validate_contract(updated_data, contract_path) is True
+    finally:
+        if os.path.exists(contract_path):
+            os.remove(contract_path)
