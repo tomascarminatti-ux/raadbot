@@ -1,0 +1,3 @@
+## 2026-02-28 - Textarea Keyboard Submission & Visual Shortcut Hints
+**Learning:** Multi-line textareas in form controls often lack intuitive keyboard submission capabilities, forcing power users to manually move focus or click the submit button with a mouse. Pairing `Ctrl+Enter` / `Cmd+Enter` keydown listeners with visible `<kbd>` shortcut hints linked via `aria-describedby` significantly improves input efficiency and keyboard accessibility without conflicting with standard multi-line text editing.
+**Action:** Always include `Ctrl+Enter` submission handlers, visible `<kbd>` shortcut hints, and `aria-describedby` attributes on prompt textareas across dashboard forms.

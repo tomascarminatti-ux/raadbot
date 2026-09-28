@@ -74,8 +74,15 @@
                 </div>
 
                 <div class="space-y-3">
-                    <textarea id="refine-input" rows="3" class="w-full bg-slate-800 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 outline-none transition-all placeholder:text-slate-600" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
-                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <textarea id="refine-input" rows="3" aria-describedby="refine-hint" class="w-full bg-slate-800 text-slate-200 border border-white/10 rounded-lg p-3 text-sm focus:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none transition-all placeholder:text-slate-500" placeholder="Ej: Hazlo más estricto verificando las fechas del CV..."></textarea>
+                    <div id="refine-hint" class="flex justify-end text-[11px] text-slate-300 gap-1">
+                        <span>Presiona</span>
+                        <kbd class="px-1.5 py-0.5 bg-slate-700 border border-slate-600 rounded text-slate-200 font-mono text-[10px]">Ctrl</kbd>
+                        <span>+</span>
+                        <kbd class="px-1.5 py-0.5 bg-slate-700 border border-slate-600 rounded text-slate-200 font-mono text-[10px]">Enter</kbd>
+                        <span>para enviar</span>
+                    </div>
+                    <button onclick="refineGem()" id="send-btn" disabled class="w-full bg-blue-600 hover:bg-blue-500 focus-visible:ring-2 focus-visible:ring-blue-400 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
                         <span>🚀</span> Refinar Prompt
                     </button>
                 </div>
@@ -193,6 +200,17 @@
                 history.scrollTop = history.scrollHeight;
             }
         }
+
+        // Keyboard shortcut handling for refine-input
+        document.getElementById('refine-input').addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                const sendBtn = document.getElementById('send-btn');
+                if (!sendBtn.disabled) {
+                    refineGem();
+                }
+            }
+        });
 
         // Init
         loadGems();
