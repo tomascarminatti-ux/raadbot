@@ -1,0 +1,4 @@
+## 2026-03-29 - Strict Identifier and Path Traversal Input Validation in FastAPI Models
+**Vulnerability:** Path traversal vectors (`../`, `..\`, absolute paths, or special characters) permitted in identifier parameters (`search_id`, `candidate_id`, `gem_id`) and file system path fields (`local_dir`).
+**Learning:** Using `re.fullmatch(r"[a-zA-Z0-9_-]+", v)` on identifiers prevents arbitrary file read/write vectors when identifiers construct file system paths or select files on disk. For relative path fields like `local_dir`, backslash normalization (`.replace("\\", "/")`) before checking for `..` or leading `/` ensures cross-platform safety.
+**Prevention:** Always validate all user-supplied identifiers and file paths using strict Pydantic field validators before passing them to file system operations or path joining functions.
