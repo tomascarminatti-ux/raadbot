@@ -1,0 +1,3 @@
+## 2026-09-29 - Fixed overlay panel positioning and dark mode textarea accessibility
+**Learning:** Fixed position overlay elements like `#live-logs` positioned at `bottom: 20px; right: 20px` can obscure critical interactive form inputs and action buttons in sidebar layouts. Additionally, dark mode textareas in Tailwind require explicit `text-slate-200` styling to avoid browser user-agent defaults that render dark typed text on dark background inputs.
+**Action:** Position floating logs or debug overlays in main content whitespace (e.g. `left: 270px; bottom: 16px`) with controlled height (`max-height: 200px; z-index: 50`) and always include explicit `text-*` classes and visible focus ring indicators on form controls.
