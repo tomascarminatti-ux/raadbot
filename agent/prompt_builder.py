@@ -2,23 +2,35 @@
 prompt_builder.py – Construye prompts finales inyectando variables de template.
 """
 
+import functools
 import os
 import re
 
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+# Pre-compile regular expression for template variable detection
+VAR_RE = re.compile(r"\{\{(\w+)\}\}")
+
+
+@functools.lru_cache(maxsize=32)
+def _load_prompt_cached(filepath: str, mtime: float) -> str:
+    """Helper cached para cargar el contenido de un prompt."""
+    with open(filepath, "r", encoding="utf-8") as f:
+        return f.read()
 
 
 def load_prompt(gem_name: str) -> str:
-    """Carga un prompt desde el directorio de prompts."""
+    """Carga un prompt desde el directorio de prompts usando caché con invalidación por mtime."""
     filename = f"{gem_name}.md"
     filepath = os.path.join(PROMPTS_DIR, filename)
 
-    if not os.path.exists(filepath):
+    try:
+        # Optimización: Cargar prompt con caché usando mtime (evita syscalls os.path.exists duplicadas)
+        mtime = os.path.getmtime(filepath)
+    except OSError:
         raise FileNotFoundError(f"Prompt no encontrado: {filepath}")
 
-    with open(filepath, "r", encoding="utf-8") as f:
-        return f.read()
+    return _load_prompt_cached(filepath, mtime)
 
 
 def load_maestro() -> str:
@@ -59,7 +71,7 @@ def build_prompt(gem_name: str, variables: dict) -> str:
         prompt = prompt.replace(placeholder, str(value))
 
     # Validar que no queden variables sin reemplazar
-    remaining = re.findall(r"\{\{(\w+)\}\}", prompt)
+    remaining = VAR_RE.findall(prompt)
     if remaining:
         # Filtrar VERSION que es metadata, no un input
         remaining = [v for v in remaining if v != "VERSION"]
@@ -77,7 +89,7 @@ def get_required_variables(gem_name: str) -> list[str]:
         Lista de nombres de variables (sin {{ }})
     """
     prompt = load_prompt(gem_name)
-    variables = re.findall(r"\{\{(\w+)\}\}", prompt)
+    variables = VAR_RE.findall(prompt)
     # Filtrar las que se resuelven automáticamente
     auto_resolved = {"PROMPT_MAESTRO", "VERSION"}
     return [v for v in set(variables) if v not in auto_resolved]
