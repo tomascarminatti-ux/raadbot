@@ -24,11 +24,12 @@ def load_prompt(gem_name: str) -> str:
     filename = f"{gem_name}.md"
     filepath = os.path.join(PROMPTS_DIR, filename)
 
-    if not os.path.exists(filepath):
+    try:
+        # Optimización: Cargar prompt con caché usando mtime (evita syscalls os.path.exists duplicadas)
+        mtime = os.path.getmtime(filepath)
+    except OSError:
         raise FileNotFoundError(f"Prompt no encontrado: {filepath}")
 
-    # Optimización: Cargar prompt con caché usando modificación de archivo (mtime)
-    mtime = os.path.getmtime(filepath)
     return _load_prompt_cached(filepath, mtime)
 
 
