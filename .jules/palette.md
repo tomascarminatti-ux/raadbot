@@ -1,0 +1,3 @@
+## 2026-03-06 - Accessible Keyboard Shortcuts & Live Logs Toggle Panel
+**Learning:** Fixed position overlay elements like `#live-logs` at `left: 270px` and `bottom: 16px` remain unobtrusive at the bottom-left of the main viewport while preserving full view and interactivity for right-sidebar form controls. Adding a collapsible toggle (`_`/`+`) with `aria-expanded` state ensures screen readers and keyboard users can easily collapse live log overlays when focusing on primary form actions.
+**Action:** When adding live updates or log overlays, place them in non-overlapping regions and provide accessible `aria-expanded` toggle controls to minimize visual clutter.
