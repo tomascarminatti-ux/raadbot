@@ -1,12 +1,15 @@
 import os
 import json
+import re
+import ipaddress
+from urllib.parse import urlparse
 from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -51,6 +54,47 @@ app.add_middleware(
 )
 
 
+IDENTIFIER_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+def validate_identifier(v: Optional[str]) -> Optional[str]:
+    if v is None:
+        return v
+    if not IDENTIFIER_RE.fullmatch(v):
+        raise ValueError("Invalid identifier format. Only alphanumeric characters, hyphens, and underscores allowed.")
+    return v
+
+
+def validate_path(v: Optional[str]) -> Optional[str]:
+    if v is None:
+        return v
+    normalized = v.replace("\\", "/")
+    if ".." in normalized or normalized.startswith("/") or re.match(r"^[a-zA-Z]:", normalized):
+        raise ValueError("Directory traversal attempt or absolute path detected in local_dir.")
+    return v
+
+
+def validate_webhook(v: Optional[str]) -> Optional[str]:
+    if v is None:
+        return v
+    parsed = urlparse(v)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError("Webhook URL must use http or https scheme.")
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError("Invalid webhook URL hostname.")
+    if hostname.lower() in ("localhost", "127.0.0.1", "::1"):
+        raise ValueError("SSRF protection: webhook URL cannot point to localhost.")
+    try:
+        ip = ipaddress.ip_address(hostname)
+        if ip.is_loopback or ip.is_private or ip.is_link_local:
+            raise ValueError("SSRF protection: webhook URL cannot point to private or loopback IP address.")
+    except ValueError as e:
+        if "SSRF protection:" in str(e):
+            raise
+    return v
+
+
 class PipelineRequest(BaseModel):
     search_id: str
     drive_folder: Optional[str] = None
@@ -58,6 +102,21 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "candidate_id")
+    @classmethod
+    def check_identifier(cls, v: Optional[str]) -> Optional[str]:
+        return validate_identifier(v)
+
+    @field_validator("local_dir")
+    @classmethod
+    def check_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        return validate_path(v)
+
+    @field_validator("webhook_url")
+    @classmethod
+    def check_webhook(cls, v: Optional[str]) -> Optional[str]:
+        return validate_webhook(v)
 
 
 class PipelineResponse(BaseModel):
@@ -165,6 +224,13 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id")
+    @classmethod
+    def check_search_id(cls, v: str) -> str:
+        res = validate_identifier(v)
+        assert res is not None
+        return res
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -236,6 +302,13 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id")
+    @classmethod
+    def check_gem_id(cls, v: str) -> str:
+        res = validate_identifier(v)
+        assert res is not None
+        return res
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
