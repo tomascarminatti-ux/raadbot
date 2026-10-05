@@ -1,0 +1,4 @@
+## 2025-05-18 - Input Validation & Path Traversal Mitigation in Pydantic Request Models
+**Vulnerability:** API request models (`PipelineRequest`, `SetupSearchRequest`, `RefineRequest`) accepted unvalidated string inputs for file/directory paths and identifiers (`search_id`, `candidate_id`, `gem_id`, `local_dir`), allowing path traversal sequences such as `..`, absolute paths (`/etc/passwd`), or drive letters (`C:\`).
+**Learning:** `re.match` with `$` in regex validations can allow trailing newlines (`\n`). Using `re.fullmatch(r"[a-zA-Z0-9_-]+", v)` strictly enforces valid alphanumeric identifiers without newline leaks. Also, normalising backslashes (`\`) to forward slashes (`/`) in `local_dir` prevents cross-platform traversal bypasses on Windows/Linux.
+**Prevention:** Always sanitize and validate file path inputs using strict regex matching (`re.fullmatch`) or relative path checks before passing them to file system APIs like `os.path.join` or `open`.
