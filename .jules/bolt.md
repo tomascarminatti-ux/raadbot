@@ -1,0 +1,3 @@
+## 2025-05-18 - Caching Prompt Template Reads with LRU and MTime Invalidation
+**Learning:** In prompt engineering pipelines, reading Markdown templates from disk on every prompt construction incurs significant I/O overhead. Caching file reads with `@functools.lru_cache` keyed by file path and `mtime` eliminates disk I/O while ensuring automatic cache invalidation if templates are edited on disk. Pre-compiling variable replacement regex at module level further reduces string processing overhead.
+**Action:** When prompt building or template rendering is called in high-frequency loops (e.g. across multiple candidates and retry attempts), use `lru_cache` with file modification time (`mtime`) and module-level pre-compiled regexes.
