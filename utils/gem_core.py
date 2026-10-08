@@ -1,6 +1,8 @@
+import functools
 import httpx
 import json
 import logging
+import os
 from typing import Dict, Any, Optional
 
 class JsonFormatter(logging.Formatter):
@@ -56,10 +58,18 @@ class GEMClient:
             logger.error(f"Failed to log execution: {e}")
             return None
 
+@functools.lru_cache(maxsize=32)
+def _load_contract_cached(filepath: str, mtime: float) -> dict:
+    """Helper to cache contract loading, keyed by filepath and file modification timestamp."""
+    with open(filepath, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
-        with open(contract_path, "r") as f:
-            contract = json.load(f)
+        # Fetch mtime for cache key; automatically invalidates cache if contract file is updated on disk
+        mtime = os.path.getmtime(contract_path)
+        contract = _load_contract_cached(contract_path, mtime)
         
         for key in contract:
             if not isinstance(key, str):
