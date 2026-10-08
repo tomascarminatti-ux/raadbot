@@ -1,0 +1,4 @@
+## 2026-03-31 - Path Traversal Prevention in RefineRequest Model
+**Vulnerability:** Unsanitized user input in `gem_id` field on `RefineRequest` could allow directory traversal payloads (e.g. `../` or `../../secret`) when opening prompt files at `prompts/{request.gem_id}.md`.
+**Learning:** In Pydantic models where field values construct file system paths, relying solely on `os.path.exists` without strict character/format validation leaves the application vulnerable to path traversal attacks and arbitrary file reading/writing. `re.fullmatch(r"[a-zA-Z0-9_-]+", v)` strictly ensures the input is a valid alphanumeric slug without path navigation characters or trailing newlines.
+**Prevention:** Always enforce strict `field_validator` regex checks using `re.fullmatch` on path component fields or normalize and verify resolved canonical paths using `os.path.abspath` before file I/O operations.
