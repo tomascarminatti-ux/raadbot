@@ -50,3 +50,34 @@ def test_real_contracts():
             with open(path, "r") as f:
                 data = json.load(f)
                 assert isinstance(data, dict)
+
+def test_validate_contract_cache_and_invalidation():
+    """Test contract loading caching and invalidation when file mtime changes"""
+    contract_path = "tests/temp_cache_contract.json"
+    os.makedirs("tests", exist_ok=True)
+
+    # Contract v1
+    contract_v1 = {"field1": "string"}
+    with open(contract_path, "w") as f:
+        json.dump(contract_v1, f)
+
+    data_v1 = {"field1": "value"}
+    data_v2 = {"field1": "value", "field2": "value"}
+
+    assert validate_contract(data_v1, contract_path) is True
+    assert validate_contract(data_v2, contract_path) is True  # missing field2 in contract v1, passes
+
+    # Update contract v2 with field2 required
+    import time
+    time.sleep(0.01) # ensure mtime timestamp differs
+    contract_v2 = {"field1": "string", "field2": "string"}
+    with open(contract_path, "w") as f:
+        json.dump(contract_v2, f)
+
+    # Now data_v1 should fail because field2 is required in v2
+    assert validate_contract(data_v1, contract_path) is False
+    assert validate_contract(data_v2, contract_path) is True
+
+    # Cleanup
+    if os.path.exists(contract_path):
+        os.remove(contract_path)
