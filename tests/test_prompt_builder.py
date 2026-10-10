@@ -1,6 +1,4 @@
-import os
-import time
-import pytest
+from unittest.mock import patch
 from agent.prompt_builder import (
     load_prompt,
     build_prompt,
@@ -13,31 +11,25 @@ def test_load_prompt_and_caching():
     """Verifica la carga de prompts y la efectividad del caché LRU con invalidación por mtime."""
     _load_prompt_cached.cache_clear()
 
-    # Primera carga -> Cache miss
-    content1 = load_prompt("gem1")
-    info1 = _load_prompt_cached.cache_info()
-    assert info1.hits == 0
-    assert info1.misses == 1
+    with patch("os.path.getmtime", return_value=100.0):
+        # Primera carga -> Cache miss
+        content1 = load_prompt("gem1")
+        info1 = _load_prompt_cached.cache_info()
+        assert info1.hits == 0
+        assert info1.misses == 1
 
-    # Segunda carga -> Cache hit
-    content2 = load_prompt("gem1")
-    info2 = _load_prompt_cached.cache_info()
-    assert content1 == content2
-    assert info2.hits == 1
+        # Segunda carga -> Cache hit
+        content2 = load_prompt("gem1")
+        info2 = _load_prompt_cached.cache_info()
+        assert content1 == content2
+        assert info2.hits == 1
 
-    # Invalidador por mtime
-    filepath = os.path.join(os.path.dirname(__file__), "..", "prompts", "gem1.md")
-    current_mtime = os.path.getmtime(filepath)
-    # Forzar actualización de mtime
-    os.utime(filepath, (current_mtime + 2, current_mtime + 2))
-
-    # Carga tras actualización de mtime -> Cache miss (re-lectura)
-    load_prompt("gem1")
-    info3 = _load_prompt_cached.cache_info()
-    assert info3.misses == 2
-
-    # Restaurar mtime original
-    os.utime(filepath, (current_mtime, current_mtime))
+    # Invalidador por mtime simulado
+    with patch("os.path.getmtime", return_value=200.0):
+        # Carga tras actualización de mtime -> Cache miss (re-lectura)
+        load_prompt("gem1")
+        info3 = _load_prompt_cached.cache_info()
+        assert info3.misses == 2
 
 
 def test_build_prompt_variables():
