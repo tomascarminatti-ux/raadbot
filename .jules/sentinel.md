@@ -1,4 +1,0 @@
-## 2025-05-18 - Input Validation & Path Traversal Mitigation in API Requests
-**Vulnerability:** API request endpoints (`/api/v1/run`, `/api/v1/search/setup`, `/api/v1/gems/refine`) accepted unvalidated string inputs for file/folder path construction (`search_id`, `candidate_id`, `gem_id`, `local_dir`), allowing path traversal vectors (e.g. `../`).
-**Learning:** Pydantic models without explicit `@field_validator` regex or path checks will accept arbitrary strings. Using `re.fullmatch(r"[a-zA-Z0-9_-]+", v)` strictly bounds identifier fields to alphanumeric characters, hyphens, and underscores.
-**Prevention:** Always enforce strict field-level validation schemas using `re.fullmatch` for identifier inputs and explicit path normalization checks (`..`, absolute paths, Windows drive letters) for local directory inputs in FastAPI models.
