@@ -1,0 +1,4 @@
+## 2025-05-18 - Input Validation for Dynamic File Path Construction in API Requests
+**Vulnerability:** Endpoints such as `/api/v1/gems/refine`, `/api/v1/search/setup`, and `/api/v1/run` accepted unvalidated identifiers (`gem_id`, `search_id`, `candidate_id`) and relative folder paths (`local_dir`) that were used directly in `os.path.join` and `open()` calls, exposing the server to directory traversal / arbitrary file read and write vulnerabilities.
+**Learning:** FastAPI Pydantic request models in this codebase lacked field validators for path parameters and string inputs used in file system operations.
+**Prevention:** Enforce strict regular expression checks (`^[a-zA-Z0-9_-]+$`) on all identifier fields in Pydantic models using `@field_validator` and explicitly disallow directory traversal characters (`..`) in directory paths.
