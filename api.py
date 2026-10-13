@@ -1,12 +1,15 @@
 import os
 import json
+import re
+import ipaddress
+from urllib.parse import urlparse
 from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -58,6 +61,38 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "candidate_id")
+    def validate_identifier(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not re.fullmatch(r"[a-zA-Z0-9_-]+", v):
+            raise ValueError("Identificador inválido: solo caracteres alfanuméricos, guiones y guiones bajos.")
+        return v
+
+    @field_validator("local_dir")
+    def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            norm = v.replace("\\", "/")
+            if ".." in norm or norm.startswith("/") or re.match(r"^[a-zA-Z]:", norm):
+                raise ValueError("Ruta 'local_dir' inválida o path traversal detectado.")
+        return v
+
+    @field_validator("webhook_url")
+    def validate_webhook_url(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            parsed = urlparse(v)
+            if parsed.scheme not in ("http", "https"):
+                raise ValueError("Esquema de 'webhook_url' no permitido (solo http/https).")
+            hostname = parsed.hostname
+            if not hostname or hostname.lower() in ("localhost", "127.0.0.1", "0.0.0.0", "::1"):
+                raise ValueError("Dominio o dirección IP de 'webhook_url' no permitida.")
+            try:
+                ip = ipaddress.ip_address(hostname)
+                if ip.is_loopback or ip.is_private or ip.is_link_local or ip.is_reserved:
+                    raise ValueError("Dirección IP privada o reservada no permitida para webhook.")
+            except ValueError as e:
+                if "Dirección IP" in str(e):
+                    raise
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -165,6 +200,12 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id")
+    def validate_search_id(cls, v: str) -> str:
+        if not re.fullmatch(r"[a-zA-Z0-9_-]+", v):
+            raise ValueError("search_id inválido: solo caracteres alfanuméricos, guiones y guiones bajos.")
+        return v
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
@@ -236,6 +277,12 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+
+    @field_validator("gem_id")
+    def validate_gem_id(cls, v: str) -> str:
+        if not re.fullmatch(r"[a-zA-Z0-9_-]+", v):
+            raise ValueError("gem_id inválido: solo caracteres alfanuméricos, guiones y guiones bajos.")
+        return v
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
