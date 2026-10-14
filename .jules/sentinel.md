@@ -1,0 +1,4 @@
+## 2026-02-25 - API Input Validation and Path Traversal Prevention
+**Vulnerability:** API endpoints (`/api/v1/run`, `/api/v1/search/setup`, `/api/v1/gems/refine`) accepted unvalidated string inputs for `search_id`, `candidate_id`, `gem_id`, and `local_dir`, making the system vulnerable to directory traversal attacks when constructing file/directory paths on the local filesystem.
+**Learning:** Pydantic request models without field validators allow arbitrary input strings containing path traversal vectors like `../` or `/etc/`. Using `re.fullmatch` with `^[a-zA-Z0-9_-]+$` is necessary because standard `re.match` with `$` allows trailing newline (`\n`) characters.
+**Prevention:** Enforce strict alphanumeric regex validation on all resource identifiers and check for `..`, leading slashes, and Windows drive prefixes on user-supplied path inputs in Pydantic request models before file system operations are executed.
