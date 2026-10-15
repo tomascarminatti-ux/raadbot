@@ -1,6 +1,7 @@
 import pytest
 import json
 import os
+import time
 from utils.gem_core import validate_contract
 
 def test_validate_contract_types():
@@ -50,3 +51,34 @@ def test_real_contracts():
             with open(path, "r") as f:
                 data = json.load(f)
                 assert isinstance(data, dict)
+
+def test_validate_contract_cache_and_invalidation():
+    """Verify that validate_contract caches contract reads and invalidates on mtime change."""
+    contract_path = "tests/temp_cache_contract.json"
+    os.makedirs("tests", exist_ok=True)
+
+    initial_contract = {"field_a": "string"}
+    with open(contract_path, "w") as f:
+        json.dump(initial_contract, f)
+
+    try:
+        # First call loads and caches initial schema
+        assert validate_contract({"field_a": "hello"}, contract_path) is True
+        assert validate_contract({"field_a": 123}, contract_path) is False
+
+        # Modify contract file on disk
+        updated_contract = {"field_a": "string", "field_b": "number"}
+        time.sleep(0.01)  # Ensure distinct mtime
+        with open(contract_path, "w") as f:
+            json.dump(updated_contract, f)
+
+        # Explicitly update mtime so caching key changes
+        now = time.time() + 1.0
+        os.utime(contract_path, (now, now))
+
+        # New call should detect changed mtime, reload updated contract, and enforce field_b
+        assert validate_contract({"field_a": "hello"}, contract_path) is False
+        assert validate_contract({"field_a": "hello", "field_b": 42}, contract_path) is True
+    finally:
+        if os.path.exists(contract_path):
+            os.remove(contract_path)
