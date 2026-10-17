@@ -1,7 +1,5 @@
-import pytest
 from fastapi.testclient import TestClient
 import os
-from unittest.mock import patch
 
 # Set dummy API key for tests
 os.environ["GEMINI_API_KEY"] = "test-key"
