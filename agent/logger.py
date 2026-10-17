@@ -3,7 +3,6 @@ logger.py – Configuración de logging para RAADBot.
 """
 
 import logging
-import sys
 from rich.logging import RichHandler
 
 def setup_logger(name: str = "raadbot"):
