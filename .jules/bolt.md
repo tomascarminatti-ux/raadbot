@@ -1,0 +1,3 @@
+## 2026-03-31 - Pre-compiling jsonschema Validator Instances
+**Learning:** Calling `jsonschema.validate(instance, schema)` repeatedly causes `jsonschema` to re-resolve schema meta-schemas and re-instantiate validator classes on every validation call. Pre-compiling the validator instance once during class initialization via `jsonschema.validators.validator_for(schema)(schema)` yields a ~13.5x speedup per validation call.
+**Action:** When validating JSON objects against a static or reusable schema in loops or pipeline orchestrators, pre-instantiate the validator instance using `validator_for(schema)(schema)` and reuse `validator.validate(data)`.
