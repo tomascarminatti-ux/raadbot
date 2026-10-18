@@ -21,16 +21,22 @@ class GEM6Orchestrator:
         self.search_id = kwargs.get("search_id", self.config.get("search_id"))
 
     async def run_pipeline(self, search_inputs: Dict[str, Any], candidates: Dict[str, Any]):
-        """Entry point to process all candidates"""
-        results = {}
-        for candidate_id, candidate_data in candidates.items():
-            context = {
+        """Entry point to process all candidates concurrently."""
+        # Performance Optimization (Bolt): Execute candidate processing concurrently with asyncio.gather
+        # instead of waiting sequentially for each candidate. Yields up to N-fold speedup for N candidates.
+        candidate_ids = list(candidates.keys())
+        tasks = [
+            self.process_context({
                 "search_inputs": search_inputs,
-                "candidate_id": candidate_id,
-                "candidate_data": candidate_data,
-                "entity_id": candidate_id
-            }
-            results[candidate_id] = await self.process_context(context)
+                "candidate_id": cid,
+                "candidate_data": candidates[cid],
+                "entity_id": cid
+            })
+            for cid in candidate_ids
+        ]
+
+        candidate_results = await asyncio.gather(*tasks) if tasks else []
+        results = dict(zip(candidate_ids, candidate_results))
         
         # Save summary
         if self.output_dir:
