@@ -1,7 +1,7 @@
-import pytest
 import json
 import os
 from utils.gem_core import validate_contract
+
 
 def test_validate_contract_types():
     # Create temp contract
@@ -16,7 +16,7 @@ def test_validate_contract_types():
     os.makedirs("tests", exist_ok=True)
     with open(contract_path, "w") as f:
         json.dump(contract, f)
-    
+
     # Valid data
     valid_data = {
         "name": "Test",
@@ -26,12 +26,12 @@ def test_validate_contract_types():
         "metadata": {"key": "value"}
     }
     assert validate_contract(valid_data, contract_path) is True
-    
+
     # Invalid type
     invalid_data = valid_data.copy()
     invalid_data["score"] = "high"
     assert validate_contract(invalid_data, contract_path) is False
-    
+
     # Missing key
     missing_data = valid_data.copy()
     missing_data.pop("name", None)
@@ -40,6 +40,31 @@ def test_validate_contract_types():
     # Cleanup
     if os.path.exists(contract_path):
         os.remove(contract_path)
+
+
+def test_validate_contract_cache_and_invalidation():
+    contract_path = "tests/temp_cache_contract.json"
+    os.makedirs("tests", exist_ok=True)
+    with open(contract_path, "w") as f:
+        json.dump({"field": "string"}, f)
+
+    try:
+        data = {"field": "value"}
+        assert validate_contract(data, contract_path) is True
+
+        # Modify contract on disk and update mtime
+        with open(contract_path, "w") as f:
+            json.dump({"field": "number"}, f)
+        # Ensure mtime updates
+        current_mtime = os.path.getmtime(contract_path)
+        os.utime(contract_path, (current_mtime + 2, current_mtime + 2))
+
+        # Should reflect updated contract rules after cache invalidation
+        assert validate_contract(data, contract_path) is False
+    finally:
+        if os.path.exists(contract_path):
+            os.remove(contract_path)
+
 
 def test_real_contracts():
     """Verify that current contracts are valid JSON and can be loaded"""
