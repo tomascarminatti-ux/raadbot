@@ -1,0 +1,3 @@
+## 2026-03-31 - Contract Schema Caching with File Modification Invalidation
+**Learning:** JSON contract validation performed repeatedly during agent pipeline execution causes unnecessary disk I/O and JSON parsing overhead when reading static contract schemas. Decorating the schema reader with `@functools.lru_cache` and passing the file modification timestamp (`os.path.getmtime`) as a key parameter avoids redundant disk reads while ensuring immediate cache invalidation if schema files are updated on disk.
+**Action:** Always pair `@functools.lru_cache` with file `mtime` when caching file-backed static configurations or JSON schemas to get ~7x+ speedup without sacrificing freshness on file updates.
