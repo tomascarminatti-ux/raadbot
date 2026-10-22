@@ -1,0 +1,3 @@
+## 2025-05-20 - Concurrent Candidate Processing in GEM6 Orchestrator
+**Learning:** Sequential processing of candidate contexts in `orchestrator.run_pipeline` was a major bottleneck for multi-candidate search pipelines because LLM calls and network logs are async I/O bound operations. Refactoring `run_pipeline` to use `asyncio.gather` reduces processing wall-clock time from O(N * latency) to O(max_latency), providing an ~N-fold speedup for N candidates.
+**Action:** Always check loop structures processing independent asynchronous tasks in orchestrator/pipeline classes and leverage `asyncio.gather` for concurrent execution.

@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import asyncio
+import time
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
 from agent.prompt_builder import build_prompt, build_agent_prompt
@@ -21,16 +22,21 @@ class GEM6Orchestrator:
         self.search_id = kwargs.get("search_id", self.config.get("search_id"))
 
     async def run_pipeline(self, search_inputs: Dict[str, Any], candidates: Dict[str, Any]):
-        """Entry point to process all candidates"""
-        results = {}
-        for candidate_id, candidate_data in candidates.items():
+        """Entry point to process all candidates concurrently for optimal throughput."""
+        # Process all candidates concurrently using asyncio.gather to avoid sequential blocking IO
+        async def _process_candidate(candidate_id: str, candidate_data: Any):
             context = {
                 "search_inputs": search_inputs,
                 "candidate_id": candidate_id,
                 "candidate_data": candidate_data,
                 "entity_id": candidate_id
             }
-            results[candidate_id] = await self.process_context(context)
+            res = await self.process_context(context)
+            return candidate_id, res
+
+        tasks = [_process_candidate(cid, cdata) for cid, cdata in candidates.items()]
+        processed_candidates = await asyncio.gather(*tasks) if tasks else []
+        results = dict(processed_candidates)
         
         # Save summary
         if self.output_dir:
