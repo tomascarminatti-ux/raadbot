@@ -50,3 +50,36 @@ def test_real_contracts():
             with open(path, "r") as f:
                 data = json.load(f)
                 assert isinstance(data, dict)
+
+
+def test_validate_contract_cache_and_invalidation():
+    """Verify schema caching and mtime invalidation behavior"""
+    import time
+    contract_path = "tests/temp_cache_contract.json"
+    initial_contract = {"field1": "string"}
+
+    os.makedirs("tests", exist_ok=True)
+    with open(contract_path, "w") as f:
+        json.dump(initial_contract, f)
+
+    data = {"field1": "hello"}
+    assert validate_contract(data, contract_path) is True
+
+    # Update contract schema file
+    time.sleep(0.01)
+    updated_contract = {"field1": "string", "field2": "number"}
+    with open(contract_path, "w") as f:
+        json.dump(updated_contract, f)
+
+    # Force mtime update if file system timestamp resolution is coarse
+    new_mtime = os.stat(contract_path).st_mtime + 2.0
+    os.utime(contract_path, (new_mtime, new_mtime))
+
+    # Expect validation failure because field2 is required in updated schema
+    assert validate_contract(data, contract_path) is False
+
+    updated_data = {"field1": "hello", "field2": 42}
+    assert validate_contract(updated_data, contract_path) is True
+
+    if os.path.exists(contract_path):
+        os.remove(contract_path)

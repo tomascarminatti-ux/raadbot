@@ -1,6 +1,8 @@
+import functools
 import httpx
 import json
 import logging
+import os
 from typing import Dict, Any, Optional
 
 class JsonFormatter(logging.Formatter):
@@ -56,11 +58,18 @@ class GEMClient:
             logger.error(f"Failed to log execution: {e}")
             return None
 
+@functools.lru_cache(maxsize=32)
+def _load_contract_cached(contract_path: str, mtime_ns: int) -> dict:
+    """Helper caching schema loading keyed by filepath and file modification timestamp."""
+    with open(contract_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
 def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
     try:
-        with open(contract_path, "r") as f:
-            contract = json.load(f)
-        
+        mtime_ns = os.stat(contract_path).st_mtime_ns
+        contract = _load_contract_cached(contract_path, mtime_ns)
+
         for key in contract:
             if not isinstance(key, str):
                 continue
@@ -75,7 +84,7 @@ def validate_contract(data: Dict[str, Any], contract_path: str) -> bool:
             if expected_type == "string" and not isinstance(val, str): return False
             if expected_type == "object" and not isinstance(val, dict): return False
             if expected_type == "boolean" and not isinstance(val, bool): return False
-            
+
         return True
     except Exception as e:
         logger.error(f"Contract validation error: {e}")
