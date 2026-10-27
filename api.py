@@ -1,12 +1,21 @@
-import os
+import ipaddress
 import json
+import os
+import re
 from contextlib import asynccontextmanager
 from typing import Optional
+from urllib.parse import urlparse
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+from fastapi import (
+    BackgroundTasks,
+    FastAPI,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -22,21 +31,19 @@ from utils.ws_logger import active_connections
 async def lifespan(app: FastAPI):
     # Check for API Key on startup
     if not config.GEMINI_API_KEY:
-        print(
-            "⚠️  WARNING: GEMINI_API_KEY no detectada. La API fallará si no se configura al momento del request."
-        )
+        print("⚠️  WARNING: GEMINI_API_KEY no detectada.")
     yield
 
 
 app = FastAPI(
     title="Raadbot API",
-    description="API interna para integrar Raadbot con n8n u otros sistemas externos.",
+    description="API interna para integrar Raadbot con n8n.",
     version="3.0.0",
     lifespan=lifespan,
 )
 
 # --- Configuración de CORS ---
-# Permite que la frontend de Netlify y el dashboard local se comuniquen con la API
+# Permite que la frontend de Netlify y el dashboard local comuniquen
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -51,6 +58,50 @@ app.add_middleware(
 )
 
 
+def _validate_id(v: Optional[str]) -> Optional[str]:
+    if v is not None and not re.fullmatch(r"[a-zA-Z0-9_-]+", v):
+        raise ValueError(
+            "Invalid identifier: only alphanumeric, "
+            "underscores, and hyphens allowed."
+        )
+    return v
+
+
+def _validate_local_dir(v: Optional[str]) -> Optional[str]:
+    if v is not None:
+        norm = v.replace("\\", "/")
+        if (
+            ".." in norm.split("/")
+            or norm.startswith("/")
+            or re.match(r"^[a-zA-Z]:", norm)
+        ):
+            raise ValueError(
+                "Directory traversal or absolute path detected in local_dir."
+            )
+    return v
+
+
+def _validate_webhook_url(v: Optional[str]) -> Optional[str]:
+    if v is not None:
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https") or not parsed.hostname:
+            raise ValueError("Invalid webhook URL scheme or host.")
+        host = parsed.hostname.lower()
+        if host == "localhost":
+            raise ValueError("Access to localhost webhook URL is blocked.")
+        try:
+            ip = ipaddress.ip_address(host)
+        except ValueError:
+            ip = None
+        if ip is not None and (
+            ip.is_loopback or ip.is_private or ip.is_link_local
+        ):
+            raise ValueError(
+                "Access to private or loopback IP webhook URL is blocked."
+            )
+    return v
+
+
 class PipelineRequest(BaseModel):
     search_id: str
     drive_folder: Optional[str] = None
@@ -58,6 +109,21 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "candidate_id")
+    @classmethod
+    def validate_ids(cls, v: Optional[str]) -> Optional[str]:
+        return _validate_id(v)
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_dir(cls, v: Optional[str]) -> Optional[str]:
+        return _validate_local_dir(v)
+
+    @field_validator("webhook_url")
+    @classmethod
+    def validate_url(cls, v: Optional[str]) -> Optional[str]:
+        return _validate_webhook_url(v)
 
 
 class PipelineResponse(BaseModel):
@@ -89,14 +155,18 @@ async def run_pipeline(request: PipelineRequest) -> dict:
 
     if request.candidate_id:
         if request.candidate_id not in candidates:
-            raise ValueError(f"Candidato {request.candidate_id} no encontrado.")
+            raise ValueError(
+                f"Candidato {request.candidate_id} no encontrado."
+            )
         candidates = {request.candidate_id: candidates[request.candidate_id]}
 
     output_dir = os.path.join("runs", request.search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
 
     gemini = GeminiClient(api_key=api_key, model=request.model)
-    orchestrator = GEM6Orchestrator(gemini=gemini, search_id=request.search_id, output_dir=output_dir)
+    orchestrator = GEM6Orchestrator(
+        gemini=gemini, search_id=request.search_id, output_dir=output_dir
+    )
 
     # Ejecución asíncrona no bloqueante
     await orchestrator.run_pipeline(search_inputs, candidates)
@@ -121,7 +191,9 @@ async def background_run_pipeline(request: PipelineRequest):
         resultado = await run_pipeline(request)
         if request.webhook_url:
             async with httpx.AsyncClient() as client:
-                await client.post(request.webhook_url, json=resultado, timeout=60.0)
+                await client.post(
+                    request.webhook_url, json=resultado, timeout=60.0
+                )
     except Exception as e:
         if request.webhook_url:
             try:
@@ -129,9 +201,9 @@ async def background_run_pipeline(request: PipelineRequest):
                     await client.post(
                         request.webhook_url,
                         json={
-                            "status": "error", 
-                            "search_id": request.search_id, 
-                            "message": str(e)
+                            "status": "error",
+                            "search_id": request.search_id,
+                            "message": str(e),
                         },
                         timeout=30.0,
                     )
@@ -140,7 +212,9 @@ async def background_run_pipeline(request: PipelineRequest):
 
 
 @app.post("/api/v1/run")
-async def trigger_pipeline(request: PipelineRequest, background_tasks: BackgroundTasks):
+async def trigger_pipeline(
+    request: PipelineRequest, background_tasks: BackgroundTasks
+):
     """
     Verbo POST para iniciar una corrida del pipeline.
     Soporta webhook_url para ejecuciones asíncronas no bloqueantes.
@@ -165,42 +239,56 @@ class SetupSearchRequest(BaseModel):
     jd_content: str
     company_context: Optional[str] = None
 
+    @field_validator("search_id")
+    @classmethod
+    def validate_search_id(cls, v: str) -> str:
+        return _validate_id(v)
+
+
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
     """
-    Inicializa una búsqueda ejecutando únicamente GEM 5 (Radiografía Estratégica).
+    Inicializa una búsqueda ejecutando únicamente GEM 5.
     Crea la estructura de carpetas y guarda el mandato inicial.
     """
     output_dir = os.path.join("runs", request.search_id, "outputs")
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Simular estructura de inputs para GEM 5
     search_inputs = {
         "kickoff_notes": request.brief_notes,
         "brief_jd": request.jd_content,
-        "company_context": request.company_context or ""
+        "company_context": request.company_context or "",
     }
-    
+
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     # Ejecutar GEM 5 directamente
     from agent.prompt_builder import build_gem5_prompt
+
     prompt = build_gem5_prompt(search_inputs)
     result = gemini.run_gem(prompt, gem_name="gem5")
-    
+
     # Guardar resultados
-    with open(os.path.join(output_dir, "gem5.json"), "w", encoding="utf-8") as f:
+    json_path = os.path.join(output_dir, "gem5.json")
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(result.get("data", {}), f, indent=4)
-    with open(os.path.join(output_dir, "gem5.md"), "w", encoding="utf-8") as f:
+
+    md_path = os.path.join(output_dir, "gem5.md")
+    with open(md_path, "w", encoding="utf-8") as f:
         f.write(result.get("markdown", ""))
-        
+
+    summary = result.get("data", {}).get(
+        "mandate_summary", "Mandato generado con éxito."
+    )
     return {
         "status": "success",
         "search_id": request.search_id,
-        "gem5_summary": result.get("data", {}).get("mandate_summary", "Mandato generado con éxito.")
+        "gem5_summary": summary,
     }
 
 
 # --- Dashboard Endpoints ---
+
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard():
@@ -209,70 +297,82 @@ async def get_dashboard():
         with open("templates/dashboard.html", "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
-        return "Dashboard template not found. Please create templates/dashboard.html"
+        return (
+            "Dashboard template not found. "
+            "Please create templates/dashboard.html"
+        )
+
 
 @app.get("/api/v1/gems")
 async def list_gems():
     """Lista metadatos y prompts actuales de los GEMs."""
     gems = []
     gem_list = ["gem1", "gem2", "gem3", "gem4", "gem5"]
-    
+
     for g in gem_list:
         prompt_path = f"prompts/{g}.md"
         prompt_content = ""
         if os.path.exists(prompt_path):
             with open(prompt_path, "r", encoding="utf-8") as f:
                 prompt_content = f.read()
-        
-        gems.append({
-            "id": g,
-            "name": g.upper(),
-            "prompt": prompt_content,
-            "config": config.GEM_CONFIGS.get(g, {})
-        })
-    
+
+        gems.append(
+            {
+                "id": g,
+                "name": g.upper(),
+                "prompt": prompt_content,
+                "config": config.GEM_CONFIGS.get(g, {}),
+            }
+        )
+
     return gems
+
 
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
 
+    @field_validator("gem_id")
+    @classmethod
+    def validate_gem_id(cls, v: str) -> str:
+        return _validate_id(v)
+
+
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
-    """Refina un prompt GEM usando IA basado en una instrucción del usuario."""
+    """Refina un prompt GEM usando IA basado en instrucción del usuario."""
     prompt_path = f"prompts/{request.gem_id}.md"
     if not os.path.exists(prompt_path):
-        raise HTTPException(status_code=404, detail="GEM prompt file not found")
-        
+        raise HTTPException(
+            status_code=404, detail="GEM prompt file not found"
+        )
+
     with open(prompt_path, "r", encoding="utf-8") as f:
         current_prompt = f.read()
-        
-    refinement_prompt = f"""
-    Eres un experto en Prompt Engineering. Tu misión es REFINAR el siguiente System Prompt de RAADBOT v2.0.
-    
-    ESTRUCTURA ACTUAL:
-    {current_prompt}
-    
-    INSTRUCCIÓN DEL USUARIO:
-    {request.instruction}
-    
-    REGLAS:
-    1. Mantén la estructura de secciones (ROL, CONTEXTO, INSTRUCCIONES CORE, etc.).
-    2. Aplica la instrucción del usuario de forma profesional y precisa.
-    3. Devuelve el prompt REFINADO completo en formato Markdown.
-    4. NO agregues explicaciones, solo el contenido del nuevo prompt.
-    """
-    
+
+    refinement_prompt = (
+        "Eres un experto en Prompt Engineering. "
+        "Tu misión es REFINAR el System Prompt.\n\n"
+        f"ESTRUCTURA ACTUAL:\n{current_prompt}\n\n"
+        f"INSTRUCCIÓN DEL USUARIO:\n{request.instruction}\n\n"
+        "REGLAS:\n"
+        "1. Mantén la estructura de secciones.\n"
+        "2. Aplica la instrucción del usuario.\n"
+        "3. Devuelve el prompt REFINADO completo en Markdown.\n"
+        "4. NO agregues explicaciones, solo el nuevo prompt."
+    )
+
     gemini = GeminiClient(api_key=config.GEMINI_API_KEY)
     result = gemini.run_gem(refinement_prompt)
     new_prompt = result.get("markdown", "") or result.get("raw", "")
-    
+
     if new_prompt:
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write(new_prompt)
         return {"status": "success", "new_prompt": new_prompt}
-    
+
     return {"status": "error", "message": "Failed to generate new prompt"}
+
 
 @app.websocket("/ws/logs")
 async def websocket_logs(websocket: WebSocket):
@@ -286,12 +386,13 @@ async def websocket_logs(websocket: WebSocket):
         if websocket in active_connections:
             active_connections.remove(websocket)
 
+
 @app.get("/health")
 def health_check():
     return {
-        "status": "ok", 
-        "agent": "raadbot", 
+        "status": "ok",
+        "agent": "raadbot",
         "version": "3.0.0",
         "model": config.DEFAULT_MODEL,
-        "provider": config.LLM_PROVIDER
+        "provider": config.LLM_PROVIDER,
     }
