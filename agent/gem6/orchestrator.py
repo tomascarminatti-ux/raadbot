@@ -1,6 +1,7 @@
 import os
 import json
 import uuid
+import time
 import asyncio
 from typing import Dict, Any, List, Optional
 from utils.gem_core import GEMClient, validate_contract, logger
@@ -20,18 +21,36 @@ class GEM6Orchestrator:
         self.config = kwargs.get("config") or (args[2] if len(args) > 2 else {})
         self.search_id = kwargs.get("search_id", self.config.get("search_id"))
 
-    async def run_pipeline(self, search_inputs: Dict[str, Any], candidates: Dict[str, Any]):
-        """Entry point to process all candidates"""
-        results = {}
-        for candidate_id, candidate_data in candidates.items():
+    async def run_pipeline(self, search_inputs: Dict[str, Any], candidates: Any):
+        """
+        Entry point to process candidate workloads concurrently using asyncio.gather.
+        Converts sequential candidate processing loop into parallel task execution,
+        reducing total pipeline latency from O(N*T) to O(T) for multi-candidate tasks.
+        """
+        # Normalize candidates if provided as list or dict
+        cand_map: Dict[str, Any] = {}
+        if isinstance(candidates, list):
+            for idx, item in enumerate(candidates):
+                cid = item.get("candidate_id") or item.get("candidato_id") or f"CAND-{idx+1:03d}"
+                cand_map[cid] = item
+        elif isinstance(candidates, dict):
+            cand_map = candidates
+
+        async def _process_candidate(candidate_id: str, candidate_data: Dict[str, Any]):
             context = {
                 "search_inputs": search_inputs,
                 "candidate_id": candidate_id,
                 "candidate_data": candidate_data,
                 "entity_id": candidate_id
             }
-            results[candidate_id] = await self.process_context(context)
-        
+            res = await self.process_context(context)
+            return candidate_id, res
+
+        # Process candidates concurrently
+        tasks = [_process_candidate(cid, cdata) for cid, cdata in cand_map.items()]
+        completed = await asyncio.gather(*tasks) if tasks else []
+        results = dict(completed)
+
         # Save summary
         if self.output_dir:
             os.makedirs(self.output_dir, exist_ok=True)
@@ -43,8 +62,15 @@ class GEM6Orchestrator:
             }
             with open(summary_path, "w") as f:
                 json.dump(summary, f, indent=2)
-        
-        return results
+
+        return {
+            "status": "success",
+            "search_id": self.search_id,
+            "metrics": {"counters": {"candidates_processed": len(results)}},
+            "candidates": results
+        }
+
+    execute_pipeline = run_pipeline
 
     async def process_context(self, context_data: Dict[str, Any]):
         trace_id = str(uuid.uuid4())
