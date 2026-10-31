@@ -1,0 +1,6 @@
+# Sentinel's Security Journal
+
+## 2026-10-30 - API Input Validation and SSRF Protection in Webhooks
+**Vulnerability:** User-controlled parameters (`search_id`, `candidate_id`, `gem_id`, `local_dir`) were passed directly into filesystem path construction (`os.path.join("runs", search_id, ...)`, `prompts/{gem_id}.md`), exposing the application to path traversal attacks. In addition, `PipelineRequest.webhook_url` allowed arbitrary target URLs without scheme or host restrictions, introducing SSRF risks.
+**Learning:** In FastAPI/Pydantic applications, file operations must never rely on string interpolation without strict identifier validation (`re.fullmatch(r"[a-zA-Z0-9_-]+", ...)`) and traversal pattern checks. Webhook endpoints must restrict protocols strictly to `http`/`https` and disallow loopback/private/link-local network destinations. Furthermore, test collection isolation (`pytest.ini` with `testpaths = tests`) and `if __name__ == '__main__':` entry guards prevent local integration scripts from executing live network requests during CI/test runs.
+**Prevention:** Enforce input constraints at the boundary model layer with Pydantic `@field_validator`s, sanitize path segments with defense-in-depth checks, validate URLs and resolved IP destinations against non-routable IP ranges, and ensure clean CI test suite scoping.
