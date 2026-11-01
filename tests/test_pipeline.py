@@ -75,3 +75,31 @@ async def test_pipeline_full_run_with_descartado(mock_gemini, temp_output_dir):
     results = await pipeline.run_full_pipeline(search_inputs, candidates)
 
     assert results["candidates"]["CAND-001"]["decision"] == "DESCARTADO_GEM1"
+
+def test_pipeline_compiled_validator_correctness(mock_gemini, temp_output_dir):
+    pipeline = Pipeline(mock_gemini, "SEARCH-2026-001", temp_output_dir)
+
+    assert pipeline.validator is not None, "Validator should be pre-compiled on initialization"
+
+    valid_payload = {
+        "meta": {
+            "search_id": "SEARCH-2026-001",
+            "candidate_id": None,
+            "gem": "GEM_5",
+            "prompt_version": "v1.2",
+            "timestamp": "2024-01-01T00:00:00Z",
+            "sources": ["source1"]
+        },
+        "scores": {"confidence": 9},
+        "blockers": [],
+        "content": {}
+    }
+    assert pipeline._validate_output(valid_payload, "gem5") is True
+
+    invalid_payload = {
+        "meta": {
+            "search_id": "INVALID",
+        }
+    }
+    with pytest.raises(ValueError, match="Schema fallido en gem5"):
+        pipeline._validate_output(invalid_payload, "gem5")
