@@ -2,11 +2,14 @@ import os
 import json
 from contextlib import asynccontextmanager
 from typing import Optional
+import ipaddress
+import re
+from urllib.parse import urlparse
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import httpx
 import asyncio
 
@@ -51,6 +54,13 @@ app.add_middleware(
 )
 
 
+def _check_safe_id(v: Optional[str]) -> Optional[str]:
+    """Valida identificadores contra inyecciones y path traversal."""
+    if v is not None and not re.fullmatch(r"[a-zA-Z0-9_-]+", v):
+        raise ValueError("Identificador inválido: solo caracteres alfanuméricos, guiones y guiones bajos.")
+    return v
+
+
 class PipelineRequest(BaseModel):
     search_id: str
     drive_folder: Optional[str] = None
@@ -58,6 +68,39 @@ class PipelineRequest(BaseModel):
     candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("search_id", "candidate_id")
+    @classmethod
+    def validate_ids(cls, v: Optional[str]) -> Optional[str]:
+        return _check_safe_id(v)
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        # Prevenir path traversal relativo o absoluto
+        if v and (".." in v.replace("\\", "/").split("/") or v.startswith("/") or re.match(r"^[a-zA-Z]:", v)):
+            raise ValueError("Secuencia de path traversal no permitida en local_dir.")
+        return v
+
+    @field_validator("webhook_url")
+    @classmethod
+    def validate_webhook_url(cls, v: Optional[str]) -> Optional[str]:
+        # Mitigación SSRF: validar protocolo y bloquear localhost/redes privadas
+        if v:
+            p = urlparse(v)
+            if p.scheme not in ("http", "https") or not p.hostname:
+                raise ValueError("webhook_url debe ser una URL HTTP/HTTPS válida.")
+            host = p.hostname.lower()
+            if host in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
+                raise ValueError("webhook_url no puede apuntar a localhost.")
+            try:
+                ip = ipaddress.ip_address(host)
+                if ip.is_private or ip.is_loopback or ip.is_link_local:
+                    raise ValueError("webhook_url no puede apuntar a direcciones privadas o internas.")
+            except ValueError as e:
+                if "no puede apuntar" in str(e):
+                    raise
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -164,6 +207,7 @@ class SetupSearchRequest(BaseModel):
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
+    _v_id = field_validator("search_id")(classmethod(lambda cls, v: _check_safe_id(v)))
 
 @app.post("/api/v1/search/setup")
 async def setup_search(request: SetupSearchRequest):
@@ -236,6 +280,7 @@ async def list_gems():
 class RefineRequest(BaseModel):
     gem_id: str
     instruction: str
+    _v_id = field_validator("gem_id")(classmethod(lambda cls, v: _check_safe_id(v)))
 
 @app.post("/api/v1/gems/refine")
 async def refine_gem(request: RefineRequest):
