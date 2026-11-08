@@ -3,10 +3,10 @@ import json
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 import httpx
 import asyncio
 
@@ -51,13 +51,26 @@ app.add_middleware(
 )
 
 
+ID_REGEX = r"^[a-zA-Z0-9_-]+$"
+
+
 class PipelineRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(..., pattern=ID_REGEX)
     drive_folder: Optional[str] = None
     local_dir: Optional[str] = None
-    candidate_id: Optional[str] = None  # Si se quiere procesar solo uno
+    candidate_id: Optional[str] = Field(None, pattern=ID_REGEX)  # Si se quiere procesar solo uno
     model: str = config.DEFAULT_MODEL
     webhook_url: Optional[str] = None  # Para n8n asíncrono
+
+    @field_validator("local_dir")
+    @classmethod
+    def validate_local_dir(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        norm = v.replace("\\", "/")
+        if norm.startswith("/") or ".." in norm.split("/") or ":" in norm:
+            raise ValueError("Invalid local_dir: Path traversal or absolute path detected.")
+        return v
 
 
 class PipelineResponse(BaseModel):
@@ -155,12 +168,14 @@ async def trigger_pipeline(request: PipelineRequest, background_tasks: Backgroun
     else:
         try:
             return await run_pipeline(request)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        except Exception:
+            raise HTTPException(
+                status_code=400, detail="Pipeline execution failed. Check logs for details."
+            )
 
 
 class SetupSearchRequest(BaseModel):
-    search_id: str
+    search_id: str = Field(..., pattern=ID_REGEX)
     brief_notes: str
     jd_content: str
     company_context: Optional[str] = None
@@ -234,7 +249,7 @@ async def list_gems():
     return gems
 
 class RefineRequest(BaseModel):
-    gem_id: str
+    gem_id: str = Field(..., pattern=r"^(gem1|gem2|gem3|gem4|gem5)$")
     instruction: str
 
 @app.post("/api/v1/gems/refine")
