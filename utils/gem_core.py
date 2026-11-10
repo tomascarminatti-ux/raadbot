@@ -23,35 +23,57 @@ logger.setLevel(logging.INFO)
 logger.propagate = False
 
 class GEMClient:
+    """Client for DB and telemetry endpoints with HTTP connection pooling."""
+
     def __init__(self, db_url: str = "http://db-api:8000"):
         self.db_url = db_url
+        # Reusable client session to eliminate per-request connection setup overhead
+        self._client: Optional[httpx.AsyncClient] = None
+
+    def _get_client(self) -> httpx.AsyncClient:
+        """Lazily initialize or return the persistent httpx.AsyncClient session."""
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(timeout=30.0)
+        return self._client
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
+
+    async def close(self):
+        """Close the underlying persistent HTTP client session."""
+        if self._client is not None and not self._client.is_closed:
+            await self._client.aclose()
+            self._client = None
 
     async def upsert_entity(self, data: Dict[str, Any]):
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(f"{self.db_url}/entity/upsert", json=data)
-                resp.raise_for_status()
-                return resp.json()
+            client = self._get_client()
+            resp = await client.post(f"{self.db_url}/entity/upsert", json=data)
+            resp.raise_for_status()
+            return resp.json()
         except Exception as e:
             logger.error(f"Failed to upsert entity: {e}")
             return None
 
     async def discard_entity(self, data: Dict[str, Any]):
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(f"{self.db_url}/entity/discard", json=data)
-                resp.raise_for_status()
-                return resp.json()
+            client = self._get_client()
+            resp = await client.post(f"{self.db_url}/entity/discard", json=data)
+            resp.raise_for_status()
+            return resp.json()
         except Exception as e:
             logger.error(f"Failed to discard entity: {e}")
             return None
 
     async def log_execution(self, log_data: Dict[str, Any]):
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(f"{self.db_url}/log/discovery", json=log_data)
-                resp.raise_for_status()
-                return resp.json()
+            client = self._get_client()
+            resp = await client.post(f"{self.db_url}/log/discovery", json=log_data)
+            resp.raise_for_status()
+            return resp.json()
         except Exception as e:
             logger.error(f"Failed to log execution: {e}")
             return None
