@@ -231,7 +231,8 @@
             }
         }
         document.addEventListener('keydown', (e) => {
-            if (e.altKey && (e.key === 'c' || e.key === 'C')) {
+            if (e.altKey && !e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
+                if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
                 e.preventDefault();
                 copyPrompt();
             }
